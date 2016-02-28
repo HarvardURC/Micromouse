@@ -1,14 +1,18 @@
 
-void Motors::setup() {
- Serial.begin(9600);
- pinMode(TICKPIN, INPUT);
- pinMode(SECONDTICKPIN, INPUT);
- attachInterrupt(digitalPinToInterrupt(TICKPIN), onTick, RISING);
- attachInterrupt(digitalPinToInterrupt(SECONDTICKPIN), onTickTwo, RISING);
- pinMode(PHASEPIN, OUTPUT);
- pinMode(SECONDPHASEPIN, OUTPUT);
- analogWrite(DRIVEPIN, 255); 
- analogWrite(DRIVEPINTWO, 255);
+ Motors::Motors(int drivepinL, int drivepinR, int tickpinL, 
+           int tickpinR, int phasepinL, int phasepinR) {
+ 
+ pinMode(tickpinL, INPUT);
+ pinMode(tickpinR, INPUT);
+ attachInterrupt(digitalPinToInterrupt(tickpinL), onTick, RISING);
+ attachInterrupt(digitalPinToInterrupt(tickpinR), onTickTwo, RISING);
+ pinMode(phasepinL, OUTPUT);
+ pinMode(phasepinR, OUTPUT); 
+
+ _drivepinL = drivepinL;
+ _drivepinR = drivepinR;
+ _phasepinL = phasepinL;
+ _phasepinR = phasepinR;
 
 }
 
@@ -16,11 +20,11 @@ void Motors::setup() {
 void Motors::anything(int pwm, int tickDelta) {
 
   counter1 = 0;
-  analogWrite(DRIVEPIN, pwm);
+  analogWrite(_drivepinL, pwm);
   while (counterL < tickdelta) {
     delay(1);
     }
-  analogWrite(DRIVEPIN, 0);
+  analogWrite(L, 0);
   Serial.println(counterL);
 }
 
@@ -31,22 +35,22 @@ void Motors::othermotor(int pwm, int tickDelta) {
   
   while (counterR < tickDelta || counterL < tickDelta) {
  
-    analogWrite(DRIVEPIN, pwm);
-    analogWrite(DRIVEPINTWO, pwm);
+    analogWrite(_drivepinL, pwm);
+    analogWrite(_drivepinR, pwm);
       
       if (counterL > counterR) 
       {
-         analogWrite(DRIVEPIN, 0);
+         analogWrite(_drivepinL, 0);
       }
       else if (counterL < counterR)
       {
-        analogWrite(DRIVEPINTWO, 0);
+        analogWrite(_drivepinR, 0);
       }
         
  
   }
-  analogWrite(DRIVEPIN, 0);
-  analogWrite(DRIVEPINTWO, 0);
+  analogWrite(_drivepinL, 0);
+  analogWrite(_drivepinR, 0);
   
 }
 
