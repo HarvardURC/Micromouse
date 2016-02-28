@@ -1,67 +1,83 @@
+#include "Arduino.h"
+#include "Morse.h"
 
- Motors::Motors(int drivepinL, int drivepinR, int tickpinL, 
-           int tickpinR, int phasepinL, int phasepinR) {
- 
- pinMode(tickpinL, INPUT);
- pinMode(tickpinR, INPUT);
- attachInterrupt(digitalPinToInterrupt(tickpinL), onTick, RISING);
- attachInterrupt(digitalPinToInterrupt(tickpinR), onTickTwo, RISING);
- pinMode(phasepinL, OUTPUT);
- pinMode(phasepinR, OUTPUT); 
+Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
+               int tickpinR, int phasepinL, int phasepinR)
+{
+  pinMode(tickpinL, INPUT);
+  pinMode(tickpinR, INPUT);
+  attachInterrupt(digitalPinToInterrupt(tickpinL), onTickL, RISING);
+  attachInterrupt(digitalPinToInterrupt(tickpinR), onTickR, RISING);
+  pinMode(drivepinL, OUTPUT);
+  pinMode(drivepinR, OUTPUT);
+  pinMode(phasepinL, OUTPUT);
+  pinMode(phasepinR, OUTPUT);
 
- _drivepinL = drivepinL;
- _drivepinR = drivepinR;
- _phasepinL = phasepinL;
- _phasepinR = phasepinR;
+  _drivepinL = drivepinL;
+  _drivepinR = drivepinR;
+  _phasepinL = phasepinL;
+  _phasepinR = phasepinR;
 
 }
 
 
-void Motors::anything(int pwm, int tickDelta) {
-
-  counter1 = 0;
-  analogWrite(_drivepinL, pwm);
-  while (counterL < tickdelta) {
-    delay(1);
-    }
-  analogWrite(L, 0);
-  Serial.println(counterL);
+void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
+{
+  counter* = 0;
+  while (counter* < tickdelta) {
+    analogWrite(pin, pwm);
+  }
+  analogWrite(pin, 0);
 }
 
-void Motors::othermotor(int pwm, int tickDelta) {
-  
-  counter1 = 0; 
-  counter2 = 0;
-  
-  while (counterR < tickDelta || counterL < tickDelta) {
- 
+void Motors::forward(int pwm, int tickDelta)
+{
+  _counterL = 0;
+  _counterR = 0;
+
+  while (_counterR < tickDelta || _counterL < tickDelta) {
+
     analogWrite(_drivepinL, pwm);
     analogWrite(_drivepinR, pwm);
-      
-      if (counterL > counterR) 
-      {
-         analogWrite(_drivepinL, 0);
-      }
-      else if (counterL < counterR)
-      {
-        analogWrite(_drivepinR, 0);
-      }
-        
- 
+
+    if (_counterL > _counterR)
+    {
+      analogWrite(_drivepinL, 0);
+    }
+    else if (_counterL < _counterR)
+    {
+      analogWrite(_drivepinR, 0);
+    }
+
+
   }
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
-  
+
 }
 
+void Motors::turnLeft()
+{
 
-
-void Motors::onTick() {
-  
-  counterL++;
- 
 }
 
-void Motors::onTickTwo() {
-  counterR++;
+void Motors::turnRight()
+{
+
+}
+
+void Motors::turnAround()
+{
+
+}
+
+void Motors::onTickL()
+{
+  _counterL++;
+
+}
+
+void Motors::onTickR()
+{
+  _counterR++;
 }
