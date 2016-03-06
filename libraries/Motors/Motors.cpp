@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "Motors.h"
 
+//initialise counters at 0
 volatile int _counterL = 0;
 volatile int _counterR = 0;
 
@@ -24,12 +25,18 @@ Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
   _phasepinL = phasepinL;
   _phasepinR = phasepinR;
 
+  digitalWrite(phasepinL, HIGH);
+  digitalWrite(phasepinR, HIGH);
 }
 
 
 void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
 {
+  
   *counter = 0;
+  
+  /* if too many turns then stop */
+  
   while (*counter < tickDelta) {
     analogWrite(pin, pwm);
   }
@@ -40,7 +47,11 @@ void Motors::forward(int pwm, int tickDelta)
 {
   _counterL = 0;
   _counterR = 0;
-
+  
+  /*check motors are in sync
+    if not then stop
+    motor with higher count */
+  
   while (_counterR < tickDelta || _counterL < tickDelta) {
 
     analogWrite(_drivepinL, pwm);
@@ -64,18 +75,29 @@ void Motors::forward(int pwm, int tickDelta)
 
 void Motors::turnLeft()
 {
-
+  /*
+  digitalWrite(phasepinL, LOW);
+  forward(/something, /somthing else)
+    digitalWrite(phasepinL, HIGH);  
+  */
+	  
 }
 
 void Motors::turnRight()
 {
+  /*
+    digitalWrite(phasepinR, LOW);
+    forward(/something, the other thing)
+    digitalWrite(phasepinR, HIGH) */
 
 }
 
 void Motors::turnAround()
 {
-
+  
 }
+
+//increment count with each turn
 
 void onTickL()
 {
