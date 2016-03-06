@@ -1,5 +1,11 @@
 #include "Arduino.h"
-#include "Morse.h"
+#include "Motors.h"
+
+volatile int _counterL = 0;
+volatile int _counterR = 0;
+
+void onTickL();
+void onTickR();
 
 Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
                int tickpinR, int phasepinL, int phasepinR)
@@ -23,8 +29,8 @@ Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
 
 void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
 {
-  counter* = 0;
-  while (counter* < tickdelta) {
+  *counter = 0;
+  while (*counter < tickDelta) {
     analogWrite(pin, pwm);
   }
   analogWrite(pin, 0);
@@ -71,13 +77,13 @@ void Motors::turnAround()
 
 }
 
-void Motors::onTickL()
+void onTickL()
 {
   _counterL++;
 
 }
 
-void Motors::onTickR()
+void onTickR()
 {
   _counterR++;
 }

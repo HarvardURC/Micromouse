@@ -17,12 +17,8 @@ private:
   int _drivepinR;
   int _phasepinL;
   int _phasepinR;
-  volatile int _counterL;
-  volatile int _counterR;
-  void onTickL();
-  void onTickR();
   void oneMotor(int pin, int* counter, int pwm, int tickDelta);
 
-}
+};
 
 #endif
