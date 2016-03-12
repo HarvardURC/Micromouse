@@ -49,8 +49,7 @@ void Motors::forward(int pwm, int tickDelta)
   _counterR = 0;
   
   /*check motors are in sync
-    if not then stop
-    motor with higher count */
+    if not then stop motor with higher count */
   
   while (_counterR < tickDelta || _counterL < tickDelta) {
 
@@ -75,25 +74,31 @@ void Motors::forward(int pwm, int tickDelta)
 
 void Motors::turnLeft()
 {
+  /* motors initially set HIGH forward.
+     to turn left set L to low and then reset to high when complete */
+  
   /*
-  digitalWrite(phasepinL, LOW);
-  forward(/something, /somthing else)
-    digitalWrite(phasepinL, HIGH);  
+    digitalWrite(phasepinL, LOW);
+    forward(int pwm, int tickDelta);
   */
 	  
 }
 
 void Motors::turnRight()
 {
+  /* same as above but change phasepinR */
+  
   /*
     digitalWrite(phasepinR, LOW);
-    forward(/something, the other thing)
-    digitalWrite(phasepinR, HIGH) */
+    forward(int pwm, int tickDelta);
+  */
 
-}
+ }
 
 void Motors::turnAround()
 {
+ 
+  /*need to measure tickDelta for 180 rotation*/   
   
 }
 
