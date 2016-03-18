@@ -75,15 +75,18 @@ void Motors::forward(int pwm, int tickDelta)
 
 }
 
+/* 0.786 degrees per tick
+ * 115 ticks to go 90 degrees
+ * 229 ticks to go 180 degrees */
+
 void Motors::turnLeft()
 {
   /* motors initially set HIGH forward.
      to turn left set L to low and then reset to high when complete */
 
-  /*
-    digitalWrite(phasepinL, LOW);
-    forward(int pwm, int tickDelta);
-  */
+  digitalWrite(_phasepinL, HIGH);
+  forward(60, 115);
+  digitalWrite(_phasepinL, LOW);
 
 }
 
@@ -91,17 +94,18 @@ void Motors::turnRight()
 {
   /* same as above but change phasepinR */
 
-  /*
-    digitalWrite(phasepinR, LOW);
-    forward(int pwm, int tickDelta);
-  */
+  digitalWrite(_phasepinR, HIGH);
+  forward(60, 115);
+  digitalWrite(_phasepinR, LOW);
 
  }
 
 void Motors::turnAround()
 {
 
-  /*need to measure tickDelta for 180 rotation*/
+  digitalWrite(_phasepinR, HIGH);
+  forward(60, 229);
+  digitalWrite(_phasepinR, LOW);
 
 }
 
