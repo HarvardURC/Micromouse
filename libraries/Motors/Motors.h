@@ -12,6 +12,7 @@ public:
   void turnRight();
   void turnAround();
   void forward(int pwm, int tickDelta);
+  void wallOrientate();
 private:
   int _drivepinL;
   int _drivepinR;

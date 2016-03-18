@@ -1,7 +1,8 @@
-#include <DistanceGP2Y0A21YK.h>
+#include <DistanceGP2Y0A41SK.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <Motors.h>
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -24,12 +25,8 @@ int STEP_DELAY = 2;
 
 int irThresholds[4] = {300, 300, 1023, 300};
 
-//Define Stepper Pins
-// Arduino pins -- will change
-int dirpinLeft = 6;
-int steppinLeft = 4;
-int dirpinRight = 3;
-int steppinRight = 2;
+//define motor pins
+Motors motors (9, 11, 2, 3, 10, 12);
 
 // mousePos = 16 * row + col
 int mousePos = 0;
@@ -48,9 +45,9 @@ int leftIRPin = A2;
 int rightIRPin = A1;
 int centerIRPin = A0;
 // Initializes the sensor class
-DistanceGP2Y0A21YK leftIR;
-DistanceGP2Y0A21YK rightIR;
-DistanceGP2Y0A21YK forwardIR;
+DistanceGP2Y0A41SK leftIR;
+DistanceGP2Y0A41SK rightIR;
+DistanceGP2Y0A41SK forwardIR;
 
 /* Global Variables */
 // Global array to store the cell values
@@ -89,11 +86,6 @@ void setup()
    * MOUSE HARDWARE INTITALIZATION *
    * * * * * * * * * * * * * * * * **/
   Serial.begin(9600);
-  // initialize steppers to outputs
-  pinMode(dirpinLeft, OUTPUT);
-  pinMode(steppinLeft, OUTPUT);
-  pinMode(dirpinRight, OUTPUT);
-  pinMode(steppinRight, OUTPUT);
   
   //Start distance sensors
   leftIR.begin(leftIRPin);
@@ -148,13 +140,21 @@ void readCell()
       int oppositeCell = 16 * currentRow + currentCol + offsetMap[dir];
       if (oppositeCell >= 0 && oppositeCell < 256) {
         wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
+ 
+      }
+
+      if(i == 0)
+      {
+        motors.wallOrientate();
       }
     }
+    
   }
 }
 
 void makeNextMove ()
 {
+  int nextDir = 0;
 	// Get the current cell
 	unsigned char currentCell = 16 * currentRow + currentCol;
 	
@@ -169,7 +169,7 @@ void makeNextMove ()
 	// NORTH
 	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16)
 	{
-		int nextDir = SOUTH;
+		nextDir = SOUTH;
 
 		
 
@@ -180,7 +180,7 @@ void makeNextMove ()
 	// EAST
 	if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16)
 	{
-		double nextDir = EAST;
+		nextDir = EAST;
 		lowest = cellMap[currentCell + 1];
 		currentRow = tempCurrentRow;
 		currentCol = tempCurrentCol + 1;
@@ -188,7 +188,7 @@ void makeNextMove ()
 	// SOUTH
 	if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0)
 	{
-		double nextDir = NORTH;
+		nextDir = NORTH;
 		lowest = cellMap[currentCell - 16];
 		currentRow = tempCurrentRow - 1;
 		currentCol = tempCurrentCol;
@@ -196,11 +196,15 @@ void makeNextMove ()
 	// WEST
 	if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0)
 	{
-		double nextDir = WEST;
+		nextDir = WEST;
 		lowest = cellMap[currentCell - 1];
 		currentRow = tempCurrentRow;
 		currentCol = tempCurrentCol - 1;
 	}
+
+  makeTurn(nextDir);
+  moveForward();
+ 
 }
 
 void makeTurn(int nextDir)
@@ -208,75 +212,24 @@ void makeTurn(int nextDir)
   switch((4 + nextDir - mouseDir) % 4)
   {
     case 1:
-      turnRight();
+      motors.turnRight();
       break;
     case 2:
-      turnAround();
+      motors.turnAround();
       break;
     case 3:
-      turnLeft();
+      motors.turnLeft();
       break;
     default:
       break;
   }
 }
 
-void turnRight()
-{
-	digitalWrite(dirpinLeft, LOW);
-	digitalWrite(dirpinRight, LOW);
-
-	for (int i; i < RIGHT_TURN_STEPS; i++)
-	{
-		digitalWrite(steppinLeft, HIGH);   
-		delay(STEP_DELAY);             
-		digitalWrite(steppinLeft, LOW);   
-		delay(STEP_DELAY);              
-		digitalWrite(steppinRight, HIGH);  
-		delay(STEP_DELAY);             
-		digitalWrite(steppinRight, LOW);    
-		delay(STEP_DELAY); 
-	}
-}
-
-void turnLeft()
-{
-	digitalWrite(dirpinLeft, HIGH);
-	digitalWrite(dirpinRight, HIGH);
-
-	for (int i; i < LEFT_TURN_STEPS; i++){
-		digitalWrite(steppinLeft, HIGH);   
-		delay(STEP_DELAY);             
-		digitalWrite(steppinLeft, LOW);   
-		delay(STEP_DELAY);              
-		digitalWrite(steppinRight, HIGH);  
-		delay(STEP_DELAY);             
-		digitalWrite(steppinRight, LOW);    
-		delay(STEP_DELAY); 
-	}
-}
 
 void moveForward() {
-	digitalWrite(dirpinLeft, LOW);
-	digitalWrite(dirpinRight, HIGH);
-
-	for (int i; i < MOVE_FORWARD_STEPS; i++){
-		digitalWrite(steppinLeft, HIGH);   
-		delay(STEP_DELAY);             
-		digitalWrite(steppinLeft, LOW);   
-		delay(STEP_DELAY);              
-		digitalWrite(steppinRight, HIGH);  
-		delay(STEP_DELAY);             
-		digitalWrite(steppinRight, LOW);    
-		delay(STEP_DELAY); 
-	}
+  motors.forward(60, 300);
 }
 
-void turnAround() 
-{
-	turnRight();
-	turnRight();
-}
 
 
 
