@@ -98,7 +98,7 @@ void Motors::turnRight()
   forward(60, 115);
   digitalWrite(_phasepinR, LOW);
 
- }
+}
 
 void Motors::turnAround()
 {
@@ -106,6 +106,17 @@ void Motors::turnAround()
   digitalWrite(_phasepinR, HIGH);
   forward(60, 229);
   digitalWrite(_phasepinR, LOW);
+
+}
+
+void Motors::wallOrientate()
+{
+
+  analogWrite(_drivepinL, 255);
+  analogWrite(_drivepinR, 255);
+  delay(500);
+  analogWrite(_drivepinL, 0);
+  analogWrite(_drivepinR, 0);
 
 }
 
