@@ -111,11 +111,14 @@ void Motors::turnAround()
 void Motors::wallOrientate()
 {
 
-  analogWrite(_drivepinL, 255);
-  analogWrite(_drivepinR, 255);
-  delay(500);
+  unsigned long previousMillis = 0;
+  analogWrite(_drivepinL, 160);
+  analogWrite(_drivepinR, 160);
+  unsigned long currentMillis = millis();
+  if ((unsigned long)(currentMillis - previousMillis)>= 1000){
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
+  }
 
 }
 
