@@ -115,10 +115,11 @@ void Motors::wallOrientate()
   analogWrite(_drivepinL, 160);
   analogWrite(_drivepinR, 160);
   unsigned long currentMillis = millis();
-  if ((unsigned long)(currentMillis - previousMillis)>= 1000){
+  while ((unsigned long)(currentMillis - previousMillis)>= 1000){
+  }
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
-  }
+  
 
 }
 
