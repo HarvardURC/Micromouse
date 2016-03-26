@@ -86,6 +86,7 @@ void debugBlink() {
 
 void setup() 
 {
+  
   pinMode(13, OUTPUT);
   
   /* * * * * * * * * * * * * * * * * 
@@ -109,6 +110,11 @@ void setup()
   // Test path length
   int pathLength = 0;
   
+  /*for (int i = 5; i > 0; i--) {
+    Serial.println(i);
+    delay(1000);
+  }*/
+  
 }
 
 void loop()
@@ -116,7 +122,7 @@ void loop()
 
 	readCell();
 
-  /*for (int i = 0; i < 16 * currentRow + currentCol; i++) {
+  for (int i = 0; i < 16 * currentRow + currentCol; i++) {
     debugBlink();
   }
 
@@ -124,11 +130,11 @@ void loop()
 
   for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
     debugBlink();
-  }*/
+  }
 
-	floodMaze();
+	//floodMaze();
 
-  Serial.println(cellMap[16 * currentRow + currentCol]);
+  Serial.println(cellMap[16 * currentRow + currentCol + 16]);
 
 	makeNextMove();
 
@@ -186,38 +192,50 @@ void makeNextMove ()
 	// Define a default, very high step value
 	unsigned char lowest = 255;
 
+  Serial.println(wallMap[currentCell]);
+  Serial.println(wallMap[currentCell] & 1 == 0);
+
 	// Compare through all the neighbors
 	// NORTH
-	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 /*&& wallMap[currentCell] & 1 == 0*/)
+	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && (wallMap[currentCell] & 1) == 0)
 	{
-		nextDir = NORTH;
+		nextDir = 0;
 
-		
+    Serial.println("NORTH");
 
 		lowest = cellMap[currentCell + 16];
 		currentRow = tempCurrentRow + 1;
 		currentCol = tempCurrentCol;
 	}
 	// EAST
-	if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16)
+	if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16 && (wallMap[currentCell] & 2) == 0)
 	{
-		nextDir = EAST;
+		nextDir = 1;
+
+    Serial.println("EAST");
+
 		lowest = cellMap[currentCell + 1];
 		currentRow = tempCurrentRow;
 		currentCol = tempCurrentCol + 1;
 	}
 	// SOUTH
-	if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0)
+	if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0 && (wallMap[currentCell] & 4) == 0)
 	{
-		nextDir = SOUTH;
+		nextDir = 2;
+
+    Serial.println("SOUTH");
+
 		lowest = cellMap[currentCell - 16];
 		currentRow = tempCurrentRow - 1;
 		currentCol = tempCurrentCol;
 	}
 	// WEST
-	if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0)
+	if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0 && (wallMap[currentCell] & 8) == 0)
 	{
-		nextDir = WEST;
+		nextDir = 3;
+
+    Serial.println("WEST");
+
 		lowest = cellMap[currentCell - 1];
 		currentRow = tempCurrentRow;
 		currentCol = tempCurrentCol - 1;
@@ -275,7 +293,7 @@ void initializeMaze ()
 	
 	for (int i = 0; i < 255; i++)
 	{
-		cellMap[i] = 255;
+		cellMap[i] = 0;
 		wallMap[i] = 0;
 	}
 }
@@ -342,7 +360,7 @@ void floodMaze ()
   		// Set the current cell value to the step path value
   		cellMap[floodCell] = stepValue;
   		
-  		// printf ("Flood Cell: %d\n", floodCell);
+  		// Serial.print ("Flood Cell: %d\n", floodCell);
   
   		// Add all unvisited, available uneighbors to a temporary stack stack
   		
@@ -427,20 +445,20 @@ void floodMaze ()
     }
     
     // Print stack for debug
-    /*printf ("Current Stack\n");
+    /*Serial.print ("Current Stack\n");
     for (int i = 0; i < stackPointer; i++)
     {
-		printf ("Stack Member: %d\n", cellStack[i]);
+		Serial.print ("Stack Member: %d\n", cellStack[i]);
 	}
 	*/
 	
 	// system("clear");
   
   // Print the maze
-  printf ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
+  Serial.print ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
 	for (int i = 15; i >= 0; i--)
 	{
-		printf ("\n");
+		Serial.print ("\n");
 		for (int j = 0; j < 16; j++)
 		{
 			unsigned char current = cellMap[16* i + j];
@@ -449,48 +467,43 @@ void floodMaze ()
 			{
 				if (currentRow == i && currentCol == j)
 				{
-					printf(" @%d    ",cellMap[16* i + j]);
+					//Serial.print(" @%d    ",cellMap[16* i + j]);
+          
 				}
 				else
 				{
-					printf("  %d    ",cellMap[16* i + j]);
+					//Serial.print("  %d    ",cellMap[16* i + j]);
 				}
 			}
 			else if (current < 100)
 			{
 				if (currentRow == i && currentCol == j)
 				{
-					printf(" @%d   ",cellMap[16* i + j]);
+					//Serial.print(" @%d   ",cellMap[16* i + j]);
 				}
 				else
 				{
-					printf("  %d   ",cellMap[16* i + j]);
+					//Serial.print("  %d   ",cellMap[16* i + j]);
 				}
 			}
 			else
 			{
 				if (currentRow == i && currentCol == j)
 				{
-					printf(" @%d  ",cellMap[16* i + j]);
+					//Serial.print(" @%d  ",cellMap[16* i + j]);
 				}
 				else
 				{
-					printf("  %d  ",cellMap[16* i + j]);
+					//Serial.print("  %d  ",cellMap[16* i + j]);
 				}
 			}
+     Serial.print(cellMap[16 * i + j]);
+     Serial.print("\t");
 		}
-		printf("\n");
+		Serial.print("\n");
 	}
-	printf ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
-	printf ("\n");
-
-	int j;
-	int i;
-
-	for (i=0;i<120000000;i++)
-	{
-		j=i;
-	}
+	Serial.print ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
+	Serial.print ("\n");
 	
   }
 }
