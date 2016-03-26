@@ -23,7 +23,7 @@ int LEFT_TURN_STEPS = 53;
 int MOVE_FORWARD_STEPS = 55;
 int STEP_DELAY = 2;
 
-int irThresholds[4] = {300, 300, 1023, 300};
+int irThresholds[4] = {300, 200, 1023, 200};
 
 //define motor pins
 Motors motors (9, 11, 2, 3, 10, 12);
@@ -114,6 +114,8 @@ void loop()
 
 	makeNextMove();
 
+  delay(500);
+
 }
 
 /* * * * * * * * * * * * * * * *
@@ -131,6 +133,9 @@ void readCell()
   {
     if (readings[i] > irThresholds[i])
     {
+      motors.turnAround();
+      motors.turnAround();
+      
       int dir = (mouseDir + i) % 4;
       
       // set wall for current cell
@@ -167,9 +172,9 @@ void makeNextMove ()
 
 	// Compare through all the neighbors
 	// NORTH
-	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16)
+	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && wallMap[currentCell] & 1 == 0)
 	{
-		nextDir = SOUTH;
+		nextDir = NORTH;
 
 		
 
@@ -188,7 +193,7 @@ void makeNextMove ()
 	// SOUTH
 	if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0)
 	{
-		nextDir = NORTH;
+		nextDir = SOUTH;
 		lowest = cellMap[currentCell - 16];
 		currentRow = tempCurrentRow - 1;
 		currentCol = tempCurrentCol;
@@ -223,6 +228,7 @@ void makeTurn(int nextDir)
     default:
       break;
   }
+  mouseDir = nextDir;
 }
 
 
