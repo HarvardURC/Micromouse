@@ -142,11 +142,11 @@ void readCell()
         wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
  
       }
-
+/*
       if(i == 0)
       {
         motors.wallOrientate();
-      }
+      } */
     }
     
   }
@@ -227,7 +227,7 @@ void makeTurn(int nextDir)
 
 
 void moveForward() {
-  motors.forward(60, 300);
+  motors.forward(60, 284);
 }
 
 
