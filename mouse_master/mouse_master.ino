@@ -28,9 +28,6 @@ int irThresholds[4] = {300, 200, 1023, 200};
 //define motor pins
 Motors motors (9, 11, 2, 3, 10, 12);
 
-// mousePos = 16 * row + col
-int mousePos = 0;
-
 // 0 for North
 // 1 for East
 // 2 for South 
@@ -38,7 +35,7 @@ int mousePos = 0;
 int mouseDir = 0;
 
 // maps 0-3 direction to array offset
-int offsetMap[4] = {-16, 1, 16, -1};
+int offsetMap[4] = {16, 1, -16, -1};
 
 //Define Distance Sensor pins
 int leftIRPin = A2;
@@ -80,8 +77,17 @@ void turnLeft();
 void moveForward();
 void makeNextMove();
 
+void debugBlink() {
+  digitalWrite(13, HIGH);
+  delay(200);
+  digitalWrite(13, LOW);
+  delay(200);
+}
+
 void setup() 
 {
+  pinMode(13, OUTPUT);
+  
   /* * * * * * * * * * * * * * * * * 
    * MOUSE HARDWARE INTITALIZATION *
    * * * * * * * * * * * * * * * * **/
@@ -110,7 +116,19 @@ void loop()
 
 	readCell();
 
+  /*for (int i = 0; i < 16 * currentRow + currentCol; i++) {
+    debugBlink();
+  }
+
+  delay(1000);
+
+  for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
+    debugBlink();
+  }*/
+
 	floodMaze();
+
+  Serial.println(cellMap[16 * currentRow + currentCol]);
 
 	makeNextMove();
 
@@ -133,8 +151,6 @@ void readCell()
   {
     if (readings[i] > irThresholds[i])
     {
-      motors.turnAround();
-      motors.turnAround();
       
       int dir = (mouseDir + i) % 4;
       
@@ -172,7 +188,7 @@ void makeNextMove ()
 
 	// Compare through all the neighbors
 	// NORTH
-	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && wallMap[currentCell] & 1 == 0)
+	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 /*&& wallMap[currentCell] & 1 == 0*/)
 	{
 		nextDir = NORTH;
 
@@ -269,7 +285,7 @@ void setBoundaryWalls ()
 	// NORTH
 	for (int i = 0; i < 16; i++)
 	{
-		wallMap[i] |= NORTH;
+		wallMap[i] |= SOUTH;
 	}
 	// EAST
 	for (int i = 15; i < 256; i += 16)
@@ -279,7 +295,7 @@ void setBoundaryWalls ()
 	// SOUTH
 	for (int i = 240; i < 256; i++)
 	{
-		wallMap[i] |= SOUTH;
+		wallMap[i] |= NORTH;
 	}
 	// WEST
 	for (int i = 0; i < 241; i += 16)
@@ -420,7 +436,7 @@ void floodMaze ()
 	
 	// system("clear");
   
-  /* Print the maze
+  // Print the maze
   printf ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
 	for (int i = 15; i >= 0; i--)
 	{
@@ -475,6 +491,6 @@ void floodMaze ()
 	{
 		j=i;
 	}
-	*/
+	
   }
 }
