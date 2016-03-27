@@ -271,7 +271,7 @@ void moveForward() {
 void initializeMaze ()
 {
   // Initialize misc variables
-  stepValue = 0;
+  int stepValue = 0;
 
   startRow = STARTROW;
   startCol = STARTCOL;
@@ -375,7 +375,7 @@ void floodMaze ()
     if (stackPointer == 0)
     {
       // move the next stack to the main stack
-      for (int = 0; i < nextStackPointer; i++)
+      for (int i = 0; i < nextStackPointer; i++)
       {
         cellStack[i] = nextCellStack[i];
       }
@@ -383,7 +383,7 @@ void floodMaze ()
       stackPointer = nextStackPointer;
       
       // empty next stack
-      nextStackPointer = 0
+      nextStackPointer = 0;
 
       stepValue++;
     }
