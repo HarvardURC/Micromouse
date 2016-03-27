@@ -107,7 +107,7 @@ void setup()
 void loop()
 {
 
-	readCell();
+  readCell();
 
   for (int i = 0; i < 16 * currentRow + currentCol; i++) {
     debugBlink();
@@ -119,11 +119,11 @@ void loop()
     debugBlink();
   }
 
-	//floodMaze();
+  //floodMaze();
 
   Serial.println(cellMap[16 * currentRow + currentCol + 16]);
 
-	makeNextMove();
+  makeNextMove();
 
   delay(500);
 
@@ -171,64 +171,64 @@ void readCell()
 void makeNextMove ()
 {
   int nextDir = 0;
-	// Get the current cell
-	unsigned char currentCell = 16 * currentRow + currentCol;
-	
-	// Store the current cell
-	int tempCurrentRow = currentRow;
-	int tempCurrentCol = currentCol;
-	
-	// Define a default, very high step value
-	unsigned char lowest = 255;
+  // Get the current cell
+  unsigned char currentCell = 16 * currentRow + currentCol;
+  
+  // Store the current cell
+  int tempCurrentRow = currentRow;
+  int tempCurrentCol = currentCol;
+  
+  // Define a default, very high step value
+  unsigned char lowest = 255;
 
   Serial.println(wallMap[currentCell]);
   Serial.println(wallMap[currentCell] & 1 == 0);
 
-	// Compare through all the neighbors
-	// NORTH
-	if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && (wallMap[currentCell] & 1) == 0)
-	{
-		nextDir = 0;
+  // Compare through all the neighbors
+  // NORTH
+  if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && (wallMap[currentCell] & 1) == 0)
+  {
+    nextDir = 0;
 
     Serial.println("NORTH");
 
-		lowest = cellMap[currentCell + 16];
-		currentRow = tempCurrentRow + 1;
-		currentCol = tempCurrentCol;
-	}
-	// EAST
-	if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16 && (wallMap[currentCell] & 2) == 0)
-	{
-		nextDir = 1;
+    lowest = cellMap[currentCell + 16];
+    currentRow = tempCurrentRow + 1;
+    currentCol = tempCurrentCol;
+  }
+  // EAST
+  if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16 && (wallMap[currentCell] & 2) == 0)
+  {
+    nextDir = 1;
 
     Serial.println("EAST");
 
-		lowest = cellMap[currentCell + 1];
-		currentRow = tempCurrentRow;
-		currentCol = tempCurrentCol + 1;
-	}
-	// SOUTH
-	if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0 && (wallMap[currentCell] & 4) == 0)
-	{
-		nextDir = 2;
+    lowest = cellMap[currentCell + 1];
+    currentRow = tempCurrentRow;
+    currentCol = tempCurrentCol + 1;
+  }
+  // SOUTH
+  if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0 && (wallMap[currentCell] & 4) == 0)
+  {
+    nextDir = 2;
 
     Serial.println("SOUTH");
 
-		lowest = cellMap[currentCell - 16];
-		currentRow = tempCurrentRow - 1;
-		currentCol = tempCurrentCol;
-	}
-	// WEST
-	if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0 && (wallMap[currentCell] & 8) == 0)
-	{
-		nextDir = 3;
+    lowest = cellMap[currentCell - 16];
+    currentRow = tempCurrentRow - 1;
+    currentCol = tempCurrentCol;
+  }
+  // WEST
+  if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0 && (wallMap[currentCell] & 8) == 0)
+  {
+    nextDir = 3;
 
     Serial.println("WEST");
 
-		lowest = cellMap[currentCell - 1];
-		currentRow = tempCurrentRow;
-		currentCol = tempCurrentCol - 1;
-	}
+    lowest = cellMap[currentCell - 1];
+    currentRow = tempCurrentRow;
+    currentCol = tempCurrentCol - 1;
+  }
 
   makeTurn(nextDir);
   moveForward();
@@ -271,44 +271,44 @@ void moveForward() {
 void initializeMaze ()
 {
   // Initialize misc variables
-	stepValue = 0;
+  stepValue = 0;
 
-	startRow = STARTROW;
-	startCol = STARTCOL;
-	endRow = ENDROW;
-	endCol = ENDCOL;
-	currentRow = STARTROW;
-	currentCol = STARTCOL;
-	
-	for (int i = 0; i < 255; i++)
-	{
-		cellMap[i] = 0;
-		wallMap[i] = 0;
-	}
+  startRow = STARTROW;
+  startCol = STARTCOL;
+  endRow = ENDROW;
+  endCol = ENDCOL;
+  currentRow = STARTROW;
+  currentCol = STARTCOL;
+  
+  for (int i = 0; i < 255; i++)
+  {
+    cellMap[i] = 0;
+    wallMap[i] = 0;
+  }
 }
 
 void setBoundaryWalls ()
 {
-	// NORTH
-	for (int i = 0; i < 16; i++)
-	{
-		wallMap[i] |= SOUTH;
-	}
-	// EAST
-	for (int i = 15; i < 256; i += 16)
-	{
-		wallMap[i] |= EAST;
-	}
-	// SOUTH
-	for (int i = 240; i < 256; i++)
-	{
-		wallMap[i] |= NORTH;
-	}
-	// WEST
-	for (int i = 0; i < 241; i += 16)
-	{
-		wallMap[i] |= WEST;
-	}
+  // NORTH
+  for (int i = 0; i < 16; i++)
+  {
+    wallMap[i] |= SOUTH;
+  }
+  // EAST
+  for (int i = 15; i < 256; i += 16)
+  {
+    wallMap[i] |= EAST;
+  }
+  // SOUTH
+  for (int i = 240; i < 256; i++)
+  {
+    wallMap[i] |= NORTH;
+  }
+  // WEST
+  for (int i = 0; i < 241; i += 16)
+  {
+    wallMap[i] |= WEST;
+  }
 }
 
 void floodMaze ()
@@ -356,7 +356,7 @@ void floodMaze ()
     {
       // Set the current cell value to the step path value
       cellMap[curCell] = stepValue;
-  		
+      
       // Serial.print ("Flood Cell: %d\n", curCell);
   
       // Add all unvisited, available uneighbors to the stack for the next step
@@ -392,36 +392,36 @@ void floodMaze ()
     /*Serial.print ("Current Stack\n");
     for (int i = 0; i < stackPointer; i++)
     {
-		Serial.print ("Stack Member: %d\n", cellStack[i]);
-  	}
-  	*/
-  	
-  	// system("clear");
+    Serial.print ("Stack Member: %d\n", cellStack[i]);
+    }
+    */
+    
+    // system("clear");
     
     // Print the maze
     for (int i = 0; i < 16; i++)
     {
       Serial.print ("---\t");
     }
-  	for (int i = 15; i >= 0; i--)
-  	{
-  		Serial.print ("\n");
-  		for (int j = 0; j < 16; j++)
-  		{
+    for (int i = 15; i >= 0; i--)
+    {
+      Serial.print ("\n");
+      for (int j = 0; j < 16; j++)
+      {
         if (currentRow == i && currentCol == j)
         {
           Serial.print("@");
         }
         Serial.print(cellMap[16 * i + j]);
         Serial.print("\t");
-  		}
-  		Serial.print("\n");
-  	}
-  	for (int i = 0; i < 16; i++)
+      }
+      Serial.print("\n");
+    }
+    for (int i = 0; i < 16; i++)
     {
       Serial.print ("---\t");
     }
-  	Serial.print ("\n");
-  	
+    Serial.print ("\n");
+
   }
 }
