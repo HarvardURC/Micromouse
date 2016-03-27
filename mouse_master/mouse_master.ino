@@ -17,6 +17,8 @@
 #define ENDROW 7;
 #define ENDCOL 7;
 
+int debugMode = 0;
+
 // Calibration for turns -- needs to change
 int RIGHT_TURN_STEPS = 54;
 int LEFT_TURN_STEPS = 53;
@@ -109,23 +111,32 @@ void loop()
 
   readCell();
 
-  for (int i = 0; i < 16 * currentRow + currentCol; i++) {
-    debugBlink();
+  if (debugMode)
+  {
+    for (int i = 0; i < currentRow; i++) {
+      debugBlink();
+    }
+  
+    delay(1000);
+  
+    for (int i = 0; i < currentCol; i++) {
+      debugBlink();
+    }
+  
+    delay(1000);
+  
+    for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
+      debugBlink();
+    }
   }
 
-  delay(1000);
-
-  for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
-    debugBlink();
-  }
-
-  //floodMaze();
+  floodMaze();
 
   Serial.println(cellMap[16 * currentRow + currentCol + 16]);
 
   makeNextMove();
 
-  delay(500);
+  //delay(500);
 
 }
 
@@ -135,7 +146,7 @@ void loop()
 
 void readCell()
 {
-  int irThresholds[4] = {300, 200, 1023, 200};
+  int irThresholds[4] = {250, 150, 1023, 150};
   
   int readings[4] = {forwardIR.getDistanceRaw(),
                      rightIR.getDistanceRaw(),
@@ -158,13 +169,7 @@ void readCell()
         wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
  
       }
-/*
-      if(i == 0)
-      {
-        motors.wallOrientate();
-      } */
     }
-    
   }
 }
 
@@ -208,7 +213,7 @@ void makeNextMove ()
     currentCol = tempCurrentCol + 1;
   }
   // SOUTH
-  if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) > 0 && (wallMap[currentCell] & 4) == 0)
+  if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) >= 0 && (wallMap[currentCell] & 4) == 0)
   {
     nextDir = 2;
 
@@ -219,7 +224,7 @@ void makeNextMove ()
     currentCol = tempCurrentCol;
   }
   // WEST
-  if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) > 0 && (wallMap[currentCell] & 8) == 0)
+  if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) >= 0 && (wallMap[currentCell] & 8) == 0)
   {
     nextDir = 3;
 
@@ -230,7 +235,15 @@ void makeNextMove ()
     currentCol = tempCurrentCol - 1;
   }
 
+  if (wallMap[currentCell] & 1 << mouseDir)
+  {
+    motors.wallOrientateFwd();
+  }
   makeTurn(nextDir);
+  if (wallMap[currentCell] & 1 << (nextDir + 2) % 4)
+  {
+    motors.wallOrientateBkwd();
+  }
   moveForward();
  
 }
@@ -256,7 +269,12 @@ void makeTurn(int nextDir)
 
 
 void moveForward() {
-  motors.forward(60, 284);
+  //motors.forward(60, 284);
+  motors.forward(60, 240);
+  if (forwardIR.getDistanceRaw() < 200)
+  {
+    motors.forward(60, 44);
+  }
 }
 
 
@@ -282,7 +300,7 @@ void initializeMaze ()
   
   for (int i = 0; i < 255; i++)
   {
-    cellMap[i] = 0;
+    cellMap[i] = 255;
     wallMap[i] = 0;
   }
 }
@@ -342,6 +360,7 @@ void floodMaze ()
   
   while (stackPointer > 0)
   {
+    
     // Stop flooding if our cell has a value
     if (cellMap[16 * currentRow + currentCol] != 255)
     {
@@ -352,7 +371,7 @@ void floodMaze ()
     unsigned char curCell = cellStack[stackPointer - 1];
     stackPointer--;
     
-    if (cellMap[curCell] = 255)
+    if (cellMap[curCell] == 255)
     {
       // Set the current cell value to the step path value
       cellMap[curCell] = stepValue;
@@ -363,7 +382,7 @@ void floodMaze ()
       for (int i = 0; i < 4; i++)
       {
         unsigned char adjCell = curCell + offsetMap[i];
-        if (cellMap[adjCell] == 255 && (wallMap[curCell] & 1 << i) == 0)
+        if (adjCell >= 0 && adjCell < 256 && cellMap[adjCell] == 255 && (wallMap[curCell] & 1 << i) == 0)
         {
           nextCellStack[nextStackPointer] = adjCell;
           nextStackPointer++;
@@ -397,31 +416,33 @@ void floodMaze ()
     */
     
     // system("clear");
-    
-    // Print the maze
-    for (int i = 0; i < 16; i++)
-    {
-      Serial.print ("---\t");
-    }
-    for (int i = 15; i >= 0; i--)
-    {
-      Serial.print ("\n");
-      for (int j = 0; j < 16; j++)
-      {
-        if (currentRow == i && currentCol == j)
-        {
-          Serial.print("@");
-        }
-        Serial.print(cellMap[16 * i + j]);
-        Serial.print("\t");
-      }
-      Serial.print("\n");
-    }
-    for (int i = 0; i < 16; i++)
-    {
-      Serial.print ("---\t");
-    }
-    Serial.print ("\n");
 
+    if (debugMode)
+    {
+      // Print the maze
+      for (int i = 0; i < 16; i++)
+      {
+        Serial.print ("---\t");
+      }
+      for (int i = 15; i >= 0; i--)
+      {
+        Serial.print ("\n");
+        for (int j = 0; j < 16; j++)
+        {
+          if (currentRow == i && currentCol == j)
+          {
+            Serial.print("@");
+          }
+          Serial.print(cellMap[16 * i + j]);
+          Serial.print("\t");
+        }
+        Serial.print("\n");
+      }
+      for (int i = 0; i < 16; i++)
+      {
+        Serial.print ("---\t");
+      }
+      Serial.print ("\n");
+    }
   }
 }

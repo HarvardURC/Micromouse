@@ -7,6 +7,7 @@ volatile int _counterR = 0;
 
 void onTickL();
 void onTickR();
+void wait();
 
 Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
                int tickpinR, int phasepinL, int phasepinR)
@@ -103,24 +104,62 @@ void Motors::turnAround()
 {
 
   digitalWrite(_phasepinR, HIGH);
-  forward(60, 220);
+  forward(60, 215);
   digitalWrite(_phasepinR, LOW);
 
 }
 
-void Motors::wallOrientate()
+void wait(int deltaTime)
 {
-
-  unsigned long previousMillis = 0;
-  analogWrite(_drivepinL, 160);
-  analogWrite(_drivepinR, 160);
+  unsigned long previousMillis = millis();
   unsigned long currentMillis = millis();
-  while ((unsigned long)(currentMillis - previousMillis)>= 1000){
+  while ((unsigned long)(currentMillis - previousMillis) < deltaTime){
+    currentMillis = millis();
   }
+}
+
+void Motors::bump()
+{
+  analogWrite(_drivepinL, 40);
+  analogWrite(_drivepinR, 40);
+  int prevCounterL;
+  int prevCounterR;
+  do
+  {
+    prevCounterL = _counterL;
+    prevCounterR = _counterR;
+
+    wait(100);
+  }
+  while ((_counterL + _counterR) - (prevCounterL + prevCounterR) > 5);
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
-  
+}
 
+void Motors::wallOrientateFwd()
+{
+  bump();
+
+  digitalWrite(_phasepinL, HIGH);
+  digitalWrite(_phasepinR, HIGH);
+
+  forward(60, 16);
+
+  digitalWrite(_phasepinL, LOW);
+  digitalWrite(_phasepinR, LOW);
+}
+
+void Motors::wallOrientateBkwd()
+{
+  digitalWrite(_phasepinL, HIGH);
+  digitalWrite(_phasepinR, HIGH);
+
+  bump();
+
+  digitalWrite(_phasepinL, LOW);
+  digitalWrite(_phasepinR, LOW);
+
+  forward(60, 86);
 }
 
 //increment count with each turn

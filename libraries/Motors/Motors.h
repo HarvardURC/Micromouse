@@ -12,14 +12,15 @@ public:
   void turnRight();
   void turnAround();
   void forward(int pwm, int tickDelta);
-  void wallOrientate();
+  void wallOrientateFwd();
+  void wallOrientateBkwd();
 private:
   int _drivepinL;
   int _drivepinR;
   int _phasepinL;
   int _phasepinR;
   void oneMotor(int pin, int* counter, int pwm, int tickDelta);
-
+  void bump();
 };
 
 #endif
