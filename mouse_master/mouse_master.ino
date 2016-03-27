@@ -23,8 +23,6 @@ int LEFT_TURN_STEPS = 53;
 int MOVE_FORWARD_STEPS = 55;
 int STEP_DELAY = 2;
 
-int irThresholds[4] = {300, 200, 1023, 200};
-
 //define motor pins
 Motors motors (9, 11, 2, 3, 10, 12);
 
@@ -51,17 +49,6 @@ DistanceGP2Y0A41SK forwardIR;
 unsigned char cellMap[256];
 // Global array to store the wall bits
 unsigned char wallMap[256];
-// Global char to store current distance from end
-unsigned char stepValue;
-// Global array to act as stack
-unsigned char cellStack[256];
-// Global array to act as temporary storage
-unsigned char tempCellStack[256];
-// Global int to serve as a pointer to the top of the stack
-// 0 means the stack is empty
-unsigned int stackPointer, tempStackPointer;
-// Global int to serve as the stack empty flag
-unsigned int stackEmptyFlag, tempStackEmptyFlag;
 // Global ints for current position
 int currentRow, currentCol;
 int startRow, startCol, endRow, endCol;
@@ -148,6 +135,8 @@ void loop()
 
 void readCell()
 {
+  int irThresholds[4] = {300, 200, 1023, 200};
+  
   int readings[4] = {forwardIR.getDistanceRaw(),
                      rightIR.getDistanceRaw(),
                      0,
@@ -324,23 +313,34 @@ void setBoundaryWalls ()
 
 void floodMaze ()
 {
-  // Set the bottom of each stack to garbage values
-  cellStack[0] = 255;
-  tempCellStack[0] = 255;
+  // reset the array of values
+  for (int i = 0; i < 256; i++)
+  {
+    cellMap[i] = 255;
+  }
+  
+  // char to store current distance from end
+  unsigned char stepValue = 0;
+  // array to act as stack
+  unsigned char cellStack[256];
+  // array to act as temporary storage
+  unsigned char nextCellStack[256];
+  // int to serve as a pointer to the top of the stack
+  // 0 means the stack is empty
+  int stackPointer, nextStackPointer;
+  
+    // Initialize pointers to the top of each stack
+  stackPointer = 0;
+  nextStackPointer = 0;
 
-  // Initialize pointers to the top of each stack
-  stackPointer = 1;
-  tempStackPointer = 1;
-
-  // Push the destination cell onto the stack
-  cellStack[stackPointer] = (16 * endRow) + endCol;
-  stackPointer++;
-  // Signal that the stack is not empty
-  stackEmptyFlag = 0;
-  // Signal that the stack is indeed empty
-  tempStackEmptyFlag = 0;
-
-  while (stackEmptyFlag == 0)
+  // Push the destination cells onto the stack
+  cellStack[0] = (16 * endRow) + endCol;
+  cellStack[1] = (16 * (endRow + 1)) + endCol;
+  cellStack[2] = (16 * endRow) + (endCol + 1);
+  cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
+  stackPointer = 4;
+  
+  while (stackPointer > 0)
   {
     // Stop flooding if our cell has a value
     if (cellMap[16 * currentRow + currentCol] != 255)
@@ -349,99 +349,43 @@ void floodMaze ()
     }
 
     // Pop the cell off the stack
-    unsigned char floodCell = cellStack[stackPointer - 1];
+    unsigned char curCell = cellStack[stackPointer - 1];
+    stackPointer--;
     
-    if (cellMap[floodCell] != 255 && stackPointer >= 1)
+    if (cellMap[curCell] = 255)
     {
-		  stackPointer--;
-	  }
-	  else
-  	{
-  		// Set the current cell value to the step path value
-  		cellMap[floodCell] = stepValue;
+      // Set the current cell value to the step path value
+      cellMap[curCell] = stepValue;
   		
-  		// Serial.print ("Flood Cell: %d\n", floodCell);
+      // Serial.print ("Flood Cell: %d\n", curCell);
   
-  		// Add all unvisited, available uneighbors to a temporary stack stack
-  		
-  		// Get all wall bits
-  		unsigned char checkNorthWall = wallMap[floodCell] & NORTH;
-  		unsigned char checkEastWall = wallMap[floodCell] & EAST;
-  		unsigned char checkSouthWall = wallMap[floodCell] & SOUTH;
-  		unsigned char checkWestWall = wallMap[floodCell] & WEST;
-  		
-  		// Check NORTH Cell
-  		if (checkNorthWall == 0 && cellMap[floodCell + 16] == 255)
-  		{
-  		  tempCellStack[tempStackPointer] = floodCell + 16;
-  		  // Update temp stack pointer
-  		  tempStackPointer++;
-  		  // Flag that it's no longer empty
-  		  tempStackEmptyFlag = 0;
-  		}
-  		// EAST Cell
-  		if (checkEastWall == 0 && cellMap[floodCell + 1] == 255)
-  		{
-  		  tempCellStack[tempStackPointer] = floodCell + 1;
-  		  // Update temp stack pointer
-  		  tempStackPointer++;
-  		  // Flag that it's no longer empty
-  		  tempStackEmptyFlag = 0;
-  		}
-  		// SOUTH Cell
-  		if (checkSouthWall == 0 && cellMap[floodCell - 16] == 255)
-  		{
-  		  tempCellStack[tempStackPointer] = floodCell - 16;
-  		  // Update temp stack pointer
-  		  tempStackPointer++;
-  		  // Flag that it's no longer empty
-  		  tempStackEmptyFlag = 0;
-  		}
-  		// WEST Cell
-  		if (checkWestWall == 0 && cellMap[floodCell - 1] == 255)
-  		{
-  		  tempCellStack[tempStackPointer] = floodCell - 1;
-  		  // Update temp stack pointer
-  		  tempStackPointer++;
-  		  // Flag that it's no longer empty
-  		  tempStackEmptyFlag = 0;
-  		}
-  	}
-	
-
-    // Check if this is the last pointer in the stack
-    // If so, switch the empty flag on
-    if (stackPointer == 1)
-    {
-      // Check if the secondary stack is empty
-      if (tempStackEmptyFlag == 0)
+      // Add all unvisited, available uneighbors to the stack for the next step
+      for (int i = 0; i < 4; i++)
       {
-        // Replace primary stack with secondary stack
-        for (int i = 0; i < tempStackPointer; i++)
+        unsigned char adjCell = curCell + offsetMap[i];
+        if (cellMap[adjCell] == 255 && (wallMap[curCell] & 1 << i) == 0)
         {
-          cellStack[i] = tempCellStack[i];
+          nextCellStack[nextStackPointer] = adjCell;
+          nextStackPointer++;
         }
-
-        stackPointer = tempStackPointer;
-
-        // Reset secondary stack pointer and flag
-        tempStackPointer = 1;
-        tempStackEmptyFlag = 1;
-        
-        // Update the step value
-        stepValue++;
       }
-      // Otherwise, all stacks are empty
-      else
-      {
-        stackEmptyFlag = 1;
-      }
-
     }
-    // If not, simply decrement the pointer value
-    else
+    
+    // if the stack is empty, move on to the next step
+    if (stackPointer == 0)
     {
-      stackPointer--;
+      // move the next stack to the main stack
+      for (int = 0; i < nextStackPointer; i++)
+      {
+        cellStack[i] = nextCellStack[i];
+      }
+
+      stackPointer = nextStackPointer;
+      
+      // empty next stack
+      nextStackPointer = 0
+
+      stepValue++;
     }
     
     // Print stack for debug
@@ -449,61 +393,35 @@ void floodMaze ()
     for (int i = 0; i < stackPointer; i++)
     {
 		Serial.print ("Stack Member: %d\n", cellStack[i]);
-	}
-	*/
-	
-	// system("clear");
-  
-  // Print the maze
-  Serial.print ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
-	for (int i = 15; i >= 0; i--)
-	{
-		Serial.print ("\n");
-		for (int j = 0; j < 16; j++)
-		{
-			unsigned char current = cellMap[16* i + j];
-			
-			if (current < 10 && current < 100)
-			{
-				if (currentRow == i && currentCol == j)
-				{
-					//Serial.print(" @%d    ",cellMap[16* i + j]);
-          
-				}
-				else
-				{
-					//Serial.print("  %d    ",cellMap[16* i + j]);
-				}
-			}
-			else if (current < 100)
-			{
-				if (currentRow == i && currentCol == j)
-				{
-					//Serial.print(" @%d   ",cellMap[16* i + j]);
-				}
-				else
-				{
-					//Serial.print("  %d   ",cellMap[16* i + j]);
-				}
-			}
-			else
-			{
-				if (currentRow == i && currentCol == j)
-				{
-					//Serial.print(" @%d  ",cellMap[16* i + j]);
-				}
-				else
-				{
-					//Serial.print("  %d  ",cellMap[16* i + j]);
-				}
-			}
-     Serial.print(cellMap[16 * i + j]);
-     Serial.print("\t");
-		}
-		Serial.print("\n");
-	}
-	Serial.print ("  ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---    ---  \n");
-	Serial.print ("\n");
-	
+  	}
+  	*/
+  	
+  	// system("clear");
+    
+    // Print the maze
+    for (int i = 0; i < 16; i++)
+    {
+      Serial.print ("---\t");
+    }
+  	for (int i = 15; i >= 0; i--)
+  	{
+  		Serial.print ("\n");
+  		for (int j = 0; j < 16; j++)
+  		{
+        if (currentRow == i && currentCol == j)
+        {
+          Serial.print("@");
+        }
+        Serial.print(cellMap[16 * i + j]);
+        Serial.print("\t");
+  		}
+  		Serial.print("\n");
+  	}
+  	for (int i = 0; i < 16; i++)
+    {
+      Serial.print ("---\t");
+    }
+  	Serial.print ("\n");
+  	
   }
 }
