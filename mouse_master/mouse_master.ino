@@ -18,7 +18,7 @@
 #define ENDCOL 7;
 
 int debugMode = 0;
-int virtualMode = 1;
+int virtualMode = 0;
 
 // Calibration for turns -- needs to change
 int RIGHT_TURN_STEPS = 54;

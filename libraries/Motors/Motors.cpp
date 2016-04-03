@@ -44,16 +44,23 @@ void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
   analogWrite(pin, 0);
 }
 
-void Motors::forward(int pwm, int tickDelta)
+void Motors::forward(int max_pwm, int tickDelta)
 {
   _counterL = 0;
   _counterR = 0;
 
+  int startTime = millis();
+  int pwm = 60;
+  if (pwm > max_pwm)
+  {
+      pwm = max_pwm;
+  }
+
   /*check motors are in sync
     if not then stop motor with higher count */
 
-  while (_counterR < tickDelta || _counterL < tickDelta) {
-
+  while (_counterR < tickDelta || _counterL < tickDelta)
+  {
     if (_counterL > _counterR)
     {
       analogWrite(_drivepinL, 0);
@@ -70,6 +77,11 @@ void Motors::forward(int pwm, int tickDelta)
       analogWrite(_drivepinR, pwm);
     }
 
+    pwm = 60 + ((millis() - startTime) / 2);
+    if (pwm > max_pwm)
+    {
+        pwm = max_pwm;
+    }
   }
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
