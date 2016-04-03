@@ -66,11 +66,14 @@ void turnLeft();
 void moveForward();
 void makeNextMove();
 
-void debugBlink() {
-  digitalWrite(13, HIGH);
-  delay(200);
-  digitalWrite(13, LOW);
-  delay(200);
+void debugBlink(int times) {
+  for (int i = 0; i < times; i++)
+  {
+    digitalWrite(13, HIGH);
+    delay(200);
+    digitalWrite(13, LOW);
+    delay(200);
+  }
 }
 
 void setup() 
@@ -113,21 +116,13 @@ void loop()
 
   if (debugMode)
   {
-    for (int i = 0; i < currentRow; i++) {
-      debugBlink();
-    }
-  
+    debugBlink(currentRow);
     delay(1000);
-  
-    for (int i = 0; i < currentCol; i++) {
-      debugBlink();
-    }
-  
+    debugBlink(currentCol);
     delay(1000);
-  
-    for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
-      debugBlink();
-    }
+    debugBlink(wallMap[16 * currentRow + currentCol]);
+    delay(1000);
+    debugBlink(mouseDir);
   }
 
   floodMaze();
@@ -454,7 +449,7 @@ void floodMaze ()
     
     // system("clear");
 
-    if (debugMode)
+    if (debugMode == 2)
     {
       // Print the maze
       for (int i = 0; i < 16; i++)
