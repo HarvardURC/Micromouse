@@ -66,11 +66,14 @@ void turnLeft();
 void moveForward();
 void makeNextMove();
 
-void debugBlink() {
-  digitalWrite(13, HIGH);
-  delay(200);
-  digitalWrite(13, LOW);
-  delay(200);
+void debugBlink(int times) {
+  for (int i = 0; i < times; i++)
+  {
+    digitalWrite(13, HIGH);
+    delay(200);
+    digitalWrite(13, LOW);
+    delay(200);
+  }
 }
 
 void setup() 
@@ -113,21 +116,13 @@ void loop()
 
   if (debugMode)
   {
-    for (int i = 0; i < currentRow; i++) {
-      debugBlink();
-    }
-  
+    debugBlink(currentRow);
     delay(1000);
-  
-    for (int i = 0; i < currentCol; i++) {
-      debugBlink();
-    }
-  
+    debugBlink(currentCol);
     delay(1000);
-  
-    for (int i = 0; i < wallMap[16 * currentRow + currentCol]; i++) {
-      debugBlink();
-    }
+    debugBlink(wallMap[16 * currentRow + currentCol]);
+    delay(1000);
+    debugBlink(mouseDir);
   }
 
   floodMaze();
@@ -146,7 +141,7 @@ void loop()
 
 void readCell()
 {
-  int irThresholds[4] = {250, 150, 1023, 150};
+  int irThresholds[4] = {100, 140, 1023, 140};
   
   int readings[4] = {forwardIR.getDistanceRaw(),
                      rightIR.getDistanceRaw(),
@@ -174,10 +169,50 @@ void readCell()
 }
 
 void makeNextMove ()
-{
+{ 
   int nextDir = 0;
   // Get the current cell
   unsigned char currentCell = 16 * currentRow + currentCol;
+  
+  if (debugMode)
+  {
+    Serial.println(wallMap[currentCell]);
+  }
+
+  int lowThreshold = 180;
+  int highThreshold = 320;
+
+  int rightReading = rightIR.getDistanceRaw();
+  int leftReading = leftIR.getDistanceRaw();
+
+  int isRightWall = wallMap[currentCell] & 1 << (mouseDir + 1) % 4;
+  int isLeftWall = wallMap[currentCell] & 1 << (mouseDir + 3) % 4;
+
+  // if too close to or too far from a side wall, bump it
+  if (isRightWall && rightReading < lowThreshold)
+  {
+    motors.turnRight();
+    motors.wallOrientateFwd();
+    motors.turnLeft();
+  }
+  else if(isLeftWall && leftReading < lowThreshold)
+  {
+    motors.turnLeft();
+    motors.wallOrientateFwd();
+    motors.turnRight();
+  }
+  else if (isRightWall && rightReading > highThreshold)
+  {
+    motors.turnLeft();
+    motors.wallOrientateBkwd();
+    motors.turnRight();
+  }
+  else if (isLeftWall && leftReading > highThreshold)
+  {
+    motors.turnRight();
+    motors.wallOrientateBkwd();
+    motors.turnLeft();
+  }
   
   // Store the current cell
   int tempCurrentRow = currentRow;
@@ -185,9 +220,6 @@ void makeNextMove ()
   
   // Define a default, very high step value
   unsigned char lowest = 255;
-
-  Serial.println(wallMap[currentCell]);
-  Serial.println(wallMap[currentCell] & 1 == 0);
 
   // Compare through all the neighbors
   // NORTH
@@ -271,7 +303,7 @@ void makeTurn(int nextDir)
 void moveForward() {
   //motors.forward(60, 284);
   motors.forward(60, 240);
-  if (forwardIR.getDistanceRaw() < 200)
+  if (forwardIR.getDistanceRaw() < 150)
   {
     motors.forward(60, 44);
   }
@@ -417,7 +449,7 @@ void floodMaze ()
     
     // system("clear");
 
-    if (debugMode)
+    if (debugMode == 2)
     {
       // Print the maze
       for (int i = 0; i < 16; i++)
