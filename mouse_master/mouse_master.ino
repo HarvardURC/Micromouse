@@ -57,6 +57,8 @@ unsigned char virtualWallMap[256];
 // Global ints for current position
 int currentRow, currentCol;
 int startRow, startCol, endRow, endCol;
+// Global counter to set destination cell
+int counter = 0; 
 
 /* Function Prototypes */
 void initializeMaze ();
@@ -129,6 +131,11 @@ void loop()
   }
 
   makeNextMove();
+
+  if(cellMap[(16*currentRow) + currentCol] == 0)
+  {
+    counter++;
+  }
 
   if (virtualMode)
   {
@@ -413,12 +420,28 @@ void floodMaze ()
   stackPointer = 0;
   nextStackPointer = 0;
 
-  // Push the destination cells onto the stack
-  cellStack[0] = (16 * endRow) + endCol;
-  cellStack[1] = (16 * (endRow + 1)) + endCol;
-  cellStack[2] = (16 * endRow) + (endCol + 1);
-  cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
-  stackPointer = 4;
+   // to switch path
+  int x;
+  if((counter mod 2) == 0) {
+    x = 0;
+  }
+  else {
+    x = 1;
+  }
+
+if(x = 0) { 
+  //initial path to centre
+    stackPointer = 4;
+    cellStack[0] = (16 * endRow) + endCol;
+    cellStack[1] = (16 * (endRow + 1)) + endCol;
+    cellStack[2] = (16 * endRow) + (endCol + 1);
+    cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
+  }
+  else {
+  //path back to start
+    stackPointer = 1;
+    cellStack[0] = 0;
+   }
   
   while (stackPointer > 0)
   {
