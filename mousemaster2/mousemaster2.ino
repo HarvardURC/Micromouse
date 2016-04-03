@@ -54,6 +54,8 @@ unsigned char wallMap[256];
 // Global ints for current position
 int currentRow, currentCol;
 int startRow, startCol, endRow, endCol;
+// Global counter to set destination cell
+int counter = 0; 
 
 /* Function Prototypes */
 void initializeMaze ();
@@ -135,6 +137,11 @@ void loop()
   Serial.println(cellMap[16 * currentRow + currentCol + 16]);
 
   makeNextMove();
+
+  if(cellMap[(16*currentRow) + currentCol] == 0)
+  {
+    counter++;
+  }
 
   //delay(500);
 
@@ -346,39 +353,32 @@ void floodMaze ()
   // int to serve as a pointer to the top of the stack
   // 0 means the stack is empty
   int stackPointer, nextStackPointer;
-  
-    // Initialize pointers to the top of each stack
+  // Initialize pointers to the top of each stack
   stackPointer = 0;
   nextStackPointer = 0;
   
-  stackPointer = 4;
-
   // to switch path
   int x;
-  
-  if(cellStack[256] = 0) {
+  if((counter mod 2) == 0) {
     x = 0;
   }
   else {
     x = 1;
   }
 
-// need to fix this..  
-if(x = 1) { 
+if(x = 0) { 
   //initial path to centre
+    stackPointer = 4;
     cellStack[0] = (16 * endRow) + endCol;
     cellStack[1] = (16 * (endRow + 1)) + endCol;
     cellStack[2] = (16 * endRow) + (endCol + 1);
     cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
   }
   else {
-  // path back to start
-    cellStack[0] = (16 * endRow) + endCol;
-    cellStack[1] = (16 * (endRow + 1)) + endCol;
-    cellStack[2] = (16 * endRow) + (endCol + 1);
-    cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
+  //path back to start
+    stackPointer = 1;
+    cellStack[0] = 0;
    }
-
   
   while (stackPointer > 0)
   {
