@@ -13,7 +13,9 @@ public:
   void turnAroundLeft();
   void turnAroundRight();
   void forward(int pwm, int tickDelta);
+  void forward(int pwm, int tickDelta, int forwardIRPin);
   void accForward(int start_pwm, int max_pwm, int tickDelta);
+  void accForward(int start_pwm, int max_pwm, int tickDelta, int forwardIRPin);
   void wallOrientateFwd();
   void wallOrientateBkwd();
 private:
@@ -22,7 +24,7 @@ private:
   int _phasepinL;
   int _phasepinR;
   void oneMotor(int pin, int* counter, int pwm, int tickDelta);
-  void bump();
+  void bump(int pwm);
 };
 
 void wait(int deltaTime);

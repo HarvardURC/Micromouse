@@ -46,6 +46,12 @@ void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
 
 void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
 {
+  accForward(start_pwm, max_pwm, tickDelta, -1);
+}
+
+void Motors::accForward(int start_pwm, int max_pwm,
+                        int tickDelta, int forwardIRPin)
+{
   _counterL = 0;
   _counterR = 0;
 
@@ -57,7 +63,8 @@ void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
   /*check motors are in sync
     if not then stop motor with higher count */
 
-  while (_counterR < tickDelta || _counterL < tickDelta)
+  while ((_counterR < tickDelta || _counterL < tickDelta) &&
+         (forwardIRPin == -1 || analogRead(forwardIRPin) <= 240))
   {
     int pwm = acc_pwm;
     if (pwm > max_pwm)
@@ -84,13 +91,13 @@ void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
     int curTime = millis();
     deltaTime = curTime - prevTime;
     prevTime = curTime;
-    if (_counterL + _counterR < tickDelta)
+    if ((_counterL + _counterR) * 3 < tickDelta * 2)
     {
       acc_pwm += deltaTime / 2;
     }
     else
     {
-      acc_pwm -= deltaTime / 2;
+      acc_pwm -= deltaTime;
     }
   }
   analogWrite(_drivepinL, 0);
@@ -103,6 +110,11 @@ void Motors::forward(int pwm, int tickDelta)
   accForward(pwm, pwm, tickDelta);
 }
 
+void Motors::forward(int pwm, int tickDelta, int forwardIRPin)
+{
+  accForward(pwm, pwm, tickDelta, forwardIRPin);
+}
+
 /* 110 ticks to go 90 degrees
  * 220 ticks to go 180 degrees */
 
@@ -112,7 +124,7 @@ void Motors::turnLeft()
      to turn left set L to low and then reset to high when complete */
 
   digitalWrite(_phasepinL, HIGH);
-  forward(60, 110);
+  accForward(30, 60, 105);
   digitalWrite(_phasepinL, LOW);
 
 }
@@ -122,7 +134,7 @@ void Motors::turnRight()
   /* same as above but change phasepinR */
 
   digitalWrite(_phasepinR, HIGH);
-  forward(60, 110);
+  accForward(30, 60, 105);
   digitalWrite(_phasepinR, LOW);
 
 }
@@ -131,7 +143,7 @@ void Motors::turnAroundLeft()
 {
 
   digitalWrite(_phasepinL, HIGH);
-  forward(60, 215);
+  accForward(30, 60, 215);
   digitalWrite(_phasepinL, LOW);
 
 }
@@ -140,7 +152,7 @@ void Motors::turnAroundRight()
 {
 
   digitalWrite(_phasepinR, HIGH);
-  forward(60, 215);
+  accForward(30, 60, 215);
   digitalWrite(_phasepinR, LOW);
 
 }
@@ -154,10 +166,10 @@ void wait(int deltaTime)
   }
 }
 
-void Motors::bump()
+void Motors::bump(int pwm)
 {
-  analogWrite(_drivepinL, 40);
-  analogWrite(_drivepinR, 40);
+  analogWrite(_drivepinL, pwm);
+  analogWrite(_drivepinR, pwm);
   int prevCounterL;
   int prevCounterR;
   do
@@ -174,7 +186,7 @@ void Motors::bump()
 
 void Motors::wallOrientateFwd()
 {
-  bump();
+  bump(40);
 
   digitalWrite(_phasepinL, HIGH);
   digitalWrite(_phasepinR, HIGH);
@@ -190,7 +202,7 @@ void Motors::wallOrientateBkwd()
   digitalWrite(_phasepinL, HIGH);
   digitalWrite(_phasepinR, HIGH);
 
-  bump();
+  bump(40);
 
   digitalWrite(_phasepinL, LOW);
   digitalWrite(_phasepinR, LOW);

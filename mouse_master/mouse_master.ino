@@ -182,7 +182,7 @@ int irReading(int pin)
 
 void readCell()
 {
-  int irThresholds[4] = {140, 140, 1023, 140};
+  int irThresholds[4] = {240, 140, 1023, 140};
   
   int readings[4] = {irReading(forwardIRPin),
                      irReading(rightIRPin),
@@ -235,19 +235,7 @@ void makeNextMove ()
     int isLeftWall = wallMap[currentCell] & 1 << (mouseDir + 3) % 4;
   
     // if too close to or too far from a side wall, bump it
-    if (isRightWall && rightReading < lowThreshold)
-    {
-      motors.turnRight();
-      motors.wallOrientateFwd();
-      motors.turnLeft();
-    }
-    else if(isLeftWall && leftReading < lowThreshold)
-    {
-      motors.turnLeft();
-      motors.wallOrientateFwd();
-      motors.turnRight();
-    }
-    else if (isRightWall && rightReading > highThreshold)
+    if (isRightWall && rightReading > highThreshold)
     {
       motors.turnLeft();
       motors.wallOrientateBkwd();
@@ -258,6 +246,18 @@ void makeNextMove ()
       motors.turnRight();
       motors.wallOrientateBkwd();
       motors.turnLeft();
+    }
+    else if (isRightWall && rightReading < lowThreshold)
+    {
+      motors.turnRight();
+      motors.wallOrientateFwd();
+      motors.turnLeft();
+    }
+    else if(isLeftWall && leftReading < lowThreshold)
+    {
+      motors.turnLeft();
+      motors.wallOrientateFwd();
+      motors.turnRight();
     }
   }
   
@@ -341,18 +341,13 @@ void makeTurn(int nextDir)
 
 
 void moveForward() {
-  //motors.forward(60, 284);
   if (counter >= 2)
   {
-    motors.accForward(100, 255, 240);
+    motors.accForward(100, 255, 284, forwardIRPin);
   }
   else
   {
-    motors.forward(60, 240);
-  }
-  if (irReading(forwardIRPin) < 150)
-  {
-    motors.forward(60, 44);
+    motors.forward(60, 284, forwardIRPin);
   }
 }
 
