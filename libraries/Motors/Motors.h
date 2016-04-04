@@ -10,8 +10,10 @@ public:
          int tickpinR, int phasepinL, int phasepinR);
   void turnLeft();
   void turnRight();
-  void turnAround();
+  void turnAroundLeft();
+  void turnAroundRight();
   void forward(int pwm, int tickDelta);
+  void accForward(int start_pwm, int max_pwm, int tickDelta);
   void wallOrientateFwd();
   void wallOrientateBkwd();
 private:

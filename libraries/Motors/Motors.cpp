@@ -44,23 +44,27 @@ void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
   analogWrite(pin, 0);
 }
 
-void Motors::forward(int max_pwm, int tickDelta)
+void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
 {
   _counterL = 0;
   _counterR = 0;
 
-  int startTime = millis();
-  int pwm = 60;
-  if (pwm > max_pwm)
-  {
-      pwm = max_pwm;
-  }
+  float acc_pwm = start_pwm;
+
+  float deltaTime = 0;
+  int prevTime = millis();
 
   /*check motors are in sync
     if not then stop motor with higher count */
 
   while (_counterR < tickDelta || _counterL < tickDelta)
   {
+    int pwm = acc_pwm;
+    if (pwm > max_pwm)
+    {
+      pwm = max_pwm;
+    }
+
     if (_counterL > _counterR)
     {
       analogWrite(_drivepinL, 0);
@@ -77,15 +81,26 @@ void Motors::forward(int max_pwm, int tickDelta)
       analogWrite(_drivepinR, pwm);
     }
 
-    pwm = 60 + ((millis() - startTime) / 2);
-    if (pwm > max_pwm)
+    int curTime = millis();
+    deltaTime = curTime - prevTime;
+    prevTime = curTime;
+    if (_counterL + _counterR < tickDelta)
     {
-        pwm = max_pwm;
+      acc_pwm += deltaTime / 2;
+    }
+    else
+    {
+      acc_pwm -= deltaTime / 2;
     }
   }
   analogWrite(_drivepinL, 0);
   analogWrite(_drivepinR, 0);
 
+}
+
+void Motors::forward(int pwm, int tickDelta)
+{
+  accForward(pwm, pwm, tickDelta);
 }
 
 /* 110 ticks to go 90 degrees
@@ -112,7 +127,16 @@ void Motors::turnRight()
 
 }
 
-void Motors::turnAround()
+void Motors::turnAroundLeft()
+{
+
+  digitalWrite(_phasepinL, HIGH);
+  forward(60, 215);
+  digitalWrite(_phasepinL, LOW);
+
+}
+
+void Motors::turnAroundRight()
 {
 
   digitalWrite(_phasepinR, HIGH);

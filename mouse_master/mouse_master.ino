@@ -6,16 +6,16 @@
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
-#define NORTH 1;
-#define EAST  2;
-#define SOUTH 4;
-#define WEST  8;
+#define NORTH 1
+#define EAST  2
+#define SOUTH 4
+#define WEST  8
 
 // Starting and ending position
-#define STARTROW 0;
-#define STARTCOL 0;
-#define ENDROW 7;
-#define ENDCOL 7;
+#define STARTROW 0
+#define STARTCOL 0
+#define ENDROW 3
+#define ENDCOL 3
 
 int debugMode = 0;
 int virtualMode = 0;
@@ -53,8 +53,9 @@ unsigned char cellMap[256];
 // Global array to store the wall bits
 unsigned char wallMap[256];
 // Global array for virtual maze walls
-unsigned char virtualWallMap[256] =
- {0b1100,0b100,0b101,0b110,0b1100,0b110,0b1100,0b101,0b101,0b110,0b1000,0b101,0b101,0b110,0b1000,0b110,
+unsigned char virtualWallMap[256];
+/*
+={0b1100,0b100,0b101,0b110,0b1100,0b110,0b1100,0b101,0b101,0b110,0b1000,0b101,0b101,0b110,0b1000,0b110,
   0b1010,0b1010,0b1110,0b1010,0b1011,0b1010,0b1010,0b1100,0b111,0b1010,0b1010,0b1100,0b110,0b1010,0b1010,0b1010,
   0b1010,0b1010,0b1000,0b1,0b101,0b10,0b1010,0b1010,0b1100,0b11,0b1010,0b1010,0b1010,0b1010,0b1010,0b1010,
   0b1010,0b1010,0b1011,0b1100,0b110,0b1010,0b1010,0b1010,0b1010,0b1100,0b11,0b1010,0b1010,0b1010,0b1010,0b1010,
@@ -69,12 +70,13 @@ unsigned char virtualWallMap[256] =
   0b1000,0b101,0b10,0b1010,0b1001,0b111,0b1010,0b1010,0b1110,0b1010,0b1010,0b1000,0b101,0b11,0b1110,0b1010,
   0b1010,0b1110,0b1010,0b1001,0b101,0b101,0b11,0b1010,0b1010,0b1011,0b1010,0b1001,0b101,0b101,0b11,0b1010,
   0b1010,0b1010,0b1000,0b101,0b101,0b101,0b111,0b1010,0b1001,0b101,0b11,0b1010,0b1101,0b101,0b101,0b10,
-  0b1001,0b11,0b1001,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b11};           
+  0b1001,0b11,0b1001,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b11};*/
 // Global ints for current position
 int currentRow, currentCol;
-int startRow, startCol, endRow, endCol;
 // Global counter to set destination cell
-int counter = 0; 
+int counter = 0;
+// For going fast: 1 if the last move was forward
+int lastWasForward = 0;
 
 /* Function Prototypes */
 void initializeMaze ();
@@ -257,50 +259,22 @@ void makeNextMove ()
     }
   }
   
-  // Store the current cell
-  int tempCurrentRow = currentRow;
-  int tempCurrentCol = currentCol;
-  
   // Define a default, very high step value
   unsigned char lowest = 255;
 
   // Compare through all the neighbors
-  // NORTH
-  if (cellMap[currentCell + 16] < lowest && (tempCurrentRow + 1) < 16 && (wallMap[currentCell] & 1) == 0)
+  for (int i = 0; i < 4; i++)
   {
-    nextDir = 0;
-
-    lowest = cellMap[currentCell + 16];
-    currentRow = tempCurrentRow + 1;
-    currentCol = tempCurrentCol;
+    int curDir = (mouseDir + i) % 4;
+    if (cellMap[currentCell + offsetMap[curDir]] < lowest && !(wallMap[currentCell] & 1 << curDir))
+    {
+      lowest = cellMap[currentCell + offsetMap[curDir]];
+      nextDir = curDir;
+    }
   }
-  // EAST
-  if (cellMap[currentCell + 1] < lowest && (tempCurrentCol + 1) < 16 && (wallMap[currentCell] & 2) == 0)
-  {
-    nextDir = 1;
 
-    lowest = cellMap[currentCell + 1];
-    currentRow = tempCurrentRow;
-    currentCol = tempCurrentCol + 1;
-  }
-  // SOUTH
-  if (cellMap[currentCell - 16] < lowest && (tempCurrentRow - 1) >= 0 && (wallMap[currentCell] & 4) == 0)
-  {
-    nextDir = 2;
-
-    lowest = cellMap[currentCell - 16];
-    currentRow = tempCurrentRow - 1;
-    currentCol = tempCurrentCol;
-  }
-  // WEST
-  if (cellMap[currentCell - 1] < lowest && (tempCurrentCol - 1) >= 0 && (wallMap[currentCell] & 8) == 0)
-  {
-    nextDir = 3;
-
-    lowest = cellMap[currentCell - 1];
-    currentRow = tempCurrentRow;
-    currentCol = tempCurrentCol - 1;
-  }
+  currentRow += offsetMap[nextDir] / 16;
+  currentCol += offsetMap[nextDir] % 16;
 
   if (virtualMode)
   {
@@ -338,13 +312,24 @@ void makeNextMove ()
 
 void makeTurn(int nextDir)
 {
+  lastWasForward = 0;
   switch ((4 + nextDir - mouseDir) % 4)
   {
+    case 0:
+      lastWasForward = 1;
+      break;
     case 1:
       motors.turnRight();
       break;
     case 2:
-      motors.turnAround();
+      if (leftIR.getDistanceRaw() < rightIR.getDistanceRaw())
+      {
+        motors.turnAroundLeft();
+      }
+      else
+      {
+        motors.turnAroundRight();
+      }
       break;
     case 3:
       motors.turnLeft();
@@ -355,7 +340,14 @@ void makeTurn(int nextDir)
 
 void moveForward() {
   //motors.forward(60, 284);
-  motors.forward(60, 240);
+  if (counter >= 2)
+  {
+    motors.accForward(100, 255, 240);
+  }
+  else
+  {
+    motors.forward(60, 240);
+  }
   if (forwardIR.getDistanceRaw() < 150)
   {
     motors.forward(60, 44);
@@ -376,10 +368,6 @@ void initializeMaze ()
   // Initialize misc variables
   int stepValue = 0;
 
-  startRow = STARTROW;
-  startCol = STARTCOL;
-  endRow = ENDROW;
-  endCol = ENDCOL;
   currentRow = STARTROW;
   currentCol = STARTCOL;
   
@@ -439,15 +427,15 @@ void floodMaze ()
 if(counter % 2 == 0) { 
   //initial path to centre
     stackPointer = 4;
-    cellStack[0] = (16 * endRow) + endCol;
-    cellStack[1] = (16 * (endRow + 1)) + endCol;
-    cellStack[2] = (16 * endRow) + (endCol + 1);
-    cellStack[3] = (16 * (endRow + 1)) + (endCol + 1);
+    cellStack[0] = (16 * ENDROW) + ENDCOL;
+    cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
+    cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
+    cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
   }
   else {
   //path back to start
     stackPointer = 1;
-    cellStack[0] = 0;
+    cellStack[0] = (16 * STARTROW) + STARTCOL;
    }
   
   while (stackPointer > 0)
