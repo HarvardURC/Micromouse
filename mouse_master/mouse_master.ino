@@ -1,4 +1,3 @@
-#include <DistanceGP2Y0A41SK.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,11 +40,7 @@ int offsetMap[4] = {16, 1, -16, -1};
 //Define Distance Sensor pins
 int leftIRPin = A2;
 int rightIRPin = A1;
-int centerIRPin = A0;
-// Initializes the sensor class
-DistanceGP2Y0A41SK leftIR;
-DistanceGP2Y0A41SK rightIR;
-DistanceGP2Y0A41SK forwardIR;
+int forwardIRPin = A0;
 
 /* Global Variables */
 // Global array to store the cell values
@@ -79,32 +74,31 @@ int counter = 0;
 int lastWasForward = 0;
 
 /* Function Prototypes */
-void initializeMaze ();
-void floodMaze ();
+void initializeMaze();
+void floodMaze();
 void setBoundaryWalls ();
-void setTestWalls ();
-void makeNextMove ();
+void setTestWalls();
+void makeNextMove();
 void turnRight();
 void turnLeft();
 void moveForward();
 void makeNextMove();
+int irReading(int pin);
+void readCell();
 void debugBlink(int times);
 void printMaze();
 
 void setup() 
 {
-  
-  pinMode(13, OUTPUT);
-  
   /* * * * * * * * * * * * * * * * * 
    * MOUSE HARDWARE INTITALIZATION *
    * * * * * * * * * * * * * * * * **/
   Serial.begin(9600);
   
-  //Start distance sensors
-  leftIR.begin(leftIRPin);
-  rightIR.begin(rightIRPin);
-  forwardIR.begin(centerIRPin);
+  pinMode(13, OUTPUT);
+  pinMode(forwardIRPin, INPUT);
+  pinMode(leftIRPin, INPUT);
+  pinMode(rightIRPin, INPUT);
   
   /* * * * * * * * * * * * * * *
    * FLOODFILL INITIALIZATION  *
@@ -113,9 +107,6 @@ void setup()
   initializeMaze ();
   // Set maze boundary walls
   setBoundaryWalls ();
-  
-  // Test path length
-  int pathLength = 0;
 
   if (virtualMode)
   {
@@ -178,14 +169,25 @@ void debugBlink(int times) {
  *       HARDWARE CODE         *
  * * * * * * * * * * * * * * * */
 
+int irReading(int pin)
+{
+  int sum = 0;
+  sum += analogRead(pin);
+  wait(1);
+  sum += analogRead(pin);
+  wait(1);
+  sum += analogRead(pin);
+  return sum / 3;
+}
+
 void readCell()
 {
-  int irThresholds[4] = {100, 140, 1023, 140};
+  int irThresholds[4] = {140, 140, 1023, 140};
   
-  int readings[4] = {forwardIR.getDistanceRaw(),
-                     rightIR.getDistanceRaw(),
+  int readings[4] = {irReading(forwardIRPin),
+                     irReading(rightIRPin),
                      0,
-                     leftIR.getDistanceRaw()};
+                     irReading(leftIRPin)};
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
@@ -226,8 +228,8 @@ void makeNextMove ()
     int lowThreshold = 180;
     int highThreshold = 320;
   
-    int rightReading = rightIR.getDistanceRaw();
-    int leftReading = leftIR.getDistanceRaw();
+    int rightReading = irReading(rightIRPin);
+    int leftReading = irReading(leftIRPin);
   
     int isRightWall = wallMap[currentCell] & 1 << (mouseDir + 1) % 4;
     int isLeftWall = wallMap[currentCell] & 1 << (mouseDir + 3) % 4;
@@ -322,7 +324,7 @@ void makeTurn(int nextDir)
       motors.turnRight();
       break;
     case 2:
-      if (leftIR.getDistanceRaw() < rightIR.getDistanceRaw())
+      if (irReading(leftIRPin) < irReading(rightIRPin))
       {
         motors.turnAroundLeft();
       }
@@ -348,7 +350,7 @@ void moveForward() {
   {
     motors.forward(60, 240);
   }
-  if (forwardIR.getDistanceRaw() < 150)
+  if (irReading(forwardIRPin) < 150)
   {
     motors.forward(60, 44);
   }

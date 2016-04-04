@@ -25,4 +25,6 @@ private:
   void bump();
 };
 
+void wait(int deltaTime);
+
 #endif
