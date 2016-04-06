@@ -97,7 +97,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
     }
     else
     {
-      acc_pwm -= deltaTime;
+      acc_pwm -= deltaTime / 4;
     }
   }
   analogWrite(_drivepinL, 0);
