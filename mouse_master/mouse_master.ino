@@ -225,7 +225,7 @@ void makeNextMove ()
 
   if (!virtualMode)
   {
-    int lowThreshold = 180;
+    int lowThreshold = 150;
     int highThreshold = 320;
   
     int rightReading = irReading(rightIRPin);

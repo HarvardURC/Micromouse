@@ -57,7 +57,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
   if(releaseFlag){
     return;
       }
-    
+
   _counterL = 0;
   _counterR = 0;
 
@@ -68,11 +68,11 @@ void Motors::accForward(int start_pwm, int max_pwm,
 
   /*check motors are in sync
     if not then stop motor with higher count */
-  int startTime = millis(); 
+  unsigned long startTime = millis();
   while ((_counterR < tickDelta || _counterL < tickDelta) &&
          (forwardIRPin == -1 || analogRead(forwardIRPin) <= 240))
   {
-    
+
     if(millis() - startTime > 5000){
       analogWrite(_drivepinL,0);
       analogWrite(_drivepinR,0);
@@ -80,7 +80,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
       }
       return;
     }
-      
+
     int pwm = acc_pwm;
     if (pwm > max_pwm)
     {
@@ -106,13 +106,13 @@ void Motors::accForward(int start_pwm, int max_pwm,
     int curTime = millis();
     deltaTime = curTime - prevTime;
     prevTime = curTime;
-    if ((_counterL + _counterR) * 3 < tickDelta * 2)
+    if ((_counterL + _counterR) < tickDelta)
     {
       acc_pwm += deltaTime / 2;
     }
     else
     {
-      acc_pwm -= deltaTime / 4;
+      acc_pwm = start_pwm;
     }
   }
   analogWrite(_drivepinL, 0);
@@ -139,7 +139,7 @@ void Motors::turnLeft()
      to turn left set L to low and then reset to high when complete */
 
   digitalWrite(_phasepinL, HIGH);
-  accForward(30, 60, 105);
+  forward(60, 105);
   digitalWrite(_phasepinL, LOW);
 
 }
@@ -149,7 +149,7 @@ void Motors::turnRight()
   /* same as above but change phasepinR */
 
   digitalWrite(_phasepinR, HIGH);
-  accForward(30, 60, 105);
+  forward(60, 105);
   digitalWrite(_phasepinR, LOW);
 
 }
@@ -158,7 +158,7 @@ void Motors::turnAroundLeft()
 {
 
   digitalWrite(_phasepinL, HIGH);
-  accForward(30, 60, 215);
+  forward(60, 215);
   digitalWrite(_phasepinL, LOW);
 
 }
@@ -167,7 +167,7 @@ void Motors::turnAroundRight()
 {
 
   digitalWrite(_phasepinR, HIGH);
-  accForward(30, 60, 215);
+  forward(60, 215);
   digitalWrite(_phasepinR, LOW);
 
 }
