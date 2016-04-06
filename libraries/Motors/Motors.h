@@ -18,6 +18,7 @@ public:
   void accForward(int start_pwm, int max_pwm, int tickDelta, int forwardIRPin);
   void wallOrientateFwd();
   void wallOrientateBkwd();
+  int releaseFlag;
 private:
   int _drivepinL;
   int _drivepinR;

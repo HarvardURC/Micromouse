@@ -25,6 +25,7 @@ Motors::Motors(int drivepinL, int drivepinR, int tickpinL,
   _drivepinR = drivepinR;
   _phasepinL = phasepinL;
   _phasepinR = phasepinR;
+  releaseFlag = 0;
 
   digitalWrite(phasepinL, LOW);
   digitalWrite(phasepinR, LOW);
@@ -49,9 +50,14 @@ void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
   accForward(start_pwm, max_pwm, tickDelta, -1);
 }
 
+
 void Motors::accForward(int start_pwm, int max_pwm,
                         int tickDelta, int forwardIRPin)
 {
+  if(releaseFlag){
+    return;
+      }
+    
   _counterL = 0;
   _counterR = 0;
 
@@ -62,10 +68,19 @@ void Motors::accForward(int start_pwm, int max_pwm,
 
   /*check motors are in sync
     if not then stop motor with higher count */
-
+  int startTime = millis(); 
   while ((_counterR < tickDelta || _counterL < tickDelta) &&
          (forwardIRPin == -1 || analogRead(forwardIRPin) <= 240))
   {
+    
+    if(millis() - startTime > 5000){
+      analogWrite(_drivepinL,0);
+      analogWrite(_drivepinR,0);
+      while(!releaseFlag){
+      }
+      return;
+    }
+      
     int pwm = acc_pwm;
     if (pwm > max_pwm)
     {
@@ -168,6 +183,9 @@ void wait(int deltaTime)
 
 void Motors::bump(int pwm)
 {
+  if(releaseFlag){
+    return;
+  }
   analogWrite(_drivepinL, pwm);
   analogWrite(_drivepinR, pwm);
   int prevCounterL;
