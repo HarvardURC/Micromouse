@@ -35,14 +35,17 @@ int mouseDir = 0;
 // maps 0-3 direction to array offset
 int offsetMap[4] = {16, 1, -16, -1};
 
-//Define Distance Sensor pins
+// define distance sensor pins
 int leftIRPin = A2;
 int rightIRPin = A1;
 int forwardIRPin = A0;
 
-//define motor pins
+// define motor pins
 Motors motors (9, 11, 2, 3, 10, 12,
                forwardIRPin, leftIRPin, rightIRPin);
+
+// define push-button pin
+int buttonPin = 7;
 
 /* Global Variables */
 // Global array to store the cell values
@@ -85,6 +88,7 @@ void turnRight();
 void turnLeft();
 void moveForward();
 void makeNextMove();
+void onButtonRelease();
 void readCell();
 void debugBlink(int times);
 void printMaze();
@@ -96,10 +100,13 @@ void setup()
    * * * * * * * * * * * * * * * * **/
   Serial.begin(9600);
   
-  pinMode(13, OUTPUT);
+  pinMode(13, OUTPUT); // onboard LED
   pinMode(forwardIRPin, INPUT);
   pinMode(leftIRPin, INPUT);
   pinMode(rightIRPin, INPUT);
+  
+  pinMode(buttonPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, FALLING);
   
   /* * * * * * * * * * * * * * *
    * FLOODFILL INITIALIZATION  *
@@ -150,6 +157,14 @@ void loop()
   if (virtualMode)
   {
     wait(1000);
+  }
+
+  if (motors.releaseFlag)
+  {
+    currentRow = 0;
+    currentCol = 0;
+    mouseDir = 0;
+    motors.releaseFlag = 0;
   }
 
   //wait(500);
@@ -330,7 +345,8 @@ void makeTurn(int nextDir)
 }
 
 
-void moveForward() {
+void moveForward()
+{
   if (counter >= 2)
   {
     motors.accForward(100, 255, 284, 1);
@@ -341,9 +357,10 @@ void moveForward() {
   }
 }
 
-
-
-
+void onButtonRelease()
+{
+  motors.releaseFlag = 1;
+}
 
 /* * * * * * * * * * * * * * * *
  *          LOGIC CODE         * 
