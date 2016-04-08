@@ -6,28 +6,32 @@
 class Motors
 {
 public:
-  Motors(int drivepinL, int drivepinR, int tickpinL,
-         int tickpinR, int phasepinL, int phasepinR);
+  Motors(int drivePinL, int drivePinR, int tickPinL,
+         int tickPinR, int phasePinL, int phasePinR,
+         int forwardIRPin, int leftIRPin, int rightIRPin);
   void turnLeft();
   void turnRight();
   void turnAroundLeft();
   void turnAroundRight();
   void forward(int pwm, int tickDelta);
-  void forward(int pwm, int tickDelta, int forwardIRPin);
+  void forward(int pwm, int tickDelta, int useSensors);
   void accForward(int start_pwm, int max_pwm, int tickDelta);
-  void accForward(int start_pwm, int max_pwm, int tickDelta, int forwardIRPin);
+  void accForward(int start_pwm, int max_pwm, int tickDelta, int useSensors);
   void wallOrientateFwd();
   void wallOrientateBkwd();
   int releaseFlag;
 private:
-  int _drivepinL;
-  int _drivepinR;
-  int _phasepinL;
-  int _phasepinR;
+  int _drivePinL;
+  int _drivePinR;
+  int _phasePinL;
+  int _phasePinR;
+  int _forwardIRPin;
+  int _leftIRPin;
+  int _rightIRPin;
+  void stop();
   void oneMotor(int pin, int* counter, int pwm, int tickDelta);
   void bump(int pwm);
+  void wiggle();
 };
-
-void wait(int deltaTime);
 
 #endif

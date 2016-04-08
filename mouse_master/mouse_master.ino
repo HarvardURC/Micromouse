@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <Util.h>
 #include <Motors.h>
 
 /* Global Constants */
@@ -25,9 +26,6 @@ int LEFT_TURN_STEPS = 53;
 int MOVE_FORWARD_STEPS = 55;
 int STEP_DELAY = 2;
 
-//define motor pins
-Motors motors (9, 11, 2, 3, 10, 12);
-
 // 0 for North
 // 1 for East
 // 2 for South 
@@ -41,6 +39,10 @@ int offsetMap[4] = {16, 1, -16, -1};
 int leftIRPin = A2;
 int rightIRPin = A1;
 int forwardIRPin = A0;
+
+//define motor pins
+Motors motors (9, 11, 2, 3, 10, 12,
+               forwardIRPin, leftIRPin, rightIRPin);
 
 /* Global Variables */
 // Global array to store the cell values
@@ -83,7 +85,6 @@ void turnRight();
 void turnLeft();
 void moveForward();
 void makeNextMove();
-int irReading(int pin);
 void readCell();
 void debugBlink(int times);
 void printMaze();
@@ -112,7 +113,7 @@ void setup()
   {
     for (int i = 5; i > 0; i--) {
       Serial.println(i);
-      delay(1000);
+      wait(1000);
     }
   }
 }
@@ -125,11 +126,11 @@ void loop()
   if (debugMode)
   {
     debugBlink(currentRow);
-    delay(1000);
+    wait(1000);
     debugBlink(currentCol);
-    delay(1000);
+    wait(1000);
     debugBlink(wallMap[16 * currentRow + currentCol]);
-    delay(1000);
+    wait(1000);
     debugBlink(mouseDir);
   }
 
@@ -148,10 +149,10 @@ void loop()
 
   if (virtualMode)
   {
-    delay(1000);
+    wait(1000);
   }
 
-  //delay(500);
+  //wait(500);
 
 }
 
@@ -159,26 +160,15 @@ void debugBlink(int times) {
   for (int i = 0; i < times; i++)
   {
     digitalWrite(13, HIGH);
-    delay(200);
+    wait(200);
     digitalWrite(13, LOW);
-    delay(200);
+    wait(200);
   }
 }
 
 /* * * * * * * * * * * * * * * *
  *       HARDWARE CODE         *
  * * * * * * * * * * * * * * * */
-
-int irReading(int pin)
-{
-  int sum = 0;
-  sum += analogRead(pin);
-  wait(1);
-  sum += analogRead(pin);
-  wait(1);
-  sum += analogRead(pin);
-  return sum / 3;
-}
 
 void readCell()
 {
@@ -343,11 +333,11 @@ void makeTurn(int nextDir)
 void moveForward() {
   if (counter >= 2)
   {
-    motors.accForward(100, 255, 284, forwardIRPin);
+    motors.accForward(100, 255, 284, 1);
   }
   else
   {
-    motors.forward(60, 284, forwardIRPin);
+    motors.forward(60, 284, 1);
   }
 }
 
