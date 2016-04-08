@@ -90,6 +90,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
       stop();
       while (!releaseFlag)
       {
+        wait(100);
       }
       return;
     }
@@ -103,7 +104,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
     int leftReading = irReading(_leftIRPin);
     int rightReading = irReading(_rightIRPin);
 
-    if (leftReading > 140 && rightReading > 140)
+    if (0 && leftReading > 140 && rightReading > 140)
     {
       int avgCounter = (_counterR + _counterL) / 2;
       _counterR = avgCounter;

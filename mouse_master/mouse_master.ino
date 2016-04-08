@@ -17,7 +17,7 @@
 #define ENDROW 3
 #define ENDCOL 3
 
-int debugMode = 0;
+int debugMode = 1;
 int virtualMode = 0;
 
 // Calibration for turns -- needs to change
@@ -98,7 +98,10 @@ void setup()
   /* * * * * * * * * * * * * * * * * 
    * MOUSE HARDWARE INTITALIZATION *
    * * * * * * * * * * * * * * * * **/
-  Serial.begin(9600);
+  if (debugMode)
+  {
+    Serial.begin(9600);
+  }
   
   pinMode(13, OUTPUT); // onboard LED
   pinMode(forwardIRPin, INPUT);
@@ -106,7 +109,7 @@ void setup()
   pinMode(rightIRPin, INPUT);
   
   pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, FALLING);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, RISING);
   
   /* * * * * * * * * * * * * * *
    * FLOODFILL INITIALIZATION  *
@@ -165,6 +168,10 @@ void loop()
     currentCol = 0;
     mouseDir = 0;
     motors.releaseFlag = 0;
+    if (debugMode)
+    {
+      debugBlink(2);
+    }
   }
 
   //wait(500);
@@ -360,6 +367,10 @@ void moveForward()
 void onButtonRelease()
 {
   motors.releaseFlag = 1;
+  if (debugMode)
+  {
+    Serial.println("button");
+  }
 }
 
 /* * * * * * * * * * * * * * * *
