@@ -74,7 +74,7 @@ unsigned char virtualWallMap[256];
 // Global ints for current position
 int currentRow, currentCol;
 // Global counter to set destination cell
-int counter = 2;
+int counter = 0;
 // For going fast: 1 if the last move was forward
 int lastWasForward = 0;
 // Code to side-bump
