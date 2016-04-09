@@ -232,7 +232,7 @@ void Motors::turnLeft()
      to turn left set L to low and then reset to high when complete */
 
   digitalWrite(_phasePinL, HIGH);
-  forward(60, 105);
+  forward(60, 106);
   digitalWrite(_phasePinL, LOW);
 
 }
@@ -242,7 +242,7 @@ void Motors::turnRight()
   /* same as above but change phasePinR */
 
   digitalWrite(_phasePinR, HIGH);
-  forward(60, 105);
+  forward(60, 106);
   digitalWrite(_phasePinR, LOW);
 
 }
@@ -251,7 +251,7 @@ void Motors::turnAroundLeft()
 {
 
   digitalWrite(_phasePinL, HIGH);
-  forward(60, 215);
+  forward(60, 214);
   digitalWrite(_phasePinL, LOW);
 
 }
@@ -260,7 +260,7 @@ void Motors::turnAroundRight()
 {
 
   digitalWrite(_phasePinR, HIGH);
-  forward(60, 215);
+  forward(60, 214);
   digitalWrite(_phasePinR, LOW);
 
 }

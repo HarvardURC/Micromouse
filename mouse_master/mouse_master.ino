@@ -14,8 +14,8 @@
 // Starting and ending position
 #define STARTROW 0
 #define STARTCOL 0
-#define ENDROW 3
-#define ENDCOL 3
+#define ENDROW 7
+#define ENDCOL 7
 
 int debugMode = 0;
 int virtualMode = 0;
@@ -384,22 +384,22 @@ int chooseNextDir(int currentCell, int _mouseDir)
 
 int moveForward()
 {
+  int nextCell = 16*currentRow + currentCol + offsetMap[mouseDir];
+  int forwardIsNext = wallMap[nextCell] < 240 &&
+                      chooseNextDir(nextCell, mouseDir) == mouseDir &&
+                      cellMap[nextCell] != 0;
+  int start_pwm = 60;
+  if (lastWasForward)
+  {
+    start_pwm = motors.pwmRecord;
+  }
   if (counter >= 2)
   {
-    int nextCell = 16*currentRow + currentCol + offsetMap[mouseDir];
-    int forwardIsNext = wallMap[nextCell] < 240 &&
-                        chooseNextDir(nextCell, mouseDir) == mouseDir &&
-                        cellMap[nextCell] != 0;
-    int start_pwm = 60;
-    if (lastWasForward)
-    {
-      start_pwm = motors.pwmRecord;
-    }
     return motors.accForward(start_pwm, 255, 284, 1, !forwardIsNext);
   }
   else
   {
-    return motors.accForward(60, 90, 284, 1, 1);
+    return motors.accForward(start_pwm, 150, 284, 1, !forwardIsNext);
   }
 }
 
@@ -425,7 +425,7 @@ void initializeMaze ()
   currentRow = STARTROW;
   currentCol = STARTCOL;
   
-  for (int i = 0; i < 255; i++)
+  for (int i = 0; i < 256; i++)
   {
     cellMap[i] = 255;
     wallMap[i] = 240;
