@@ -14,12 +14,14 @@ public:
   void turnAroundLeft();
   void turnAroundRight();
   void forward(int pwm, int tickDelta);
-  void forward(int pwm, int tickDelta, int useSensors);
+  int forward(int pwm, int tickDelta, int useSensors);
   void accForward(int start_pwm, int max_pwm, int tickDelta);
-  void accForward(int start_pwm, int max_pwm, int tickDelta, int useSensors);
+  int accForward(int start_pwm, int max_pwm, int tickDelta,
+                 int useSensors, int forceDecelerate);
   void wallOrientateFwd();
   void wallOrientateBkwd();
   int releaseFlag;
+  int pwmRecord;
 private:
   int _drivePinL;
   int _drivePinR;

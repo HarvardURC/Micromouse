@@ -2,7 +2,7 @@
 #include "Util.h"
 #include "Motors.h"
 
-//initialise counters at 0
+//initialize counters at 0
 volatile int _counterL = 0;
 volatile int _counterR = 0;
 
@@ -36,6 +36,7 @@ Motors::Motors(int drivePinL, int drivePinR, int tickPinL,
   digitalWrite(phasePinR, LOW);
 
   releaseFlag = 0;
+  pwmRecord = 60;
 }
 
 void Motors::stop()
@@ -58,17 +59,19 @@ void Motors::oneMotor(int pin, int* counter, int pwm, int tickDelta)
 
 void Motors::accForward(int start_pwm, int max_pwm, int tickDelta)
 {
-  accForward(start_pwm, max_pwm, tickDelta, 0);
+  accForward(start_pwm, max_pwm, tickDelta, 0, 0);
 }
 
 
-void Motors::accForward(int start_pwm, int max_pwm,
-                        int tickDelta, int useSensors)
+int Motors::accForward(int start_pwm, int max_pwm, int tickDelta,
+                       int useSensors, int forceDecelerate)
 {
   if (releaseFlag)
   {
-    return;
+    return 0;
   }
+
+  int rv = -1;
 
   _counterL = 0;
   _counterR = 0;
@@ -92,7 +95,7 @@ void Motors::accForward(int start_pwm, int max_pwm,
       {
         wait(100);
       }
-      return;
+      return 0;
     }
 
     int pwm = acc_pwm;
@@ -100,11 +103,25 @@ void Motors::accForward(int start_pwm, int max_pwm,
     {
       pwm = max_pwm;
     }
-
+    /*
     int leftReading = irReading(_leftIRPin);
     int rightReading = irReading(_rightIRPin);
 
-    if (0 && leftReading > 140 && rightReading > 140)
+    int maxReading, minReading;
+    if (leftReading > rightReading)
+    {
+      maxReading = leftReading;
+      minReading = rightReading;
+    }
+    else
+    {
+      maxReading = rightReading;
+      minReading = leftReading;
+    }
+
+    if (leftReading > 140 && rightReading > 140 &&
+        !(minReading > 200 && maxReading > 270) &&
+        _counterR + _counterL < 100 && 0)
     {
       int avgCounter = (_counterR + _counterL) / 2;
       _counterR = avgCounter;
@@ -129,30 +146,62 @@ void Motors::accForward(int start_pwm, int max_pwm,
       }
     }
     else
+    {*/
+    if (_counterL > _counterR)
     {
-      if (_counterL > _counterR)
-      {
-        analogWrite(_drivePinL, 0);
-        analogWrite(_drivePinR, pwm);
-      }
-      else if (_counterL < _counterR)
-      {
-        analogWrite(_drivePinL, pwm);
-        analogWrite(_drivePinR, 0);
-      }
-      else
-      {
-        analogWrite(_drivePinL, pwm);
-        analogWrite(_drivePinR, pwm);
-      }
+      analogWrite(_drivePinL, 0);
+      analogWrite(_drivePinR, pwm);
     }
+    else if (_counterL < _counterR)
+    {
+      analogWrite(_drivePinL, pwm);
+      analogWrite(_drivePinR, 0);
+    }
+    else
+    {
+      analogWrite(_drivePinL, pwm);
+      analogWrite(_drivePinR, pwm);
+    }
+    //}
 
     int curTime = millis();
     deltaTime = curTime - prevTime;
     prevTime = curTime;
-    if ((_counterL + _counterR) < tickDelta)
+    if ((_counterL + _counterR) < tickDelta ||
+        (rv == 0 && !forceDecelerate))
     {
       acc_pwm += deltaTime / 2;
+    }
+    else if (rv == -1)
+    {
+      int wallThreshold = 140;
+      int lowThreshold = 150;
+      int highThreshold = 320;
+
+      int rightReading = irReading(_rightIRPin);
+      int leftReading = irReading(_leftIRPin);
+
+      // if too close to or too far from a side wall, bump it
+      if (rightReading > highThreshold)
+      {
+        rv = 1;
+      }
+      else if (leftReading > highThreshold)
+      {
+        rv = 2;
+      }
+      else if (rightReading > wallThreshold && rightReading < lowThreshold)
+      {
+        rv = 3;
+      }
+      else if(leftReading > wallThreshold && leftReading < lowThreshold)
+      {
+        rv = 4;
+      }
+      else
+      {
+        rv = 0;
+      }
     }
     else
     {
@@ -160,6 +209,8 @@ void Motors::accForward(int start_pwm, int max_pwm,
     }
   }
   stop();
+  pwmRecord = acc_pwm;
+  return rv;
 }
 
 void Motors::forward(int pwm, int tickDelta)
@@ -167,9 +218,9 @@ void Motors::forward(int pwm, int tickDelta)
   accForward(pwm, pwm, tickDelta);
 }
 
-void Motors::forward(int pwm, int tickDelta, int useSensors)
+int Motors::forward(int pwm, int tickDelta, int useSensors)
 {
-  accForward(pwm, pwm, tickDelta, useSensors);
+  return accForward(pwm, pwm, tickDelta, useSensors, 0);
 }
 
 /* 110 ticks to go 90 degrees

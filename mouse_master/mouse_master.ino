@@ -17,7 +17,7 @@
 #define ENDROW 3
 #define ENDCOL 3
 
-int debugMode = 1;
+int debugMode = 0;
 int virtualMode = 0;
 
 // Calibration for turns -- needs to change
@@ -77,16 +77,19 @@ int currentRow, currentCol;
 int counter = 0;
 // For going fast: 1 if the last move was forward
 int lastWasForward = 0;
+// Code to side-bump
+int sideCorrectCode = 0;
 
 /* Function Prototypes */
 void initializeMaze();
 void floodMaze();
 void setBoundaryWalls ();
 void setTestWalls();
+int chooseNextDir(int currentCell, int _mouseDir);
 void makeNextMove();
 void turnRight();
 void turnLeft();
-void moveForward();
+int moveForward();
 void makeNextMove();
 void onButtonRelease();
 void readCell();
@@ -167,6 +170,7 @@ void loop()
     currentRow = 0;
     currentCol = 0;
     mouseDir = 0;
+    counter -= counter % 2;
     motors.releaseFlag = 0;
     if (debugMode)
     {
@@ -203,6 +207,8 @@ void readCell()
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
+  wallMap[currentCell] &= 15;
+
   for (int i = 0; i < 4; i++)
   {
     int dir = (mouseDir + i) % 4;
@@ -226,69 +232,13 @@ void readCell()
 
 void makeNextMove ()
 { 
-  int nextDir = 0;
-  // Get the current cell
   unsigned char currentCell = 16 * currentRow + currentCol;
+  int nextDir = chooseNextDir(currentCell, mouseDir);
   
   if (debugMode)
   {
     Serial.println(wallMap[currentCell]);
   }
-
-  if (!virtualMode)
-  {
-    int lowThreshold = 150;
-    int highThreshold = 320;
-  
-    int rightReading = irReading(rightIRPin);
-    int leftReading = irReading(leftIRPin);
-  
-    int isRightWall = wallMap[currentCell] & 1 << (mouseDir + 1) % 4;
-    int isLeftWall = wallMap[currentCell] & 1 << (mouseDir + 3) % 4;
-  
-    // if too close to or too far from a side wall, bump it
-    if (isRightWall && rightReading > highThreshold)
-    {
-      motors.turnLeft();
-      motors.wallOrientateBkwd();
-      motors.turnRight();
-    }
-    else if (isLeftWall && leftReading > highThreshold)
-    {
-      motors.turnRight();
-      motors.wallOrientateBkwd();
-      motors.turnLeft();
-    }
-    else if (isRightWall && rightReading < lowThreshold)
-    {
-      motors.turnRight();
-      motors.wallOrientateFwd();
-      motors.turnLeft();
-    }
-    else if(isLeftWall && leftReading < lowThreshold)
-    {
-      motors.turnLeft();
-      motors.wallOrientateFwd();
-      motors.turnRight();
-    }
-  }
-  
-  // Define a default, very high step value
-  unsigned char lowest = 255;
-
-  // Compare through all the neighbors
-  for (int i = 0; i < 4; i++)
-  {
-    int curDir = (mouseDir + i) % 4;
-    if (cellMap[currentCell + offsetMap[curDir]] < lowest && !(wallMap[currentCell] & 1 << curDir))
-    {
-      lowest = cellMap[currentCell + offsetMap[curDir]];
-      nextDir = curDir;
-    }
-  }
-
-  currentRow += offsetMap[nextDir] / 16;
-  currentCol += offsetMap[nextDir] % 16;
 
   if (virtualMode)
   {
@@ -314,13 +264,40 @@ void makeNextMove ()
     {
       motors.wallOrientateFwd();
     }
+    switch (sideCorrectCode)
+    {
+      case 1:
+        motors.turnLeft();
+        motors.wallOrientateBkwd();
+        motors.turnRight();
+        break;
+      case 2:
+        motors.turnRight();
+        motors.wallOrientateBkwd();
+        motors.turnLeft();
+        break;
+      case 3:
+        motors.turnRight();
+        motors.wallOrientateFwd();
+        motors.turnLeft();
+        break;
+      case 4:
+        motors.turnLeft();
+        motors.wallOrientateFwd();
+        motors.turnRight();
+        break;
+    }
     makeTurn(nextDir);
+    lastWasForward &= sideCorrectCode == 0;
     if (wallMap[currentCell] & 1 << (nextDir + 2) % 4)
     {
       motors.wallOrientateBkwd();
     }
-    moveForward();
+    sideCorrectCode = moveForward();
   }
+  
+  currentRow += offsetMap[nextDir] / 16;
+  currentCol += offsetMap[nextDir] % 16;
   mouseDir = nextDir;
 }
 
@@ -351,16 +328,45 @@ void makeTurn(int nextDir)
   }
 }
 
+int chooseNextDir(int currentCell, int _mouseDir)
+{
+  // Define a default, very high step value
+  unsigned char lowest = 255;
 
-void moveForward()
+  int nextDir = 0;
+
+  // Compare through all the neighbors
+  for (int i = 0; i < 4; i++)
+  {
+    int curDir = (_mouseDir + i) % 4;
+    if (cellMap[currentCell + offsetMap[curDir]] < lowest && !(wallMap[currentCell] & 1 << curDir))
+    {
+      lowest = cellMap[currentCell + offsetMap[curDir]];
+      nextDir = curDir;
+    }
+  }
+
+  return nextDir;
+}
+
+
+int moveForward()
 {
   if (counter >= 2)
   {
-    motors.accForward(100, 255, 284, 1);
+    int nextCell = 16*currentRow + currentCol + offsetMap[mouseDir];
+    int forwardIsNext = wallMap[nextCell] < 240 &&
+                        chooseNextDir(nextCell, mouseDir) == mouseDir;
+    int start_pwm = 100;
+    if (lastWasForward)
+    {
+      start_pwm = motors.pwmRecord;
+    }
+    return motors.accForward(start_pwm, 255, 284, 1, !forwardIsNext);
   }
   else
   {
-    motors.forward(60, 284, 1);
+    return motors.forward(60, 284, 1);
   }
 }
 
@@ -389,7 +395,7 @@ void initializeMaze ()
   for (int i = 0; i < 255; i++)
   {
     cellMap[i] = 255;
-    wallMap[i] = 0;
+    wallMap[i] = 240;
   }
 }
 
