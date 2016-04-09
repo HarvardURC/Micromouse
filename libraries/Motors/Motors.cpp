@@ -167,15 +167,15 @@ int Motors::accForward(int start_pwm, int max_pwm, int tickDelta,
     int curTime = millis();
     deltaTime = curTime - prevTime;
     prevTime = curTime;
-    if ((_counterL + _counterR) < tickDelta ||
+    if ((_counterL + _counterR) * 3 < tickDelta * 4 ||
         (rv == 0 && !forceDecelerate))
     {
       acc_pwm += deltaTime / 2;
     }
     else if (rv == -1)
     {
-      int wallThreshold = 140;
-      int lowThreshold = 150;
+      int wallThreshold = 100;
+      int lowThreshold = 170;
       int highThreshold = 320;
 
       int rightReading = irReading(_rightIRPin);
@@ -281,7 +281,7 @@ void Motors::bump(int pwm)
     prevCounterL = _counterL;
     prevCounterR = _counterR;
 
-    wait(100);
+    wait(200);
 
     if (_counterL - prevCounterL < 3)
     {
@@ -341,7 +341,7 @@ void Motors::wallOrientateBkwd()
   digitalWrite(_phasePinL, LOW);
   digitalWrite(_phasePinR, LOW);
 
-  forward(60, 86);
+  forward(60, 80);
 }
 
 //increment count with each turn

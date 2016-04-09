@@ -74,7 +74,7 @@ unsigned char virtualWallMap[256];
 // Global ints for current position
 int currentRow, currentCol;
 // Global counter to set destination cell
-int counter = 0;
+int counter = 2;
 // For going fast: 1 if the last move was forward
 int lastWasForward = 0;
 // Code to side-bump
@@ -198,7 +198,7 @@ void debugBlink(int times) {
 
 void readCell()
 {
-  int irThresholds[4] = {240, 140, 1023, 140};
+  int irThresholds[4] = {240, 100, 1023, 100};
   
   int readings[4] = {irReading(forwardIRPin),
                      irReading(rightIRPin),
@@ -211,21 +211,33 @@ void readCell()
 
   for (int i = 0; i < 4; i++)
   {
-    int dir = (mouseDir + i) % 4;
-    
-    if ((readings[i] > irThresholds[i] && !virtualMode) ||
-        (virtualMode && virtualWallMap[currentCell] & 1 << dir))
+    if (i != 2)
     {
+      int dir = (mouseDir + i) % 4;
       
-      // set wall for current cell
-      wallMap[currentCell] |= 1 << dir;
-
-      // set wall for opposite cell if valid
       int oppositeCell = currentCell + offsetMap[dir];
-      if (oppositeCell >= 0 && oppositeCell < 256) {
-        wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
- 
+      
+      if ((readings[i] > irThresholds[i] && !virtualMode) ||
+          (virtualMode && virtualWallMap[currentCell] & 1 << dir))
+      {
+        // set wall for current cell
+        wallMap[currentCell] |= 1 << dir;
+  
+        // set wall for opposite cell if valid
+        if (oppositeCell >= 0 && oppositeCell < 256)
+        {
+          wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
+        }
       }
+      /*else
+      {
+        wallMap[currentCell] &= ~(1 << dir);
+  
+        if (oppositeCell >= 0 && oppositeCell < 256)
+        {
+          wallMap[oppositeCell] &= ~(1 << ((dir + 2) % 4));
+        }
+      }*/
     }
   }
 }
@@ -264,6 +276,18 @@ void makeNextMove ()
     {
       motors.wallOrientateFwd();
     }
+    if (sideCorrectCode % 2 == 1 &&
+        (!(wallMap[currentCell] & 1 << (mouseDir + 1) % 4) ||
+         (nextDir + 4 - mouseDir) % 4 == 3))
+    {
+      sideCorrectCode = 0;
+    }
+    else if (sideCorrectCode % 2 == 0 &&
+             (!(wallMap[currentCell] & 1 << (mouseDir + 3) % 4) ||
+              (nextDir + 4 - mouseDir) % 4 == 1))
+    {
+      sideCorrectCode = 0;
+    }
     switch (sideCorrectCode)
     {
       case 1:
@@ -288,8 +312,9 @@ void makeNextMove ()
         break;
     }
     makeTurn(nextDir);
+    mouseDir = nextDir;
     lastWasForward &= sideCorrectCode == 0;
-    if (wallMap[currentCell] & 1 << (nextDir + 2) % 4)
+    if (wallMap[currentCell] & 1 << (mouseDir + 2) % 4)
     {
       motors.wallOrientateBkwd();
     }
@@ -303,12 +328,19 @@ void makeNextMove ()
 
 void makeTurn(int nextDir)
 {
-  lastWasForward = 0;
-  switch ((4 + nextDir - mouseDir) % 4)
+  int angle = (4 + nextDir - mouseDir) % 4;
+  if (angle == 0)
   {
-    case 0:
-      lastWasForward = 1;
-      break;
+    lastWasForward = 1;
+    return;
+  }
+  else
+  {
+    lastWasForward = 0;
+    wait(400);
+  }
+  switch (angle)
+  {
     case 1:
       motors.turnRight();
       break;
@@ -356,8 +388,9 @@ int moveForward()
   {
     int nextCell = 16*currentRow + currentCol + offsetMap[mouseDir];
     int forwardIsNext = wallMap[nextCell] < 240 &&
-                        chooseNextDir(nextCell, mouseDir) == mouseDir;
-    int start_pwm = 100;
+                        chooseNextDir(nextCell, mouseDir) == mouseDir &&
+                        cellMap[nextCell] != 0;
+    int start_pwm = 60;
     if (lastWasForward)
     {
       start_pwm = motors.pwmRecord;
@@ -366,7 +399,7 @@ int moveForward()
   }
   else
   {
-    return motors.forward(60, 284, 1);
+    return motors.accForward(60, 90, 284, 1, 1);
   }
 }
 
