@@ -20,12 +20,6 @@
 int debugMode = 0;
 int virtualMode = 0;
 
-// Calibration for turns -- needs to change
-int RIGHT_TURN_STEPS = 54;
-int LEFT_TURN_STEPS = 53;
-int MOVE_FORWARD_STEPS = 55;
-int STEP_DELAY = 2;
-
 // 0 for North
 // 1 for East
 // 2 for South 
@@ -73,12 +67,12 @@ unsigned char virtualWallMap[256];
   0b1001,0b11,0b1001,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b101,0b1,0b101,0b101,0b101,0b11};*/
 // Global ints for current position
 int currentRow, currentCol;
-// Global counter to set destination cell
+// Global counter, keeps track of run number to set speed and destination cell
 int counter = 0;
 // For going fast: 1 if the last move was forward
 int lastWasForward = 0;
-// Code to side-bump
-int sideCorrectCode = 0;
+// Flag to side-bump, which can be raised by the forward function
+int sideCorrectFlag = 0;
 
 /* Function Prototypes */
 void initializeMaze();
@@ -96,7 +90,7 @@ void readCell();
 void debugBlink(int times);
 void printMaze();
 
-void setup() 
+void setup()
 {
   /* * * * * * * * * * * * * * * * * 
    * MOUSE HARDWARE INTITALIZATION *
@@ -110,7 +104,8 @@ void setup()
   pinMode(forwardIRPin, INPUT);
   pinMode(leftIRPin, INPUT);
   pinMode(rightIRPin, INPUT);
-  
+
+  // set push-button pinmode, set it to trigger onButtonRelease on release
   pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, RISING);
   
@@ -122,6 +117,7 @@ void setup()
   // Set maze boundary walls
   setBoundaryWalls ();
 
+  // if in virtual mode, do a countdown to allow time to open the serial monitor
   if (virtualMode)
   {
     for (int i = 5; i > 0; i--) {
@@ -133,9 +129,10 @@ void setup()
 
 void loop()
 {
-
+  // use the IR sensors to detect walls, store them in wallMap
   readCell();
 
+  // if in debug mode, blink some information
   if (debugMode)
   {
     debugBlink(currentRow);
@@ -147,14 +144,18 @@ void loop()
     debugBlink(mouseDir);
   }
 
+  // run the flood-fill algorithm
   floodMaze();
   if (virtualMode)
   {
     printMaze();
   }
 
+  // move to the next cell
   makeNextMove();
 
+  /* if we've reached the destination (alternates between start and end of maze)
+   * then increment the counter that keeps track of the number of runs */
   if(cellMap[(16*currentRow) + currentCol] == 0)
   {
     counter++;
@@ -165,10 +166,11 @@ void loop()
     wait(1000);
   }
 
+  // if the push-button was pressed, reset position to the start
   if (motors.releaseFlag)
   {
-    currentRow = 0;
-    currentCol = 0;
+    currentRow = STARTROW;
+    currentCol = STARTCOL;
     mouseDir = 0;
     counter -= counter % 2;
     motors.releaseFlag = 0;
@@ -177,11 +179,9 @@ void loop()
       debugBlink(2);
     }
   }
-
-  //wait(500);
-
 }
 
+/* Blinks the onboard LED a specified number of times. */
 void debugBlink(int times) {
   for (int i = 0; i < times; i++)
   {
@@ -196,8 +196,10 @@ void debugBlink(int times) {
  *       HARDWARE CODE         *
  * * * * * * * * * * * * * * * */
 
+/* Detects walls using the IR sensors and records them in wallMap. */
 void readCell()
 {
+  // thresholds and readings for each of the 4 directions
   int irThresholds[4] = {240, 100, 1023, 100};
   
   int readings[4] = {irReading(forwardIRPin),
@@ -207,16 +209,21 @@ void readCell()
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
+  // if the current cell was marked as 240+ (unvisited), reduce it to <16
   wallMap[currentCell] &= 15;
 
+  // for each of the 4 directions
   for (int i = 0; i < 4; i++)
   {
+    // but not backwards because there's no back sensor
     if (i != 2)
     {
       int dir = (mouseDir + i) % 4;
-      
+
+      // the adjacent cell in the direction of the current sensor
       int oppositeCell = currentCell + offsetMap[dir];
-      
+
+      // if IR threshold is exceeded or virtual mode and reading from array
       if ((readings[i] > irThresholds[i] && !virtualMode) ||
           (virtualMode && virtualWallMap[currentCell] & 1 << dir))
       {
@@ -229,6 +236,7 @@ void readCell()
           wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
         }
       }
+      // unused code for erasing a wall if no wall is detected
       /*else
       {
         wallMap[currentCell] &= ~(1 << dir);
@@ -242,8 +250,9 @@ void readCell()
   }
 }
 
+/* Moves to the next cell. */
 void makeNextMove ()
-{ 
+{
   unsigned char currentCell = 16 * currentRow + currentCol;
   int nextDir = chooseNextDir(currentCell, mouseDir);
   
@@ -272,23 +281,26 @@ void makeNextMove ()
   }
   else
   {
+    // if there is a wall in front of the robot, bump forward
     if (wallMap[currentCell] & 1 << mouseDir)
     {
       motors.wallOrientateFwd();
     }
-    if (sideCorrectCode % 2 == 1 &&
+    // if side bump called for but no wall on that side exists, cancel it
+    if (sideCorrectFlag % 2 == 1 &&
         (!(wallMap[currentCell] & 1 << (mouseDir + 1) % 4) ||
          (nextDir + 4 - mouseDir) % 4 == 3))
     {
-      sideCorrectCode = 0;
+      sideCorrectFlag = 0;
     }
-    else if (sideCorrectCode % 2 == 0 &&
+    else if (sideCorrectFlag % 2 == 0 &&
              (!(wallMap[currentCell] & 1 << (mouseDir + 3) % 4) ||
               (nextDir + 4 - mouseDir) % 4 == 1))
     {
-      sideCorrectCode = 0;
+      sideCorrectFlag = 0;
     }
-    switch (sideCorrectCode)
+    // do a side bump according to the flag value
+    switch (sideCorrectFlag)
     {
       case 1:
         motors.turnLeft();
@@ -311,29 +323,42 @@ void makeNextMove ()
         motors.turnRight();
         break;
     }
+    // turn to face in the next direction
     makeTurn(nextDir);
     mouseDir = nextDir;
-    lastWasForward &= sideCorrectCode == 0;
+
+    // robot is continuing forward if the last move was forward and no side bump
+    lastWasForward &= sideCorrectFlag == 0;
+
+    // if there is a wall behind the robot, bump backward
     if (wallMap[currentCell] & 1 << (mouseDir + 2) % 4)
     {
       motors.wallOrientateBkwd();
     }
-    sideCorrectCode = moveForward();
+
+    // move forward and get the new side bump flag
+    sideCorrectFlag = moveForward();
   }
-  
+
+  // record the new position
   currentRow += offsetMap[nextDir] / 16;
   currentCol += offsetMap[nextDir] % 16;
   mouseDir = nextDir;
 }
 
+/* Makes a turn to face in the specified next direction. */
 void makeTurn(int nextDir)
 {
+  // angle to turn in units of 90 deg
   int angle = (4 + nextDir - mouseDir) % 4;
+
+  // if no turn necessary, record that the last move was in the same direction
   if (angle == 0)
   {
     lastWasForward = 1;
     return;
   }
+  // else the last move was in a different direction and wait to avoid coasting
   else
   {
     lastWasForward = 0;
@@ -345,6 +370,7 @@ void makeTurn(int nextDir)
       motors.turnRight();
       break;
     case 2:
+      // turn around left or right depending on which direction has more space
       if (irReading(leftIRPin) < irReading(rightIRPin))
       {
         motors.turnAroundLeft();
@@ -360,18 +386,27 @@ void makeTurn(int nextDir)
   }
 }
 
+/* Chooses the next direction based on the flood-fill algorithm's determination
+ * of the adjacent cell which is closest to the destination.
+ * Directions have precedence in this order: forward right back left */
 int chooseNextDir(int currentCell, int _mouseDir)
 {
-  // Define a default, very high step value
+  // stores the lowest adjacent distance from the destination
   unsigned char lowest = 255;
 
+  // default
   int nextDir = 0;
 
   // Compare through all the neighbors
   for (int i = 0; i < 4; i++)
   {
+    // current direction considered
     int curDir = (_mouseDir + i) % 4;
-    if (cellMap[currentCell + offsetMap[curDir]] < lowest && !(wallMap[currentCell] & 1 << curDir))
+
+    /* if the current direction is the lowest so far and there's no wall in the
+     * way, set it as the tentative next direction */
+    if (cellMap[currentCell + offsetMap[curDir]] < lowest &&
+        !(wallMap[currentCell] & 1 << curDir))
     {
       lowest = cellMap[currentCell + offsetMap[curDir]];
       nextDir = curDir;
@@ -381,18 +416,29 @@ int chooseNextDir(int currentCell, int _mouseDir)
   return nextDir;
 }
 
-
+/* Moves forward one cell. */
 int moveForward()
 {
   int nextCell = 16*currentRow + currentCol + offsetMap[mouseDir];
+  /* checks if the next cell has been visited, and if so preloads to check if
+   * the next action would be forward in the same direction */
   int forwardIsNext = wallMap[nextCell] < 240 &&
                       chooseNextDir(nextCell, mouseDir) == mouseDir &&
                       cellMap[nextCell] != 0;
+
+  // default: accelerate from 60
   int start_pwm = 60;
+
+  /* if we are going forward in the same direction as before, start from the
+   * speed where the previous moveForward left off */
   if (lastWasForward)
   {
     start_pwm = motors.pwmRecord;
   }
+
+  /* if we are doing a speed run (counter >= 2 means we did at least 2 runs,
+   * one to the finish and one back to the start), then accelerate up to max
+   * speed, otherwise cap it at 150 */
   if (counter >= 2)
   {
     return motors.accForward(start_pwm, 255, 284, 1, !forwardIsNext);
@@ -403,8 +449,10 @@ int moveForward()
   }
 }
 
+/* Action taken when the push-button is released. */
 void onButtonRelease()
 {
+  // set the release flag
   motors.releaseFlag = 1;
   if (debugMode)
   {
@@ -416,22 +464,21 @@ void onButtonRelease()
  *          LOGIC CODE         * 
  * * * * * * * * * * * * * * * */
 
-
-void initializeMaze ()
+/* Initializes the maze. */
+ void initializeMaze ()
 {
-  // Initialize misc variables
-  int stepValue = 0;
-
+  // set the robot's position to the start
   currentRow = STARTROW;
   currentCol = STARTCOL;
-  
+
+  // for each cell, set the wallMap value to 240, indicating unvisited
   for (int i = 0; i < 256; i++)
   {
-    cellMap[i] = 255;
     wallMap[i] = 240;
   }
 }
 
+/* Sets up wallMap with the boundary walls of the maze. */
 void setBoundaryWalls ()
 {
   // NORTH
@@ -456,6 +503,7 @@ void setBoundaryWalls ()
   }
 }
 
+/* Runs the flood-fill algorithm, updating cellMap with distances. */
 void floodMaze ()
 {
   // reset the array of values
@@ -470,32 +518,33 @@ void floodMaze ()
   unsigned char cellStack[256];
   // array to act as temporary storage
   unsigned char nextCellStack[256];
-  // int to serve as a pointer to the top of the stack
-  // 0 means the stack is empty
+  // the index of the top of each stack; 0 means the stack is empty
   int stackPointer, nextStackPointer;
   
-    // Initialize pointers to the top of each stack
+  // Initialize pointers to the top of each stack
   stackPointer = 0;
   nextStackPointer = 0;
 
-if(counter % 2 == 0) { 
-  //initial path to centre
+  // if we're on an even run, set the destination to be the center of the maze
+  if (counter % 2 == 0)
+  { 
     stackPointer = 4;
     cellStack[0] = (16 * ENDROW) + ENDCOL;
     cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
     cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
     cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
   }
-  else {
-  //path back to start
+  // otherwise, the destination is the start of the maze
+  else
+  {
     stackPointer = 1;
     cellStack[0] = (16 * STARTROW) + STARTCOL;
-   }
-  
+  }
+
+  // as long as the stack is non-empty
   while (stackPointer > 0)
   {
-    
-    // Stop flooding if our cell has a value
+    // Stop flooding if the robot's cell has a value
     if (cellMap[16 * currentRow + currentCol] != 255)
     {
       break;
@@ -504,7 +553,8 @@ if(counter % 2 == 0) {
     // Pop the cell off the stack
     unsigned char curCell = cellStack[stackPointer - 1];
     stackPointer--;
-    
+
+    // if the cell has not yet been assigned a distance value
     if (cellMap[curCell] == 255)
     {
       // Set the current cell value to the step path value
@@ -516,7 +566,8 @@ if(counter % 2 == 0) {
       for (int i = 0; i < 4; i++)
       {
         unsigned char adjCell = curCell + offsetMap[i];
-        if (adjCell >= 0 && adjCell < 256 && cellMap[adjCell] == 255 && (wallMap[curCell] & 1 << i) == 0)
+        if (adjCell >= 0 && adjCell < 256 && cellMap[adjCell] == 255 &&
+            (wallMap[curCell] & 1 << i) == 0)
         {
           nextCellStack[nextStackPointer] = adjCell;
           nextStackPointer++;
@@ -524,7 +575,7 @@ if(counter % 2 == 0) {
       }
     }
     
-    // if the stack is empty, move on to the next step
+    // if the stack is empty, move on to the next step value
     if (stackPointer == 0)
     {
       // move the next stack to the main stack
@@ -556,7 +607,7 @@ if(counter % 2 == 0) {
   }
 }
 
-// Print the maze
+/* Prints the maze. */
 void printMaze()
 {
   for (int i = 0; i < 16; i++)
