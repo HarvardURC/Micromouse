@@ -6,7 +6,7 @@
 #ifndef Motors_2016_h
 #define Motors_2016_h
 
-
+#include <VL6180X.h>
 
 class Motors_2016
 {
@@ -14,9 +14,9 @@ class Motors_2016
         // Constructor
         Motors_2016(int powerPinL, int directionPinL, int powerPinR,
                int directionPinR, int encoderPinL1, int encoderPinL2,
-               int encoderPinR1, int encoderPinR2, int forwardIRPin, 
-               int leftIRPin, int rightIRPin, int leftDiagIRPin,
-               int rightDiagIRPin);
+               int encoderPinR1, int encoderPinR2, VL6180X* frontIR, 
+               VL6180X* leftIR, VL6180X* rightIR, VL6180X* leftDiagIR,
+               VL6180X* rightDiagIR);
         /* Move forward one cell (will later incorporate sensors) */
         void forward();
         /* note: following functions must loop for appropriate time
@@ -39,11 +39,11 @@ class Motors_2016
         int _encoderPinL2;
         int _encoderPinR1;
         int _encoderPinR2;
-        int _forwardIRPin;
-        int _leftIRPin;
-        int _rightIRPin;
-        int _leftDiagIRPin;
-        int _rightDiagIRPin;
+        VL6180X* _frontIR;
+        VL6180X* _leftIR;
+        VL6180X* _rightIR;
+        VL6180X* _leftDiagIR;
+        VL6180X* _rightDiagIR;
         // pid variables
         double SetpointL, InputL, OutputL;
         double SetpointR, InputR, OutputR;

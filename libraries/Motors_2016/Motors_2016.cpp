@@ -3,8 +3,8 @@
 #include <Encoder.h>
 #include <PID_v1.h>
 #include <VL6180X.h>
-#include <Wire.h>
-#define WALL_DISTANCE 0
+#define WALL_DISTANCE 215
+#define MOTOR_SPEED 70
 
 // helpful library objects
 Encoder *encoderLeft;
@@ -12,93 +12,98 @@ Encoder *encoderRight;
 PID *PIDLeft;
 PID *PIDRight;
 
-VL6180X *frontIR;
-
-// change to take pointers to sensor objects instead of int pins
+// now takes pointers to sensor objects instead of int pins
 Motors_2016::Motors_2016(int powerPinL, int directionPinL, int powerPinR,
                          int directionPinR, int encoderPinL1, int encoderPinL2,
-                         int encoderPinR1, int encoderPinR2, int forwardIRPin, 
-                         int leftIRPin, int rightIRPin, int leftDiagIRPin,
-                         int rightDiagIRPin) 
+                         int encoderPinR1, int encoderPinR2, VL6180X* frontIR, 
+                         VL6180X* leftIR, VL6180X* rightIR, VL6180X* leftDiagIR,
+                         VL6180X* rightDiagIR) 
 {
-    // all them pins (check if should use smaller types)
-    _powerPinL = powerPinL;
-    _directionPinL = directionPinL;
-    _powerPinR = powerPinR;
-    _directionPinR = directionPinR;
-    _encoderPinL1 = encoderPinL1;
-    _encoderPinL2 = encoderPinL2;
-    _encoderPinR1 = encoderPinR1;
-    _encoderPinR2 = encoderPinR2;
-    _forwardIRPin = forwardIRPin;
-    _leftIRPin = leftIRPin;
-    _rightIRPin = rightIRPin;
-    _leftDiagIRPin = leftDiagIRPin;
-    _rightDiagIRPin = rightDiagIRPin;
-    // helpful library objects
-    encoderLeft = new Encoder (_encoderPinL1, _encoderPinL2);
-    encoderRight = new Encoder (_encoderPinR1, _encoderPinR2);
-    PIDLeft = new PID (&InputL, &OutputL, &SetpointL,1,0.0018,.01, DIRECT);
-    PIDRight = new PID (&InputR, &OutputR, &SetpointR,1,0.0018,.01, DIRECT);
-    // set up motors
-    pinMode (_powerPinL, OUTPUT);
-    pinMode (_directionPinL, OUTPUT);
-    pinMode (_powerPinR, OUTPUT);
-    pinMode (_directionPinR, OUTPUT);
-    // set up PID controllers
-    PIDLeft->SetOutputLimits(-125, 125);
-    PIDRight->SetOutputLimits(-150, 150);
-    PIDLeft->SetMode(AUTOMATIC);
-    PIDRight->SetMode(AUTOMATIC);
-    // set up IR sensor (TEMPORARY - PASS OBJECT POINTER LATER)
-    frontIR = new VL6180X;
-    Wire.begin();
-    pinMode(23, OUTPUT);
-    pinMode(22, OUTPUT);
-    digitalWrite(23, HIGH);
-    digitalWrite(22, LOW);
-    frontIR->init();
-    Serial.print("IR Connected!");
-    frontIR->configureDefault();
-    frontIR->setScaling(2);
-    frontIR->setAddress(1);
+  // all them pins
+  _powerPinL = powerPinL;
+  _directionPinL = directionPinL;
+  _powerPinR = powerPinR;
+  _directionPinR = directionPinR;
+  _encoderPinL1 = encoderPinL1;
+  _encoderPinL2 = encoderPinL2;
+  _encoderPinR1 = encoderPinR1;
+  _encoderPinR2 = encoderPinR2;
+  _frontIR = frontIR;
+  _leftIR = leftIR;
+  _rightIR = rightIR;
+  _leftDiagIR = leftDiagIR;
+  _rightDiagIR = rightDiagIR;
+  // helpful library objects
+  encoderLeft = new Encoder (_encoderPinL1, _encoderPinL2);
+  encoderRight = new Encoder (_encoderPinR1, _encoderPinR2);
+  PIDLeft = new PID (&InputL, &OutputL, &SetpointL,1.5,0.0018,.01, DIRECT);
+  PIDRight = new PID (&InputR, &OutputR, &SetpointR,1.5,0.0018,.01, DIRECT);
+  // set up motors
+  pinMode (_powerPinL, OUTPUT);
+  pinMode (_directionPinL, OUTPUT);
+  pinMode (_powerPinR, OUTPUT);
+  pinMode (_directionPinR, OUTPUT);
+  // set up PID controllers
+  PIDLeft->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDRight->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDLeft->SetMode(AUTOMATIC);
+  PIDRight->SetMode(AUTOMATIC);
 }
 
+// function to advance 1 cell, using wall follow if possible
 void Motors_2016::forward()
 {   
-    // use whatever wall is available to follow forward
-
-    // if not able to wall follow, use odometry
-    moveTicks(500,500);
+  // use whatever wall is available to follow forward
+  int right_peek = rightDiagIR->readRangeSingleMillimeters();
+  if (right_peek < WALL_THRESHOLD_DIAG && 
+      rightIR->readRangeSingleMillimeters() < WALL_THRESHOLD) 
+  {
+    followTicksRight(5000);
+  }
+  // if not able to wall follow, use odometry
+  tmoveTicks(1000,1000);
 }
 
+// 90 degree left turn
 void Motors_2016::turnLeft()
 {
-    moveTicks(-250,250);
+  moveTicks(-400,400);
 }
 
+// 90 degree right turn
 void Motors_2016::turnRight()
 {
-    moveTicks(250,-250);
+  moveTicks(400,-400);
 }
 
+// aligns robot to the wall in front, straightening position
+// and leaving room so a 90 degree turn will result in center
 void Motors_2016::front_align()
 {
-   int d = frontIR->readRangeSingleMillimeters();
-   double SetpointF, InputF, OutputF;
-   SetpointF = 230;
-   PID PIDFront (&InputF, &OutputF, &SetpointF,2,0.0018,.01, REVERSE);
-   PIDFront.SetOutputLimits(-90, 90);
-   PIDFront.SetMode(AUTOMATIC);
-   while (abs(d - SetpointF) > 5)
-   {
-     PIDFront.Compute();
-     commandMotors(OutputF, OutputF);
-     d = frontIR->readRangeSingleMillimeters();
-     Serial.print(d);
-     Serial.println();
-     InputF = d;
-   }
+  int d = _frontIR->readRangeSingleMillimeters();
+  double SetpointF, InputF, OutputF;
+  SetpointF = 200;
+  PID PIDFront (&InputF, &OutputF, &SetpointF,1.0,0.0018,.01, REVERSE);
+  PIDFront.SetOutputLimits(-50, 50);
+  PIDFront.SetMode(AUTOMATIC);
+  while (abs(d - SetpointF) > 5)
+  {
+    PIDFront.Compute();
+    int rd = _rightDiagIR->readRangeSingleMillimeters();
+    int ld = _leftDiagIR->readRangeSingleMillimeters();
+    if ((OutputF > 0 && rd > ld) || (OutputF < 0 && ld > rd)){
+      commandMotors(0, OutputF);
+    }
+    else if ((OutputF > 0 && rd < ld) || (OutputF < 0 && ld > rd)){
+      Serial.print('asdfaa;kdf;oasdjf;lksadj;aflasdjklfj');
+      commandMotors(OutputF, 0);
+    }
+    else {
+      commandMotors(OutputF, OutputF);
+    }
+    d = _frontIR->readRangeSingleMillimeters();
+    InputF = d;
+  }
    stop();
 }
 
@@ -113,90 +118,96 @@ void Motors_2016::followTicksRight(int ticks)
   {
     distanceL = encoderLeft->read();
     distanceR = encoderRight->read();
-    InputR = 0; //read right IR sensor 
+    InputR = _rightIR->readRangeSingleMillimeters(); //read right IR sensor 
     SetpointR = WALL_DISTANCE;
-    PIDRight->SetTunings(1.5,0.01,0.01); // determine tunings
+    PIDRight->SetTunings(.5,0.01,0.01); // determine tunings
     PIDRight->Compute();
-    commandMotors(255 - OutputR/2, 255 + OutputR/2);
+    //commandMotors(100,100);
+    Serial.println(MOTOR_SPEED + OutputR);
+    commandMotors((MOTOR_SPEED - OutputR)/2, (MOTOR_SPEED + OutputR)/2);
   }
+  stop();
 }
 
 // moves left and right motors given # of ticks, maxes at 10 seconds
 void Motors_2016::moveTicks(int Lticks, int Rticks)
 {
-    encoderLeft->write(0);
-    encoderRight->write(0);
-    SetpointL = Lticks;
-    SetpointR = Rticks;
-    //PIDLeft->SetTunings(1.5,0.01,0.01);
-    //PIDRight->SetTunings(1.5,0.01,0.01);
-    InputL = 0;
-    InputR = 0;
-    time = millis();
-    while ((abs(InputL-SetpointL) > 30 || abs(InputR-SetpointR) > 30)
-           && (millis() - time < 10000)){
-      InputL = encoderLeft->read();
-      InputR = encoderRight->read();
-      PIDLeft->Compute();
-      PIDRight->Compute();
-      if (abs(InputL-SetpointL) > abs(InputR-SetpointR)){
-        commandMotors(OutputL, 0);
-      }
-      else if(abs(InputL-SetpointL) < abs(InputR-SetpointR)){
-        commandMotors(0, OutputR);
-      }
-      else {
-        commandMotors(OutputL, OutputR);
-      }
-      Serial.print(InputL);
-      Serial.println();
+  encoderLeft->write(0);
+  encoderRight->write(0);
+  SetpointL = Lticks;
+  SetpointR = Rticks;
+  PIDLeft->SetTunings(1.5,0.01,0.01);
+  PIDRight->SetTunings(1.5,0.01,0.01);
+  InputL = 0;
+  InputR = 0;
+  time = millis();
+  while ((abs(InputL-SetpointL) > 30 || abs(InputR-SetpointR) > 30)
+         && (millis() - time < 10000)){
+    InputL = encoderLeft->read();
+    InputR = encoderRight->read();
+    PIDLeft->Compute();
+    PIDRight->Compute();
+    if (abs(InputL-SetpointL) > abs(InputR-SetpointR)){
+      commandMotors(OutputL, 0);
     }
-    stop();
-    wait(100);
-    time = millis();
-    PIDRight->SetTunings(3.5,0.01,0.01);
-    PIDLeft->SetTunings(3.5,0.01,0.01);
-    while (millis() - time < 1000){
-      InputL = encoderLeft->read();
-      InputR = encoderRight->read();
-      PIDLeft->Compute();
-      PIDRight->Compute();
+    else if(abs(InputL-SetpointL) < abs(InputR-SetpointR)){
+      commandMotors(0, OutputR);
+    }
+    else {
       commandMotors(OutputL, OutputR);
-      Serial.print(InputL);
-      Serial.println();
     }
-    
-    stop();
+    //commandMotors(70, 70);
+    Serial.print(InputL);
+    Serial.println();
+  }
+  stop();
+  wait(100);
+  time = millis();
+  PIDRight->SetTunings(2,0.01,0.01);
+  PIDLeft->SetTunings(2,0.01,0.01);
+  while (millis() - time < 1000){
+    InputL = encoderLeft->read();
+    InputR = encoderRight->read();
+    PIDLeft->Compute();
+    PIDRight->Compute();
+    commandMotors(OutputL, OutputR);
+    Serial.print(InputL);
+    Serial.println();
+  }   
+  stop();
 }
 
+// send power commands to left and right motors
 void Motors_2016::commandMotors(double left, double right)
 {
   if (left >= 0){
-     digitalWrite(_directionPinL, LOW);
+    digitalWrite(_directionPinL, LOW);
   }
   else {
     digitalWrite(_directionPinL, HIGH);
   }
-  analogWrite(_powerPinL, abs(left)); 
+  analogWrite(_powerPinL, abs(left));
   if (right >= 0){
-     digitalWrite(_directionPinR, LOW);
+    digitalWrite(_directionPinR, LOW);
   }
   else {
     digitalWrite(_directionPinR, HIGH);
   }
-  analogWrite(_powerPinR, abs(right)); 
+  analogWrite(_powerPinR, abs(right));
 }
 
+// stop both motors
 void Motors_2016::stop()
 {
-    analogWrite(_powerPinR, 0);
-    analogWrite(_powerPinL, 0);
+  analogWrite(_powerPinR, 0);
+  analogWrite(_powerPinL, 0);
 }
 
+// wait for milliseconds
 void Motors_2016::wait(int ms)
 {
-    time = millis();
-    while (millis() - time < ms){}
+  time = millis();
+  while (millis() - time < ms){}
 }
 
 
