@@ -3,6 +3,8 @@
 #include <string.h>
 #include <Util.h>
 #include <Motors.h>
+#include <VL6180X.h>
+#include <Wire.h>
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -30,13 +32,17 @@ int mouseDir = 0;
 int offsetMap[4] = {16, 1, -16, -1};
 
 // define distance sensor pins
-int leftIRPin = A2;
-int rightIRPin = A1;
-int forwardIRPin = A0;
+VL6180X *leftIR;
+VL6180X *leftDiagIR;
+VL6180X *forwardIR;
+VL6180X *rightDiagIR;
+VL6180X *rightIR;
+
+extern TwoWire Wire1;
 
 // define motor pins
 Motors motors (9, 11, 2, 3, 10, 12,
-               forwardIRPin, leftIRPin, rightIRPin);
+               forwardIR, leftIR, rightIR);
 
 // define push-button pin
 int buttonPin = 7;
@@ -101,9 +107,9 @@ void setup()
   }
   
   pinMode(13, OUTPUT); // onboard LED
-  pinMode(forwardIRPin, INPUT);
-  pinMode(leftIRPin, INPUT);
-  pinMode(rightIRPin, INPUT);
+  
+  Wire1.begin();
+  // INITIALIZE SENSORS
 
   // set push-button pinmode, set it to trigger onButtonRelease on release
   pinMode(buttonPin, INPUT_PULLUP);
@@ -202,10 +208,10 @@ void readCell()
   // thresholds and readings for each of the 4 directions
   int irThresholds[4] = {240, 100, 1023, 100};
   
-  int readings[4] = {irReading(forwardIRPin),
-                     irReading(rightIRPin),
+  int readings[4] = {irReading(forwardIR),
+                     irReading(rightIR),
                      0,
-                     irReading(leftIRPin)};
+                     irReading(leftIR)};
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
@@ -281,63 +287,9 @@ void makeNextMove ()
   }
   else
   {
-    // if there is a wall in front of the robot, bump forward
-    if (wallMap[currentCell] & 1 << mouseDir)
-    {
-      motors.wallOrientateFwd();
-    }
-    // if side bump called for but no wall on that side exists, cancel it
-    if (sideCorrectFlag % 2 == 1 &&
-        (!(wallMap[currentCell] & 1 << (mouseDir + 1) % 4) ||
-         (nextDir + 4 - mouseDir) % 4 == 3))
-    {
-      sideCorrectFlag = 0;
-    }
-    else if (sideCorrectFlag % 2 == 0 &&
-             (!(wallMap[currentCell] & 1 << (mouseDir + 3) % 4) ||
-              (nextDir + 4 - mouseDir) % 4 == 1))
-    {
-      sideCorrectFlag = 0;
-    }
-    // do a side bump according to the flag value
-    switch (sideCorrectFlag)
-    {
-      case 1:
-        motors.turnLeft();
-        motors.wallOrientateBkwd();
-        motors.turnRight();
-        break;
-      case 2:
-        motors.turnRight();
-        motors.wallOrientateBkwd();
-        motors.turnLeft();
-        break;
-      case 3:
-        motors.turnRight();
-        motors.wallOrientateFwd();
-        motors.turnLeft();
-        break;
-      case 4:
-        motors.turnLeft();
-        motors.wallOrientateFwd();
-        motors.turnRight();
-        break;
-    }
     // turn to face in the next direction
     makeTurn(nextDir);
     mouseDir = nextDir;
-
-    // robot is continuing forward if the last move was forward and no side bump
-    lastWasForward &= sideCorrectFlag == 0;
-
-    // if there is a wall behind the robot, bump backward
-    if (wallMap[currentCell] & 1 << (mouseDir + 2) % 4)
-    {
-      motors.wallOrientateBkwd();
-    }
-
-    // move forward and get the new side bump flag
-    sideCorrectFlag = moveForward();
   }
 
   // record the new position
@@ -371,7 +323,7 @@ void makeTurn(int nextDir)
       break;
     case 2:
       // turn around left or right depending on which direction has more space
-      if (irReading(leftIRPin) < irReading(rightIRPin))
+      if (irReading(leftIR) < irReading(rightIR))
       {
         motors.turnAroundLeft();
       }
