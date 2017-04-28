@@ -3,12 +3,12 @@
 #include <Encoder.h>
 #include <PID_v1.h>
 #include <VL6180X.h>
-#define WALL_DISTANCE 225
+#define WALL_DISTANCE 223
 #define WALL_THRESHOLD 270
 #define WALL_THRESHOLD_DIAG 288
 #define MOTOR_SPEED 70
-#define TICKS_CELL 1610
-#define TICKS_TURN 525
+#define TICKS_CELL 1650
+#define TICKS_TURN 560
 
 // helpful library objects
 Encoder *encoderLeft;
@@ -70,9 +70,9 @@ void Motors_2016::forward()
   else if (left_peek < WALL_THRESHOLD_DIAG){
     followTicksLeft(TICKS_CELL * .55);
   }
-  // if not able to wall follow, use odometry
+  // if not able to wall follow, use odometry (trimmed down)
   else{
-    moveTicks(TICKS_CELL * .65, TICKS_CELL * .65);
+    moveTicks(TICKS_CELL * .5, TICKS_CELL * .5);
   }
 }
 
@@ -114,12 +114,12 @@ void Motors_2016::front_align()
   int rd = _rightDiagIR->readRangeSingleMillimeters();
   int ld = _leftDiagIR->readRangeSingleMillimeters();
   // stage 1: move close to desired range (unconfirmed)
-  int ticks_offset = (d - WALL_THRESHOLD) / .5;
+  int ticks_offset = (d - (WALL_THRESHOLD - 27)) / .7;
   // use whatever wall is available to follow forward
   moveTicks(ticks_offset, ticks_offset);
   // stage 2: finish moving to desired distance while straightening
   double SetpointF, InputF, OutputF;
-  SetpointF = WALL_DISTANCE - 35;
+  SetpointF = WALL_DISTANCE - 30;
   PID PIDFront (&InputF, &OutputF, &SetpointF,1.7,0.0018,.01, REVERSE);
   PIDFront.SetOutputLimits(-50, 50);
   PIDFront.SetMode(AUTOMATIC);
@@ -132,10 +132,10 @@ void Motors_2016::front_align()
     int rd = _rightDiagIR->readRangeSingleMillimeters();
     int ld = _leftDiagIR->readRangeSingleMillimeters();
     if ((OutputF > 0 && rd > ld) || (OutputF < 0 && ld > rd)){
-      commandMotors(-20, OutputF + 20);
+      commandMotors(-5, OutputF + 15);
     }
     else if ((OutputF > 0 && rd < ld) || (OutputF < 0 && ld > rd)){
-      commandMotors(OutputF + 20, -20);
+      commandMotors(OutputF + 15, -5);
     }
     else {
       commandMotors(OutputF, OutputF);
@@ -153,7 +153,7 @@ void Motors_2016::followTicksRight(int ticks)
   encoderRight->write(0);
   int distanceL = 0;
   int distanceR = 0;
-  PIDRight->SetTunings(1.2,0.01,0.01); // determine tunings
+  PIDRight->SetTunings(1.3,0.01,0.05); // determine tunings
   // follow until combined motor ticks double the ticks parameter
   while (distanceL + distanceR < ticks * 2)
   {
@@ -164,7 +164,10 @@ void Motors_2016::followTicksRight(int ticks)
     PIDRight->Compute();
     commandMotors((MOTOR_SPEED - OutputR)/2, (MOTOR_SPEED + OutputR)/2);
   }
+  int off = (distanceL - distanceR) / 2;
+  moveTicks(-1 * off, off);
   stop();
+  wait(1000);
 }
 
 
@@ -175,7 +178,7 @@ void Motors_2016::followTicksLeft(int ticks)
   encoderRight->write(0);
   int distanceL = 0;
   int distanceR = 0;
-  PIDLeft->SetTunings(1.2,.01,0.01); // determine tunings
+  PIDLeft->SetTunings(1.3,.01,0.01); // determine tunings
   // follow until combined motor ticks double the ticks parameter
   while (distanceL + distanceR < ticks * 2)
   {
@@ -186,6 +189,8 @@ void Motors_2016::followTicksLeft(int ticks)
     PIDLeft->Compute();
     commandMotors((MOTOR_SPEED + OutputL)/2, (MOTOR_SPEED - OutputL)/2);
   }
+  int off = (distanceL - distanceR) / 2;
+  moveTicks(-1 * off, off);
   stop();
 }
 
@@ -213,13 +218,13 @@ void Motors_2016::moveTicks(int Lticks, int Rticks)
   encoderRight->write(0);
   SetpointL = Lticks;
   SetpointR = Rticks;
-  PIDLeft->SetTunings(1.4,0.01,0.01);
-  PIDRight->SetTunings(1.4,0.01,0.01);
+  PIDLeft->SetTunings(1.7,0.01,0.01);
+  PIDRight->SetTunings(1.7,0.01,0.01);
   InputL = 0;
   InputR = 0;
   time = millis();
   while ((abs(InputL-SetpointL) > 10 || abs(InputR-SetpointR) > 10)
-         && (millis() - time < 4000)){
+         && (millis() - time < 3000)){
     InputL = encoderLeft->read();
     InputR = encoderRight->read();
     PIDLeft->Compute();
@@ -237,8 +242,6 @@ void Motors_2016::moveTicks(int Lticks, int Rticks)
     else {
       commandMotors(OutputL, OutputR);
     }
-    Serial.print(InputR);
-    Serial.println();
   }
   stop();
 }
