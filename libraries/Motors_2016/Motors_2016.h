@@ -24,6 +24,9 @@ class Motors_2016
         // 90 deg turns
         void turnLeft();
         void turnRight();
+        // 180 deg turns
+        void turnAroundLeft();
+        void turnAroundRight();
         /* Align robot in middle of cell (distance from front wall) */
         void front_align();
     
@@ -49,7 +52,8 @@ class Motors_2016
         double SetpointR, InputR, OutputR;
         // helper functions
         void followTicksRight(int ticks);
-        //void followTicksLeft(int ticks);
+        void followTicksLeft(int ticks);
+        void advance(int ticks);
         void moveTicks(int Lticks, int Rticks);
         void commandMotors(double left, double right);
         void stop();

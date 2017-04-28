@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <Util.h>
-#include <Motors.h>
+#include "Motors_2016.h"
 #include <VL6180X.h>
 #include <Wire.h>
 
@@ -34,15 +34,14 @@ int offsetMap[4] = {16, 1, -16, -1};
 // define distance sensor pins
 VL6180X *leftIR;
 VL6180X *leftDiagIR;
-VL6180X *forwardIR;
+VL6180X *frontIR;
 VL6180X *rightDiagIR;
 VL6180X *rightIR;
 
-extern TwoWire Wire1;
+//extern TwoWire Wire1;
 
-// define motor pins
-Motors motors (9, 11, 2, 3, 10, 12,
-               forwardIR, leftIR, rightIR);
+// initialize motors object pointer
+Motors_2016* motors; 
 
 // define push-button pin
 int buttonPin = 7;
@@ -107,9 +106,59 @@ void setup()
   }
   
   pinMode(13, OUTPUT); // onboard LED
-  
-  Wire1.begin();
-  // INITIALIZE SENSORS
+
+  // Initialize sensors
+  Wire.begin();
+  pinMode(23, OUTPUT);
+  pinMode(22, OUTPUT);
+  pinMode(21, OUTPUT);
+  pinMode(20, OUTPUT);
+  pinMode(17, OUTPUT);
+  digitalWrite(23, HIGH);
+  digitalWrite(22, LOW);
+  digitalWrite(21, LOW);
+  digitalWrite(20, LOW);
+  digitalWrite(17, LOW);
+  Serial.print("trying IR..."); 
+  // left IR
+  leftIR->init();
+  leftIR->configureDefault();
+  leftIR->setScaling(2);
+  leftIR->setAddress(1);
+  Serial.print("left IR Connected!");
+  // leftDiag IR
+  digitalWrite(22, HIGH); 
+  leftDiagIR->init();
+  leftDiagIR->configureDefault();
+  leftDiagIR->setScaling(2);
+  leftDiagIR->setAddress(2);
+  Serial.print("leftDIag IR Connected!");
+  // front IR
+  digitalWrite(21, HIGH); 
+  frontIR->init();
+  frontIR->configureDefault();
+  frontIR->setScaling(2);
+  frontIR->setAddress(3);
+  Serial.print("front IR Connected!");
+  // right Diag IR
+  digitalWrite(20, HIGH); 
+  rightDiagIR->init();
+  rightDiagIR->configureDefault();
+  rightDiagIR->setScaling(2);
+  rightDiagIR->setAddress(4);
+  Serial.print("rightDIag IR Connected!");
+  // right IR
+  digitalWrite(17, HIGH); 
+  rightIR->init();
+  rightIR->configureDefault();
+  rightIR->setScaling(2);
+  rightIR->setAddress(5);
+  Serial.print("All IR Connected!");
+  // initilalize motors object w/ pins and sensors
+  motors = new Motors_2016 (9, 10, 6, 12,
+                            7, 8,  2, 1, 
+                            frontIR, leftIR, 
+                            rightIR, leftDiagIR, rightDiagIR);
 
   // set push-button pinmode, set it to trigger onButtonRelease on release
   pinMode(buttonPin, INPUT_PULLUP);
@@ -173,13 +222,13 @@ void loop()
   }
 
   // if the push-button was pressed, reset position to the start
-  if (motors.releaseFlag)
+  if (motors->releaseFlag)
   {
     currentRow = STARTROW;
     currentCol = STARTCOL;
     mouseDir = 0;
     counter -= counter % 2;
-    motors.releaseFlag = 0;
+    motors->releaseFlag = 0;
     if (debugMode)
     {
       debugBlink(2);
@@ -206,12 +255,12 @@ void debugBlink(int times) {
 void readCell()
 {
   // thresholds and readings for each of the 4 directions
-  int irThresholds[4] = {240, 100, 1023, 100};
+  int irThresholds[4] = {270, 300, 1023, 300};
   
-  int readings[4] = {irReading(forwardIR),
-                     irReading(rightIR),
+  int readings[4] = {frontIR -> readRangeSingleMillimeters(),
+                     rightIR -> readRangeSingleMillimeters(),
                      0,
-                     irReading(leftIR)};
+                     leftIR -> readRangeSingleMillimeters()};
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
@@ -230,7 +279,7 @@ void readCell()
       int oppositeCell = currentCell + offsetMap[dir];
 
       // if IR threshold is exceeded or virtual mode and reading from array
-      if ((readings[i] > irThresholds[i] && !virtualMode) ||
+      if ((readings[i] < irThresholds[i] && !virtualMode) ||
           (virtualMode && virtualWallMap[currentCell] & 1 << dir))
       {
         // set wall for current cell
@@ -292,6 +341,9 @@ void makeNextMove ()
     mouseDir = nextDir;
   }
 
+  // move forward
+  motors->forward();
+
   // record the new position
   currentRow += offsetMap[nextDir] / 16;
   currentCol += offsetMap[nextDir] % 16;
@@ -319,21 +371,21 @@ void makeTurn(int nextDir)
   switch (angle)
   {
     case 1:
-      motors.turnRight();
+      motors->turnRight();
       break;
     case 2:
       // turn around left or right depending on which direction has more space
-      if (irReading(leftIR) < irReading(rightIR))
+      if (leftIR -> readRangeSingleMillimeters() < rightIR -> readRangeSingleMillimeters())
       {
-        motors.turnAroundLeft();
+        motors->turnAroundLeft();
       }
       else
       {
-        motors.turnAroundRight();
+        motors->turnAroundRight();
       }
       break;
     case 3:
-      motors.turnLeft();
+      motors->turnLeft();
       break;
   }
 }
@@ -385,7 +437,7 @@ int moveForward()
    * speed where the previous moveForward left off */
   if (lastWasForward)
   {
-    start_pwm = motors.pwmRecord;
+    start_pwm = 0;
   }
 
   /* if we are doing a speed run (counter >= 2 means we did at least 2 runs,
@@ -393,11 +445,15 @@ int moveForward()
    * speed, otherwise cap it at 150 */
   if (counter >= 2)
   {
-    return motors.accForward(start_pwm, 255, 284, 1, !forwardIsNext);
+    // nullified function
+    return 0;
+    //return motors.accForward(start_pwm, 255, 284, 1, !forwardIsNext);
   }
   else
   {
-    return motors.accForward(start_pwm, 150, 284, 1, !forwardIsNext);
+    // obselete function
+    return 0;
+    //return motors.accForward(start_pwm, 150, 284, 1, !forwardIsNext);
   }
 }
 
@@ -405,7 +461,7 @@ int moveForward()
 void onButtonRelease()
 {
   // set the release flag
-  motors.releaseFlag = 1;
+  motors->releaseFlag = 1;
   if (debugMode)
   {
     Serial.println("button");

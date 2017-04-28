@@ -25,18 +25,6 @@ void setup() {
   pinMode(21, OUTPUT);
   pinMode(20, OUTPUT);
   pinMode(17, OUTPUT);
-  /*
-  digitalWrite(23, HIGH);
-  digitalWrite(22, HIGH);
-  digitalWrite(21, HIGH);
-  digitalWrite(20, HIGH);
-  digitalWrite(19, HIGH);
-  frontIR->init();
-  leftIR->init();
-  rightDiagIR->init();
-  leftDiagIR->init();
-  rightIR->init();
-  */
   digitalWrite(23, HIGH);
   digitalWrite(22, LOW);
   digitalWrite(21, LOW);
@@ -84,19 +72,46 @@ void setup() {
                       2, 1, 
                       frontIR, leftIR, rightIR, leftDiagIR, rightDiagIR);
   Serial.print("object initialized");
-  // drive forward 
+  // go forward
   motors.forward();
-  // turn right
-  //motors.turnRight();
-  // align with front wall
-  motors.front_align();
-  // follow wall
+  motors.forward();
+  motors.forward();
+  motors.forward();
+  motors.forward();
+  // turn back
+  motors.turnAroundLeft();
+  // go forward
+  motors.forward();
+  motors.forward();
+  motors.forward();
+  //turn left
+  motors.turnLeft();
+  // go forward
+  motors.forward();
+  motors.forward();
+  // turn left
+  motors.turnLeft();
+  motors.forward();
+  motors.forward();
+  motors.turnLeft();
+  motors.forward();
+  motors.turnLeft();
+  motors.forward();
+  motors.turnRight();
+  motors.forward();
+  motors.turnLeft();
+  motors.forward();
+  motors.forward();
+  motors.forward();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Serial.print("getting reading: ");
-  Serial.print(rightIR->readRangeSingleMillimeters());
+  Serial.print("right: ");
+  Serial.print(rightDiagIR->readRangeSingleMillimeters());
+  //Serial.println();
+  Serial.print("left: ");
+  Serial.print(leftDiagIR->readRangeSingleMillimeters());
   Serial.println();
   delay(100);
 }
