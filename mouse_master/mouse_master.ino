@@ -4,7 +4,7 @@
 #include <Util.h>
 #include "Motors_2016.h"
 #include <VL6180X.h>
-#include <Wire.h>
+#include <i2c_t3.h>
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -44,7 +44,7 @@ VL6180X *rightIR;
 Motors_2016* motors; 
 
 // define push-button pin
-int buttonPin = 7;
+int buttonPin = 29;
 
 /* Global Variables */
 // Global array to store the cell values
@@ -106,19 +106,25 @@ void setup()
   }
   
   pinMode(13, OUTPUT); // onboard LED
-
+  delay(5000);
   // Initialize sensors
-  Wire.begin();
+  Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
+  //Wire.begin();
+  frontIR = new VL6180X;
+  leftIR = new VL6180X;
+  rightDiagIR = new VL6180X;
+  leftDiagIR = new VL6180X;
+  rightIR = new VL6180X;
   pinMode(23, OUTPUT);
   pinMode(22, OUTPUT);
   pinMode(21, OUTPUT);
   pinMode(20, OUTPUT);
-  pinMode(17, OUTPUT);
+  pinMode(19, OUTPUT);
   digitalWrite(23, HIGH);
   digitalWrite(22, LOW);
   digitalWrite(21, LOW);
   digitalWrite(20, LOW);
-  digitalWrite(17, LOW);
+  digitalWrite(19, LOW);
   Serial.print("trying IR..."); 
   // left IR
   leftIR->init();
@@ -148,7 +154,7 @@ void setup()
   rightDiagIR->setAddress(4);
   Serial.print("rightDIag IR Connected!");
   // right IR
-  digitalWrite(17, HIGH); 
+  digitalWrite(19, HIGH); 
   rightIR->init();
   rightIR->configureDefault();
   rightIR->setScaling(2);
@@ -159,7 +165,6 @@ void setup()
                             7, 8,  2, 1, 
                             frontIR, leftIR, 
                             rightIR, leftDiagIR, rightDiagIR);
-
   // set push-button pinmode, set it to trigger onButtonRelease on release
   pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, RISING);
@@ -180,6 +185,7 @@ void setup()
       wait(1000);
     }
   }
+  Serial.print("setup done");
 }
 
 void loop()
@@ -206,6 +212,8 @@ void loop()
     printMaze();
   }
 
+  Serial.print("Moving!");
+  Serial.println();
   // move to the next cell
   makeNextMove();
 
@@ -310,7 +318,6 @@ void makeNextMove ()
 {
   unsigned char currentCell = 16 * currentRow + currentCol;
   int nextDir = chooseNextDir(currentCell, mouseDir);
-  
   if (debugMode)
   {
     Serial.println(wallMap[currentCell]);
@@ -337,11 +344,13 @@ void makeNextMove ()
   else
   {
     // turn to face in the next direction
+    Serial.print("Turn!");
     makeTurn(nextDir);
     mouseDir = nextDir;
   }
 
   // move forward
+  Serial.print("Forward!");
   motors->forward();
 
   // record the new position
@@ -371,6 +380,8 @@ void makeTurn(int nextDir)
   switch (angle)
   {
     case 1:
+    Serial.println();
+  Serial.print("In fuuncion");
       motors->turnRight();
       break;
     case 2:

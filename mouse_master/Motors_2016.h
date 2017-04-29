@@ -17,6 +17,7 @@ class Motors_2016
                int encoderPinR1, int encoderPinR2, VL6180X* frontIR, 
                VL6180X* leftIR, VL6180X* rightIR, VL6180X* leftDiagIR,
                VL6180X* rightDiagIR);
+        // flag for reset button
         int releaseFlag;
         /* Move forward one cell (will later incorporate sensors) */
         void forward();
