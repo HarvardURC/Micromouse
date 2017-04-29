@@ -29,6 +29,8 @@ class Motors_2016
         void turnAroundRight();
         /* Align robot in middle of cell (distance from front wall) */
         void front_align();
+        // stop robot
+        void stop();
     
     private:
         // time
@@ -56,7 +58,6 @@ class Motors_2016
         void advance(int ticks);
         void moveTicks(int Lticks, int Rticks);
         void commandMotors(double left, double right);
-        void stop();
         void wait(int millis);
 };
 

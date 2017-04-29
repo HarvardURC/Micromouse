@@ -466,6 +466,8 @@ void onButtonRelease()
   {
     Serial.println("button");
   }
+  motors->stop();
+  wait(5000);
 }
 
 /* * * * * * * * * * * * * * * *

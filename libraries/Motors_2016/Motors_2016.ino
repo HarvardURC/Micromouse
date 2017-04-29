@@ -72,31 +72,12 @@ void setup() {
                       2, 1, 
                       frontIR, leftIR, rightIR, leftDiagIR, rightDiagIR);
   Serial.print("object initialized");
-  /*
+  
   // go forward
   motors.forward();
-  motors.forward();
-  motors.forward();
-  motors.forward();
-  motors.forward();
-  // turn back
   motors.turnAroundLeft();
-  // go forward
   motors.forward();
-  motors.forward();
-  motors.forward();
-  //turn left
-  motors.turnLeft();
-  // go forward
-  motors.forward();
-  motors.forward();
-  // turn left
-  motors.turnLeft();
-  motors.forward();
-  motors.forward();
-  motors.turnLeft();
-  motors.forward();
-  motors.turnLeft();
+  motors.turnAroundRight();
   motors.forward();
   motors.turnRight();
   motors.forward();
@@ -104,7 +85,10 @@ void setup() {
   motors.forward();
   motors.forward();
   motors.forward();
-  */
+  motors.turnRight();
+  motors.forward();
+  motors.forward();
+  motors.forward();
 }
 
 void loop() {
