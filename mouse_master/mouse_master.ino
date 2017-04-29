@@ -3,7 +3,7 @@
 #include <string.h>
 #include <Util.h>
 #include "Motors_2016.h"
-#include <VL6180X.h>
+#include "VL6180X.h"
 #include <i2c_t3.h>
 
 /* Global Constants */
@@ -16,8 +16,8 @@
 // Starting and ending position
 #define STARTROW 0
 #define STARTCOL 0
-#define ENDROW 7
-#define ENDCOL 7
+#define ENDROW 5
+#define ENDCOL 2
 
 int debugMode = 0;
 int virtualMode = 0;
@@ -265,10 +265,10 @@ void readCell()
   // thresholds and readings for each of the 4 directions
   int irThresholds[4] = {270, 300, 1023, 300};
   
-  int readings[4] = {frontIR -> readRangeSingleMillimeters(),
-                     rightIR -> readRangeSingleMillimeters(),
+  int readings[4] = {frontIR -> readRangeTripleMillimeters(),
+                     rightIR -> readRangeTripleMillimeters(),
                      0,
-                     leftIR -> readRangeSingleMillimeters()};
+                     leftIR -> readRangeTripleMillimeters()};
 
   unsigned char currentCell = 16 * currentRow + currentCol;
 
@@ -386,7 +386,7 @@ void makeTurn(int nextDir)
       break;
     case 2:
       // turn around left or right depending on which direction has more space
-      if (leftIR -> readRangeSingleMillimeters() < rightIR -> readRangeSingleMillimeters())
+      if (leftIR -> readRangeTripleMillimeters() < rightIR -> readRangeTripleMillimeters())
       {
         motors->turnAroundLeft();
       }

@@ -2,7 +2,6 @@
 #include "Motors_2016.h"
 #include <Encoder.h>
 #include <PID_v1.h>
-#include <VL6180X.h>
 #define WALL_DISTANCE_RIGHT 235
 #define WALL_DISTANCE_LEFT 218
 #define WALL_DISTANCE_FRONT 205
@@ -77,8 +76,8 @@ void Motors_2016::forward()
   advance(TICKS_CELL * .2);
   moveTicks(TICKS_CELL * .25, TICKS_CELL * .25);
   // stage 2: move to have wheels centered in next cell
-  int right_peek = _rightDiagIR->readRangeSingleMillimeters();
-  int left_peek = _leftDiagIR->readRangeSingleMillimeters();
+  int right_peek = _rightDiagIR->readRangeTripleMillimeters();
+  int left_peek = _leftDiagIR->readRangeTripleMillimeters();
   if (right_peek < WALL_THRESHOLD_DIAG){
     followTicksRight(TICKS_CELL * .55);
   }
@@ -108,7 +107,7 @@ void Motors_2016::turnAroundRight()
 // 90 degree left turn
 void Motors_2016::turnLeft()
 {
-  if (_frontIR -> readRangeSingleMillimeters() < WALL_THRESHOLD){
+  if (_frontIR -> readRangeTripleMillimeters() < WALL_THRESHOLD){
     front_align();
   }
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
@@ -117,7 +116,7 @@ void Motors_2016::turnLeft()
 // 90 degree right turn
 void Motors_2016::turnRight()
 {
-  if (_frontIR -> readRangeSingleMillimeters() < WALL_THRESHOLD){
+  if (_frontIR -> readRangeTripleMillimeters() < WALL_THRESHOLD){
     front_align();
   }
   moveTicks(TICKS_TURN,-1 * TICKS_TURN);
@@ -127,20 +126,20 @@ void Motors_2016::turnRight()
 // and leaving room so a 90 degree turn will result in center
 void Motors_2016::front_align()
 {
-  int d = _frontIR->readRangeSingleMillimeters();
-  int rd = _rightDiagIR->readRangeSingleMillimeters();
-  int ld = _leftDiagIR->readRangeSingleMillimeters();
+  int d = _frontIR->readRangeTripleMillimeters();
+  int rd = _rightDiagIR->readRangeTripleMillimeters();
+  int ld = _leftDiagIR->readRangeTripleMillimeters();
   time = millis();
   do{
     // stage 1: move close to desired range (unconfirmed)
     int ticks_offset = (d - WALL_DISTANCE_FRONT) / .1;
     moveTicks(ticks_offset, ticks_offset);
     // correct angle
-    rd = _rightDiagIR->readRangeSingleMillimeters();
-    ld = _leftDiagIR->readRangeSingleMillimeters();
+    rd = _rightDiagIR->readRangeTripleMillimeters();
+    ld = _leftDiagIR->readRangeTripleMillimeters();
     int ticks_tilt = (rd - ld) / .5;
     moveTicks(-1 * ticks_tilt, ticks_tilt);
-    d = _frontIR->readRangeSingleMillimeters();
+    d = _frontIR->readRangeTripleMillimeters();
   } while (abs(d - WALL_DISTANCE_FRONT) > 10 && (millis() - time < 3000));
   stop();
 }
@@ -161,7 +160,7 @@ void Motors_2016::followTicksRight(int ticks)
   {
     distanceL = encoderLeft->read();
     distanceR = encoderRight->read();
-    InputR = _rightIR->readRangeSingleMillimeters(); //read right IR sensor 
+    InputR = _rightIR->readRangeTripleMillimeters(); //read right IR sensor 
     SetpointR = WALL_DISTANCE_RIGHT;
     PIDRight->Compute();
     commandMotors((MOTOR_SPEED - OutputR)/2, (MOTOR_SPEED + OutputR)/2);
@@ -188,7 +187,7 @@ void Motors_2016::followTicksLeft(int ticks)
   {
     distanceL = encoderLeft->read();
     distanceR = encoderRight->read();
-    InputL = _leftIR->readRangeSingleMillimeters(); //read left IR sensor 
+    InputL = _leftIR->readRangeTripleMillimeters(); //read left IR sensor 
     SetpointL = WALL_DISTANCE_LEFT;
     PIDLeft->Compute();
     commandMotors((MOTOR_SPEED + OutputL)/2, (MOTOR_SPEED - OutputL)/2);
@@ -202,11 +201,11 @@ void Motors_2016::followTicksLeft(int ticks)
 void Motors_2016::advance(int ticks)
 {
   // use right wall if available
-  if (_rightIR->readRangeSingleMillimeters() < WALL_THRESHOLD){
+  if (_rightIR->readRangeTripleMillimeters() < WALL_THRESHOLD){
     followTicksRight(ticks);
   }
   // otherwise, use left wall if available
-  else if (_leftIR->readRangeSingleMillimeters() < WALL_THRESHOLD){
+  else if (_leftIR->readRangeTripleMillimeters() < WALL_THRESHOLD){
     followTicksLeft(ticks);
   }
   // if not able to wall follow, use odometry

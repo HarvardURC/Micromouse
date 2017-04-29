@@ -20,14 +20,3 @@ void microWait(int us)
     currentMicros = micros();
   }
 }
-
-int irReading(VL6180X *sensor)
-{
-  int sum = 0;
-  sum += sensor->readRangeSingleMillimeters();
-  microWait(500);
-  sum += sensor->readRangeSingleMillimeters();
-  microWait(500);
-  sum += sensor->readRangeSingleMillimeters();
-  return sum / 3;
-}
