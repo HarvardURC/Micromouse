@@ -9,8 +9,8 @@
 #define WALL_THRESHOLD 275
 #define WALL_THRESHOLD_DIAG 288
 #define MOTOR_SPEED 70
-#define TICKS_CELL 1650
-#define TICKS_TURN 560
+#define TICKS_CELL 1645
+#define TICKS_TURN 552
 
 // helpful library objects
 Encoder *encoderLeft;
@@ -25,6 +25,8 @@ Motors_2016::Motors_2016(int powerPinL, int directionPinL, int powerPinR,
                          VL6180X* leftIR, VL6180X* rightIR, VL6180X* leftDiagIR,
                          VL6180X* rightDiagIR) 
 {
+  // init reset flag
+  releaseFlag = 0;
   // all them pins
   _powerPinL = powerPinL;
   _directionPinL = directionPinL;
@@ -59,6 +61,17 @@ Motors_2016::Motors_2016(int powerPinL, int directionPinL, int powerPinR,
 // function to advance 1 cell, using wall follow if possible
 void Motors_2016::forward()
 {
+  // turn calibration
+  /*
+  moveTicks(-1 * TICKS_TURN, TICKS_TURN);
+  wait(1000);
+  moveTicks(-1 * TICKS_TURN, TICKS_TURN);
+  wait(1000);
+  moveTicks(-1 * TICKS_TURN, TICKS_TURN);
+  wait(1000);
+  moveTicks(-1 * TICKS_TURN, TICKS_TURN);
+  wait(10000);
+  */
   // stage 1: move ~3 cm to stick head out of cell   
   // use whatever wall is available to follow forward
   advance(TICKS_CELL * .2);
@@ -74,7 +87,7 @@ void Motors_2016::forward()
   }
   // if not able to wall follow, use odometry (trimmed down)
   else{
-    moveTicks(TICKS_CELL * .5, TICKS_CELL * .5);
+    moveTicks(TICKS_CELL * .52, TICKS_CELL * .52);
   }
 }
 

@@ -74,6 +74,7 @@ void setup() {
   Serial.print("object initialized");
   
   // go forward
+  /*
   motors.forward();
   motors.turnAroundLeft();
   motors.forward();
@@ -89,6 +90,7 @@ void setup() {
   motors.forward();
   motors.forward();
   motors.forward();
+  */
 }
 
 void loop() {

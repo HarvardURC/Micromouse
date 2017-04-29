@@ -148,6 +148,9 @@ void Motors_2016::front_align()
 // follows the right wall for a certain number of ticks
 void Motors_2016::followTicksRight(int ticks)
 {
+  if (releaseFlag){
+    return;
+  }
   encoderLeft->write(0);
   encoderRight->write(0);
   int distanceL = 0;
@@ -172,6 +175,9 @@ void Motors_2016::followTicksRight(int ticks)
 // follows the right wall for a certain number of ticks
 void Motors_2016::followTicksLeft(int ticks)
 {
+  if (releaseFlag){
+    return;
+  }
   encoderLeft->write(0);
   encoderRight->write(0);
   int distanceL = 0;
@@ -212,6 +218,9 @@ void Motors_2016::advance(int ticks)
 // moves left and right motors given # of ticks, maxes at 10 seconds
 void Motors_2016::moveTicks(int Lticks, int Rticks)
 {
+  if (releaseFlag){
+    return;
+  }
   encoderLeft->write(0);
   encoderRight->write(0);
   SetpointL = Lticks;
