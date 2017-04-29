@@ -1,7 +1,7 @@
 #include "Motors_2016.h"
 #include <VL6180X.h>
-//#include <i2c_t3.h>
-#include <Wire.h>
+#include <i2c_t3.h>
+//#include <Wire.h>
 
 VL6180X* frontIR;
 VL6180X* leftIR;
@@ -13,8 +13,8 @@ void setup() {
   delay(5000);
   // initialize IR pointers
   Serial.print("setup:");
-  //Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 400000);
-  Wire.begin();
+  Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
+  //Wire.begin();
   frontIR = new VL6180X;
   leftIR = new VL6180X;
   rightDiagIR = new VL6180X;
@@ -24,12 +24,12 @@ void setup() {
   pinMode(22, OUTPUT);
   pinMode(21, OUTPUT);
   pinMode(20, OUTPUT);
-  pinMode(17, OUTPUT);
+  pinMode(19, OUTPUT);
   digitalWrite(23, HIGH);
   digitalWrite(22, LOW);
   digitalWrite(21, LOW);
   digitalWrite(20, LOW);
-  digitalWrite(17, LOW);
+  digitalWrite(19, LOW);
   Serial.print("trying IR..."); 
   // left IR
   leftIR->init();
@@ -59,7 +59,7 @@ void setup() {
   rightDiagIR->setAddress(4);
   Serial.print("rightDIag IR Connected!");
   // right IR
-  digitalWrite(17, HIGH); 
+  digitalWrite(19, HIGH); 
   rightIR->init();
   rightIR->configureDefault();
   rightIR->setScaling(2);
@@ -72,6 +72,7 @@ void setup() {
                       2, 1, 
                       frontIR, leftIR, rightIR, leftDiagIR, rightDiagIR);
   Serial.print("object initialized");
+  /*
   // go forward
   motors.forward();
   motors.forward();
@@ -103,15 +104,25 @@ void setup() {
   motors.forward();
   motors.forward();
   motors.forward();
+  */
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Serial.print("right: ");
-  Serial.print(rightDiagIR->readRangeSingleMillimeters());
   //Serial.println();
-  Serial.print("left: ");
+  Serial.print(leftIR->readRangeSingleMillimeters());
+  Serial.print("\t");
+  //delay(20);
   Serial.print(leftDiagIR->readRangeSingleMillimeters());
+  Serial.print("\t");
+  //delay(20);
+  Serial.print(frontIR->readRangeSingleMillimeters());
+  Serial.print("\t");
+  //delay(20);
+  Serial.print(rightDiagIR->readRangeSingleMillimeters());
+  Serial.print("\t");
+  //delay(20);
+  Serial.print(rightIR->readRangeSingleMillimeters());
   Serial.println();
-  delay(100);
+  //delay(20);
 }
