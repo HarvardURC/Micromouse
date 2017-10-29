@@ -9,31 +9,23 @@
 #include <PID_v1.h>
 #include "config.h"
 
-VL6180X frontIR;
+VL6180X *frontIR;
 
 int testingDistance = 50; // 50 millimeters
 int minNum = 180;
 
-//Define Variables we'll be connecting to for PID
+// Define Variables we'll be connecting to for PID
 double Setpoint, Input, Output, directionPin, powerPin;
-PID myPID(&Input, &Output, &Setpoint,2.0,0.0018,0, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, 2.0, 0.0018, 0, DIRECT);
 unsigned long time;
 
 void setup() {
+    frontIR = new VL6180X;
     Serial.begin(9600);
     delay(1000);
     Serial.println("Initializing");
     // Initialize connection bus
     Wire.begin(I2C_MASTER, 0, I2C_PINS_16_17, I2C_PULLUP_EXT, 50000);
-
-    // Initialize forward sensor
-    int reset_pin_front = pins::tofFront;
-    pinMode(reset_pin_front, OUTPUT);
-    digitalWrite(reset_pin_front, HIGH);
-    frontIR.init();
-    frontIR.configureDefault();
-    frontIR.setScaling(2);
-    Serial.print("front sensor connected");
 
     // Initialize two motors
     pinMode(pins::motorPowerL, OUTPUT);
@@ -44,9 +36,18 @@ void setup() {
     // Initialize PID controllers
     Input = 0;
     Setpoint = testingDistance;
-    myPID.SetOutputLimits(-200, 200);
+    myPID.SetOutputLimits(-50, 50);
     //turn the PID on
     myPID.SetMode(AUTOMATIC);
+
+    // Initialize forward sensor
+    int front = pins::tofFront;
+    pinMode(front, OUTPUT);
+    digitalWrite(front, HIGH);
+    frontIR->init();
+    frontIR->configureDefault();
+    frontIR->setScaling(2);
+    Serial.println("front sensor connected");
 
 }
 
@@ -55,7 +56,7 @@ void loop() {
 
     // Read sensor
     Serial.print("front sensor: ");
-    Input = frontIR.readRangeSingleMillimeters();
+    Input = frontIR->readRangeSingleMillimeters() - 180;
     Serial.print(Input);
     Serial.print(" Setpoint: ");
     Serial.println(Setpoint);
@@ -73,4 +74,5 @@ void loop() {
     digitalWrite(pins::motorDirectionR, directionPin);
     analogWrite(pins::motorPowerL, powerPin);
     analogWrite(pins::motorPowerR, powerPin);
+    delay(10);
 }

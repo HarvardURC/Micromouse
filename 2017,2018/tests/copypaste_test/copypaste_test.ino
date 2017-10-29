@@ -90,5 +90,6 @@ void loop() {
   Serial.print(" front: ");
   Serial.print(frontIR->readRangeSingleMillimeters());
   Serial.println();
-  wait(1000);
+  Serial.println();
+  wait(200);
 }

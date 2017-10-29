@@ -13,8 +13,10 @@ namespace pins
     const int motorDirectionL = 10;
     const int motorDirectionR = 12;
     const int led = 13;
+    const int tofRight = 19;
+    const int tofRightDiag = 20;
     const int tofFront = 21;
-    const int tofRight = 22;
+    const int tofLeftDiag = 22;
     const int tofLeft = 23;
 }
 

@@ -1,3 +1,8 @@
+/*
+    Tests if the PID can successfully and smoothly reach
+    a goal motor rotation as measued by the encoder. 
+*/
+
 #include <PID_v1.h>
 #include <Encoder.h>
 #include "config.h"
@@ -7,7 +12,6 @@ double Setpoint, Input, Output, direction_pin, power_pin;
 Encoder knobLeft(1, 2);
 
 //Specify the links and initial tuning parameters
-//1,.0017,.01
 int goal = -2000;
 double proportion = 1;
 double integral = 0.0018;
