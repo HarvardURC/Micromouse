@@ -8,16 +8,23 @@
 
 namespace pins
 {
+    const int led = 13;
+    // motors
     const int motorPowerR = 6;
     const int motorPowerL = 9;
     const int motorDirectionL = 10;
     const int motorDirectionR = 12;
-    const int led = 13;
+    // ToF sensors
     const int tofRight = 19;
     const int tofRightDiag = 20;
     const int tofFront = 21;
     const int tofLeftDiag = 22;
     const int tofLeft = 23;
+    // encoders
+    const int encoderPinL1 = 7;
+    const int encoderPinL2 = 8;
+    const int encoderPinR1 = 2;
+    const int encoderPinR2 = 1;
 }
 
 #endif
