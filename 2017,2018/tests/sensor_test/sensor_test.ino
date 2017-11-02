@@ -24,7 +24,6 @@ void setup() {
 
   // Sets all sensors to low for initialization
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
-    Serial.println(i);
     pinMode(sensor_pins[i], OUTPUT);
     digitalWrite(sensor_pins[i], LOW);
   }
