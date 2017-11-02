@@ -39,11 +39,11 @@ void loop() {
   for (unsigned int i = 0; i < sensors.size(); i++) {
     Serial.print(sensor_names[i]);
     Serial.print(": ");
-    Serial.println(sensors[i]->readRangeSingleMillimeters());
-    wait(10);
+    Serial.print(sensors[i]->readRangeSingleMillimeters());
+    Serial.print(" ");
   }
   Serial.println();
-  wait(50);
+  wait(10);
 }
 
 
