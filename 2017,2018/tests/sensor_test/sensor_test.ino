@@ -35,14 +35,17 @@ void setup() {
 }
 
 void loop() {
+  unsigned long start = millis();
   // Prints debug distances for sensors
   for (unsigned int i = 0; i < sensors.size(); i++) {
     Serial.print(sensor_names[i]);
     Serial.print(": ");
-    Serial.print(sensors[i]->readRangeSingleMillimeters());
+    Serial.print(sensors[i]->readRangeContinuousMillimeters());
     Serial.print(" ");
+    if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
   }
-  Serial.println();
+  Serial.print("Time taken: ");
+  Serial.println(millis() - start);
   wait(10);
 }
 
@@ -64,6 +67,11 @@ void initSensor(int pin, VL6180X *sensor, int address) {
     sensor->configureDefault();
     sensor->setScaling(2);
     sensor->setAddress(address);
+    sensor->setTimeout(500);
+    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
+    sensor->stopContinuous();
+    delay(300);
+    sensor->startRangeContinuous(30);
     Serial.print(pin);
     Serial.println(" connected.");
 }

@@ -110,7 +110,7 @@ void setup()
     Serial.begin(9600);
   }
 
-  pinMode(13, OUTPUT); // onboard LED
+  pinMode(pins::led, OUTPUT); // onboard LED
   delay(5000);
   // Initialize sensors
   Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
@@ -213,9 +213,9 @@ void loop()
 void debugBlink(int times) {
   for (int i = 0; i < times; i++)
   {
-    digitalWrite(13, HIGH);
+    digitalWrite(pins::led, HIGH);
     wait(200);
-    digitalWrite(13, LOW);
+    digitalWrite(pins::led, LOW);
     wait(200);
   }
 }
