@@ -30,6 +30,7 @@ class Motors_2017
         void front_align();
         // stop robot
         void stop();
+        void advance(int ticks);
 
     private:
         // sensor pointer local variables
@@ -46,7 +47,7 @@ class Motors_2017
         // subroutine functions
         void followTicksRight(int ticks);
         void followTicksLeft(int ticks);
-        void advance(int ticks);
+
         void moveTicks(int Lticks, int Rticks);
         // basic functions
         void commandMotors(double left, double right);

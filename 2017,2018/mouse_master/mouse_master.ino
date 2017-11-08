@@ -47,9 +47,6 @@ std::vector<VL6180X*> sensors = {leftIR, leftDiagIR, frontIR, rightDiagIR, right
 // initialize motors object pointer
 Motors_2017* motors;
 
-// define push-button pin
-int buttonPin = 29;
-
 /* Global Variables */
 // Global array to store the cell values
 unsigned char cellMap[256];
@@ -114,7 +111,6 @@ void setup()
   delay(5000);
   // Initialize sensors
   Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
-  Serial.begin(9600);
   delay(1000);
   Serial.println("Initializing:");
   // Sets all sensors to low for initialization
@@ -126,13 +122,14 @@ void setup()
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
     initSensor(sensor_pins[i], sensors[i], i + 1);
   }
-  // TODO: GIVE SENSOR OBJECTS NAMES
   Serial.print("All IR Connected!");
+
   // initilalize motors object w/ pins and sensors
-  motors = new Motors_2017 (sensors[2], sensors[0], sensors[3], sensors[1], sensors[4]);
+  motors = new Motors_2017 (sensors[0], sensors[1], sensors[2], sensors[3], sensors[4]);
+
   // set push-button pinmode, set it to trigger onButtonRelease on release
-  pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), onButtonRelease, RISING);
+  pinMode(pins::button, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(pins::button), onButtonRelease, RISING);
 
   /* * * * * * * * * * * * * * *
    * FLOODFILL INITIALIZATION  *
@@ -150,63 +147,66 @@ void setup()
       wait(1000);
     }
   }
-  Serial.print("setup done");
+  Serial.println("Setup done");
 }
 
 void loop()
 {
-  // use the IR sensors to detect walls, store them in wallMap
-  readCell();
+    Serial.println("Looping.");
+    motors->forward();
+    delay(500);
+  // // use the IR sensors to detect walls, store them in wallMap
+  // readCell();
 
-  // if in debug mode, blink some information
-  if (debugMode)
-  {
-    debugBlink(currentRow);
-    wait(1000);
-    debugBlink(currentCol);
-    wait(1000);
-    debugBlink(wallMap[16 * currentRow + currentCol]);
-    wait(1000);
-    debugBlink(mouseDir);
-  }
+  // // if in debug mode, blink some information
+  // if (debugMode)
+  // {
+  //   debugBlink(currentRow);
+  //   wait(1000);
+  //   debugBlink(currentCol);
+  //   wait(1000);
+  //   debugBlink(wallMap[16 * currentRow + currentCol]);
+  //   wait(1000);
+  //   debugBlink(mouseDir);
+  // }
 
-  // run the flood-fill algorithm
-  floodMaze();
-  if (virtualMode)
-  {
-    printMaze();
-  }
+  // // run the flood-fill algorithm
+  // floodMaze();
+  // if (virtualMode)
+  // {
+  //   printMaze();
+  // }
 
-  Serial.print("Moving!");
-  Serial.println();
-  // move to the next cell
-  makeNextMove();
+  // Serial.print("Moving!");
+  // Serial.println();
+  // // move to the next cell
+  // makeNextMove();
 
-  /* if we've reached the destination (alternates between start and end of maze)
-   * then increment the counter that keeps track of the number of runs */
-  if(cellMap[(16*currentRow) + currentCol] == 0)
-  {
-    counter++;
-  }
+  //  if we've reached the destination (alternates between start and end of maze)
+  //  * then increment the counter that keeps track of the number of runs 
+  // if(cellMap[(16*currentRow) + currentCol] == 0)
+  // {
+  //   counter++;
+  // }
 
-  if (virtualMode)
-  {
-    wait(1000);
-  }
+  // if (virtualMode)
+  // {
+  //   wait(1000);
+  // }
 
-  // if the push-button was pressed, reset position to the start
-  if (motors->releaseFlag)
-  {
-    currentRow = STARTROW;
-    currentCol = STARTCOL;
-    mouseDir = 0;
-    counter -= counter % 2;
-    motors->releaseFlag = 0;
-    if (debugMode)
-    {
-      debugBlink(2);
-    }
-  }
+  // // if the push-button was pressed, reset position to the start
+  // if (motors->releaseFlag)
+  // {
+  //   currentRow = STARTROW;
+  //   currentCol = STARTCOL;
+  //   mouseDir = 0;
+  //   counter -= counter % 2;
+  //   motors->releaseFlag = 0;
+  //   if (debugMode)
+  //   {
+  //     debugBlink(2);
+  //   }
+  // }
 }
 
 /* Blinks the onboard LED a specified number of times. */

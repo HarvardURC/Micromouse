@@ -19,8 +19,8 @@ PID *PIDLeft;
 PID *PIDRight;
 
 // now takes pointers to sensor objects instead of int pins
-Motors_2017::Motors_2017(VL6180X* leftIR, VL6180X* rightIR, VL6180X* frontIR, 
-                         VL6180X* leftDiagIR, VL6180X* rightDiagIR)
+Motors_2017::Motors_2017(VL6180X* leftIR, VL6180X* leftDiagIR, VL6180X* frontIR, 
+                         VL6180X* rightDiagIR, VL6180X* rightIR)
 {
   // init reset flag
   releaseFlag = 0;
