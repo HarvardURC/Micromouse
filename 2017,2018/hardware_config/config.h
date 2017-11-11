@@ -25,6 +25,8 @@ namespace pins
     const int encoderPinL2 = 8;
     const int encoderPinR1 = 2;
     const int encoderPinR2 = 1;
+    // button
+    const int button = 29;
 }
 
 #endif
