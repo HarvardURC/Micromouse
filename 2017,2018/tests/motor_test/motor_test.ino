@@ -6,8 +6,8 @@
 #include <vector>
 #include <config.h>
 
-#define FORWARD 0
-#define BACKWARD 1
+#define FORWARD 1
+#define BACKWARD 0
 #define STOP -1
 
 struct motor {
@@ -19,8 +19,8 @@ struct motor {
 void move(std::vector<motor> motors, int direction);
 
 // Constants for test
-int speed = 100;
-int time = 1000;
+int speed = 200;
+int time = 2000;
 int flag = 0;
 
 void setup() {
@@ -38,24 +38,29 @@ void setup() {
     pinMode(pins::motorDirectionL, OUTPUT);
     pinMode(pins::motorPowerR, OUTPUT);
     pinMode(pins::motorDirectionR, OUTPUT);
-
+    pinMode(pins::motorMode, OUTPUT);
+    digitalWrite(pins::motorMode, HIGH);
+;
     Serial.println("Motors initialized.");
 }
 
 void loop() {
     if (flag == 0) {
         move({rightMotor}, BACKWARD);
+        move({rightMotor}, STOP);
         move({rightMotor}, FORWARD);
         move({rightMotor}, STOP);
 
         move({leftMotor}, BACKWARD);
+        move({leftMotor}, STOP);
         move({leftMotor}, FORWARD);
         move({leftMotor}, STOP);
 
         move({leftMotor, rightMotor}, BACKWARD);
+        move({leftMotor, rightMotor}, STOP);
         move({leftMotor, rightMotor}, FORWARD);
         move({leftMotor, rightMotor}, STOP);
-        flag = 1;     
+        flag = 1;
     }
 }
 
@@ -72,8 +77,8 @@ void move(std::vector<motor> motors, int direction) {
             Serial.println("...");
 
             analogWrite(motors[i].powerPin, speed);
-            digitalWrite(motors[i].directionPin, direction);  
+            digitalWrite(motors[i].directionPin, direction);
         }
     }
-    delay(time);   
+    delay(time);
 }
