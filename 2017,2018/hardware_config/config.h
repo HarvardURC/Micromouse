@@ -1,6 +1,6 @@
 /**
  * config.h
- * Contains hardware constants for the 2016-2017 robot.
+ * Contains hardware constants for the 2017-2018 experienced-team robot.
  */
 
 #ifndef config_h
@@ -59,7 +59,7 @@ namespace pins
     const int MISO = 12;
     const int MOSI = 11;
     const int SCK = 14;
-    const int CS = 15; 
+    const int CS = 15;
 
     // button
     const int frontButton = 21;

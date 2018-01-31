@@ -8,29 +8,38 @@
 #include <VL6180X.h>
 #include <i2c_t3.h>
 #include <config.h>
+#include <VL53L0X.h>
 
-std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
-std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
-std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
+// VL6180X Sensors
+std::vector<int> sensor_pins = {pins::tofLeftDiagS, pins::tofRightDiagS, pins::tofFrontS};
+std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X};
+std::vector<String> sensor_names = {"leftDiagS", "rightDiagS", "frontS"};
 
 void wait(int ms);
 void initSensor(int pin, VL6180X *sensor, int address);
 
 void setup() {
-  Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
-  Serial.begin(9600);
-  delay(1000);
-  Serial.println("Initializing:");
-
   // Sets all sensors to low for initialization
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
     pinMode(sensor_pins[i], OUTPUT);
     digitalWrite(sensor_pins[i], LOW);
   }
+  Serial.begin(9600);
+  delay(1000);
+  Serial.println("Initializing:");
+  Wire.begin();
+
+  // Set sensor addresses
+  for (unsigned int i = 0; i < sensor_pins.size(); i++) {
+    digitalWrite(sensor_pins[i], HIGH);
+    delay(500);
+    sensors[i]->setAddress(2 * i);
+    Serial.println(sensors[i]->readReg(0x212));
+  }
 
   // Initializes sensors
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
-    initSensor(sensor_pins[i], sensors[i], i + 1);
+    initSensor(sensor_pins[i], sensors[i]);
   }
 }
 
@@ -40,7 +49,7 @@ void loop() {
   for (unsigned int i = 0; i < sensors.size(); i++) {
     Serial.print(sensor_names[i]);
     Serial.print(": ");
-    Serial.print(sensors[i]->readRangeContinuousMillimeters());
+    Serial.print(sensors[i]->readRangeContinuous());
     Serial.print(" ");
     if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
   }
@@ -61,12 +70,10 @@ void wait(int ms)
   }
 }
 
-void initSensor(int pin, VL6180X *sensor, int address) {
-    digitalWrite(pin, HIGH); 
+void initSensor(int pin, VL6180X *sensor) {
     sensor->init();
     sensor->configureDefault();
     sensor->setScaling(2);
-    sensor->setAddress(address);
     sensor->setTimeout(500);
     sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
     sensor->stopContinuous();
@@ -74,4 +81,5 @@ void initSensor(int pin, VL6180X *sensor, int address) {
     sensor->startRangeContinuous(30);
     Serial.print(pin);
     Serial.println(" connected.");
+    delay(1000);
 }
