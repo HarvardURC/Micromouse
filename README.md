@@ -7,6 +7,6 @@ To setup the libraries on your machine. You will need to symlink your local `/20
 1. `cd` into your local copy of the repository and `cd` into `/2017,2017/libraries`.
 2. Use `pwd` to get the current directory information and save this for later.
 3. `cd` to where your Arduino libraries are located. This should be something like `/Users/your_username/Documents/Arduino/Libraries`. Again use `pwd` to save the full directory path.
-4. Run `ln -s source destination` and replace `source` with the first directory path and replace `destionation` with the second directory path.
+4. Run `ln -s source destination` and replace `source` with the first directory path and replace `destination` with the second directory path.
 
 Use Finder to verify that the libraries are now in your Arduino folder. This should be a one-time process.
