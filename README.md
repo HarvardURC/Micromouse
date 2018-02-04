@@ -1,7 +1,7 @@
 # Micromouse
 
 ## Library Setup
-To setup the libraries on your machine. You will need to symlink your local /2017,2018/libraries to your Arduino libraries folder. This will mean that everytime you pull down updated libraries from Github, they will also be updated for Arduino without any nastiness on your part.
+To setup the libraries on your machine. You will need to symlink your local `/2017,2018/libraries` to your Arduino libraries folder. This will mean that everytime you pull down updated libraries from Github, they will also be updated for Arduino without any nastiness on your part.
 
 (Instructions for OSX/Mac, similar for Linux)
 1. `cd` into your local copy of the repository and `cd` into `/2017,2017/libraries`.
