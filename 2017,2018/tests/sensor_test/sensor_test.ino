@@ -5,15 +5,17 @@
 */
 
 #include <vector>
-#include <VL6180X.h>
+#include <tuple>
 #include <i2c_t3.h>
-#include <config.h>
 #include <VL53L0X.h>
+#include <VL6180X.h>
+#include <config.h>
 
 // VL6180X Sensors
 std::vector<int> sensor_pins = {pins::tofLeftDiagS, pins::tofRightDiagS, pins::tofFrontS};
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"leftDiagS", "rightDiagS", "frontS"};
+auto long_sensor = new VL53L0X;
 
 void wait(int ms);
 void initSensor(int pin, VL6180X *sensor, int address);
@@ -24,6 +26,10 @@ void setup() {
     pinMode(sensor_pins[i], OUTPUT);
     digitalWrite(sensor_pins[i], LOW);
   }
+  // Special initialization for long distance sensor
+  pinMode(pins::tofFrontL, OUTPUT);
+  digitalWrite(pins::tofFrontL, LOW);
+
   Serial.begin(9600);
   delay(1000);
   Serial.println("Initializing:");
@@ -34,13 +40,20 @@ void setup() {
     digitalWrite(sensor_pins[i], HIGH);
     delay(500);
     sensors[i]->setAddress(2 * i);
-    Serial.println(sensors[i]->readReg(0x212));
+    // Uncomment to debug addresses of sensors
+    // Serial.println(sensors[i]->readReg(0x212));
   }
+  digitalWrite(pins::tofFrontL, HIGH);
+  delay(500);
+  long_sensor->setAddress(sensor_pins.size() * 2);
 
   // Initializes sensors
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
     initSensor(sensor_pins[i], sensors[i]);
   }
+  long_sensor->init();
+  long_sensor->setTimeout(500);
+  long_sensor->startContinuous();
 }
 
 void loop() {
@@ -53,7 +66,9 @@ void loop() {
     Serial.print(" ");
     if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
   }
-  Serial.print("Time taken: ");
+  Serial.print("frontL: ");
+  Serial.print(long_sensor->readRangeContinuousMillimeters());
+  Serial.print(" Time taken: ");
   Serial.println(millis() - start);
   wait(10);
 }

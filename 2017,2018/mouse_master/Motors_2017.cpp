@@ -79,6 +79,75 @@ void Motors_2017::forward()
   }
 }
 
+void Motors_2017::moveTicks(int Lticks, int Rticks)
+{
+  encoderLeft->write(0);
+  encoderRight->write(0);
+  SetpointL = Lticks;
+  SetpointR = Rticks;
+  PIDLeft->SetTunings(2.9,0.01,0.01);
+  PIDRight->SetTunings(2.9,0.01,0.01);
+  InputL = 0;
+  InputR = 0;
+  time = millis();
+  while ((abs(InputL-SetpointL) > 10 || abs(InputR-SetpointR) > 10)
+         && (millis() - time < 2000)){
+    InputL = encoderLeft->read();
+    InputR = encoderRight->read();
+    PIDLeft->Compute();
+    PIDRight->Compute();
+
+    int leftDiagVal = _leftDiagIR->readRangeSingleMillimeters();
+    int rightDiagVal = _rightDiagIR->readRangeSingleMillimeters();
+    int threshold = 450;
+    if (leftDiagVal >= threshold && rightDiagVal >= threshold) {
+      commandMotors(OutputL, OutputR);
+    }
+    else if (rightDiagVal >= threshold) {
+      if (leftDiagVal < 200) {
+        commandMotors(OutputL, 0);
+      }
+      else {
+        commandMotors(0, OutputR);
+      }
+    }
+    else if (leftDiagVal >= threshold) {
+      if (rightDiagVal < 200) {
+        commandMotors(0, OutputR);
+      }
+      else {
+        commandMotors(OutputL, 0); 
+      }
+    }
+    else {
+      if (rightDiagVal - leftDiagVal < -10) {
+        commandMotors(0, OutputR);
+      } 
+      else if (rightDiagVal - leftDiagVal > 10) {
+        commandMotors(OutputL, 0); 
+      }
+      else {
+        commandMotors(OutputL, OutputR);
+      }
+    }
+
+  //   int lrem = abs(InputL-SetpointL);
+  //   int rrem = abs(InputR-SetpointR);
+  //   if (lrem - rrem > 0){
+  //     commandMotors(OutputL, 0);
+  //   }
+  //   // advance the desired ticks for each wheel, moving only
+  //   // the wheel furthest away from its destination
+  //   else if(rrem - lrem > 0){
+  //     commandMotors(0, OutputR);
+  //   }
+  //   else {
+  //     commandMotors(OutputL, OutputR);
+  //   }
+  }
+  stop();
+}
+
 // 180 degree left turn
 void Motors_2017::turnAroundLeft()
 {
@@ -203,43 +272,43 @@ void Motors_2017::advance(int ticks)
   }
 }
 
-// moves left and right motors given # of ticks, maxes at 10 seconds
-void Motors_2017::moveTicks(int Lticks, int Rticks)
-{
-  if (releaseFlag){
-    return;
-  }
-  encoderLeft->write(0);
-  encoderRight->write(0);
-  SetpointL = Lticks;
-  SetpointR = Rticks;
-  PIDLeft->SetTunings(2.9,0.01,0.01);
-  PIDRight->SetTunings(2.9,0.01,0.01);
-  InputL = 0;
-  InputR = 0;
-  time = millis();
-  while ((abs(InputL-SetpointL) > 10 || abs(InputR-SetpointR) > 10)
-         && (millis() - time < 2000)){
-    InputL = encoderLeft->read();
-    InputR = encoderRight->read();
-    PIDLeft->Compute();
-    PIDRight->Compute();
-    int lrem = abs(InputL-SetpointL);
-    int rrem = abs(InputR-SetpointR);
-    if (lrem - rrem > 0){
-      commandMotors(OutputL, 0);
-    }
-    // advance the desired ticks for each wheel, moving only
-    // the wheel furthest away from its destination
-    else if(rrem - lrem > 0){
-      commandMotors(0, OutputR);
-    }
-    else {
-      commandMotors(OutputL, OutputR);
-    }
-  }
-  stop();
-}
+// // moves left and right motors given # of ticks, maxes at 10 seconds
+// void Motors_2017::moveTicks(int Lticks, int Rticks)
+// {
+//   if (releaseFlag){
+//     return;
+//   }
+//   encoderLeft->write(0);
+//   encoderRight->write(0);
+//   SetpointL = Lticks;
+//   SetpointR = Rticks;
+//   PIDLeft->SetTunings(2.9,0.01,0.01);
+//   PIDRight->SetTunings(2.9,0.01,0.01);
+//   InputL = 0;
+//   InputR = 0;
+//   time = millis();
+//   while ((abs(InputL-SetpointL) > 10 || abs(InputR-SetpointR) > 10)
+//          && (millis() - time < 2000)){
+//     InputL = encoderLeft->read();
+//     InputR = encoderRight->read();
+//     PIDLeft->Compute();
+//     PIDRight->Compute();
+//     int lrem = abs(InputL-SetpointL);
+//     int rrem = abs(InputR-SetpointR);
+//     if (lrem - rrem > 0){
+//       commandMotors(OutputL, 0);
+//     }
+//     // advance the desired ticks for each wheel, moving only
+//     // the wheel furthest away from its destination
+//     else if(rrem - lrem > 0){
+//       commandMotors(0, OutputR);
+//     }
+//     else {
+//       commandMotors(OutputL, OutputR);
+//     }
+//   }
+//   stop();
+// }
 
 // send power commands to left and right motors
 void Motors_2017::commandMotors(double left, double right)
