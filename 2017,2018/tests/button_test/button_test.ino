@@ -2,6 +2,8 @@
 Tests for functional buttons by lighting up back led different colors.
 */
 
+// TODO: Use <Bounce.h> library for debouncing switches
+
 #include "config.h"
 
 int frontState = 1;
