@@ -19,7 +19,7 @@
 
 
 /* ...hardware SPI, using SCK/MOSI/MISO hardware SPI pins and then user selected CS/IRQ/RST */
-// Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
+//Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
 Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
 
 
@@ -30,6 +30,9 @@ void error(const __FlashStringHelper*err) {
 }
 
 void setup() {
+    SPI.setSCK(pins::SCK);
+    SPI.begin();
+
     Serial.begin(115200);
     Serial.println(F("Adafruit Bluefruit Command <-> Data Mode"));
     Serial.println(F("------------------------------------------------"));
