@@ -55,11 +55,11 @@ Adafruit_BNO055::Adafruit_BNO055(int32_t sensorID, uint8_t address)
 bool Adafruit_BNO055::begin(adafruit_bno055_opmode_t mode)
 {
   /* Enable I2C */
-  Wire.begin();
+  Wire1.begin(I2C_MASTER, 0x00, I2C_PINS_37_38, I2C_PULLUP_EXT, 400000);;
 
   // BNO055 clock stretches for 500us or more!
 #ifdef ESP8266
-  Wire.setClockStretchLimit(1000); // Allow for 1000us of clock stretching
+  Wire1.setClockStretchLimit(1000); // Allow for 1000us of clock stretching
 #endif
 
   /* Make sure we have the right device */
@@ -629,15 +629,15 @@ bool Adafruit_BNO055::isFullyCalibrated(void)
 /**************************************************************************/
 bool Adafruit_BNO055::write8(adafruit_bno055_reg_t reg, byte value)
 {
-  Wire.beginTransmission(_address);
+  Wire1.beginTransmission(_address);
   #if ARDUINO >= 100
-    Wire.write((uint8_t)reg);
-    Wire.write((uint8_t)value);
+    Wire1.write((uint8_t)reg);
+    Wire1.write((uint8_t)value);
   #else
-    Wire.send(reg);
-    Wire.send(value);
+    Wire1.send(reg);
+    Wire1.send(value);
   #endif
-  Wire.endTransmission();
+  Wire1.endTransmission();
 
   /* ToDo: Check for error! */
   return true;
@@ -652,18 +652,18 @@ byte Adafruit_BNO055::read8(adafruit_bno055_reg_t reg )
 {
   byte value = 0;
 
-  Wire.beginTransmission(_address);
+  Wire1.beginTransmission(_address);
   #if ARDUINO >= 100
-    Wire.write((uint8_t)reg);
+    Wire1.write((uint8_t)reg);
   #else
-    Wire.send(reg);
+    Wire1.send(reg);
   #endif
-  Wire.endTransmission();
-  Wire.requestFrom(_address, (byte)1);
+  Wire1.endTransmission();
+  Wire1.requestFrom(_address, (byte)1);
   #if ARDUINO >= 100
-    value = Wire.read();
+    value = Wire1.read();
   #else
-    value = Wire.receive();
+    value = Wire1.receive();
   #endif
 
   return value;
@@ -676,21 +676,21 @@ byte Adafruit_BNO055::read8(adafruit_bno055_reg_t reg )
 /**************************************************************************/
 bool Adafruit_BNO055::readLen(adafruit_bno055_reg_t reg, byte * buffer, uint8_t len)
 {
-  Wire.beginTransmission(_address);
+  Wire1.beginTransmission(_address);
   #if ARDUINO >= 100
-    Wire.write((uint8_t)reg);
+    Wire1.write((uint8_t)reg);
   #else
-    Wire.send(reg);
+    Wire1.send(reg);
   #endif
-  Wire.endTransmission();
-  Wire.requestFrom(_address, (byte)len);
+  Wire1.endTransmission();
+  Wire1.requestFrom(_address, (byte)len);
 
   for (uint8_t i = 0; i < len; i++)
   {
     #if ARDUINO >= 100
-      buffer[i] = Wire.read();
+      buffer[i] = Wire1.read();
     #else
-      buffer[i] = Wire.receive();
+      buffer[i] = Wire1.receive();
     #endif
   }
 

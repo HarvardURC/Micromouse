@@ -4,17 +4,18 @@
   by the left and right sensors.
 */
 
-#include <Wire.h>
+#include <i2c_t3.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include <config.h>
   
-Adafruit_BNO055 bno = Adafruit_BNO055(pins::imuRST);
+Adafruit_BNO055 bno = Adafruit_BNO055(55);//pins::imuRST);
  
 void setup(void) 
 {
   Serial.begin(9600);
+  delay(5000);
   Serial.println("Orientation Sensor Test"); Serial.println("");
   
   /* Initialise the sensor */
