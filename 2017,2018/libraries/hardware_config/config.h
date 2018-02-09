@@ -51,15 +51,13 @@ namespace pins
     // data pin
     const int imuSDA = 38;
 
-    // bluetooth module
-    const int bluetoothReset = 27;
-    const int bluetoothIRQ = 28;
-
-    // SPI bus
+    // Bluetooth SPI bus
     const int MISO = 12;
     const int MOSI = 11;
     const int SCK = 14;
     const int CS = 15;
+    const int bluetoothRST = 27;
+    const int bluetoothIRQ = 28;
 
     // button
     const int frontButton = 21;
