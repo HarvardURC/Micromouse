@@ -40,7 +40,7 @@ void setup() {
     pinMode(pins::motorDirectionR, OUTPUT);
     pinMode(pins::motorMode, OUTPUT);
     digitalWrite(pins::motorMode, HIGH);
-;
+
     Serial.println("Motors initialized.");
 }
 
