@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <vector>
 #include "config.h"
 #include "rgb.hh"
 

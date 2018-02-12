@@ -5,7 +5,6 @@
 */
 
 #include <vector>
-#include <tuple>
 #include <i2c_t3.h>
 #include <VL53L0X.h>
 #include <VL6180X.h>
@@ -18,7 +17,7 @@ std::vector<String> sensor_names = {"leftDiagS", "rightDiagS", "frontS"};
 auto long_sensor = new VL53L0X;
 
 void wait(int ms);
-void initSensor(int pin, VL6180X *sensor, int address);
+void initSensor(int pin, VL6180X *sensor);
 
 void setup() {
   // Sets all sensors to low for initialization
