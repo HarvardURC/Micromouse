@@ -4,27 +4,22 @@ Should cause a blinking orange LED on the corner of the Teensy board.
 */
 
 #include "config.h"
+#include "rgb.hh"
+
+using namespace pins;
+
+RGB_LED* rgbFront;
+RGB_LED* rgbBack;
 
 void setup() {
-    pinMode(pins::backLedR, OUTPUT);
-    pinMode(pins::backLedG, OUTPUT);
-    pinMode(pins::backLedB, OUTPUT);
-    digitalWrite(pins::backLedR, HIGH);
-    digitalWrite(pins::backLedG, HIGH);
-    digitalWrite(pins::backLedB, HIGH);
+    rgbFront = new RGB_LED(frontLedR, frontLedG, frontLedB);
+    rgbBack = new RGB_LED(backLedR, backLedG, backLedR);
 }
 
 void loop() {
-    digitalWrite(pins::backLedR, LOW);   // sets the LED on
-    delay(200);                  // waits for a second
-    digitalWrite(pins::backLedR, HIGH);
-    delay(500);
-    digitalWrite(pins::backLedG, LOW);    // sets the LED off
-    delay(200);                  // waits for a second
-    digitalWrite(pins::backLedG, HIGH); 
-    delay(500);
-    digitalWrite(pins::backLedB, LOW); 
-    delay(200);
-    digitalWrite(pins::backLedB, HIGH); 
-    delay(500);
+    rgbBack->switchLED(0);
+    delay(1000);
+    rgbBack->switchLED(0);
+    rgbFront->flashLED(1);
+    delay(1000);
 }

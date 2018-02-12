@@ -18,7 +18,7 @@ class RGB_LED
 
     private:
         void _turnOn(int color);
-        void _turnOff(int colo);
+        void _turnOff(int color);
 };
 
 #endif

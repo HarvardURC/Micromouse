@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <vector>
 #include "config.h"
-#include "rgb.h"
+#include "rgb.hh"
 
 int rgbPins[3];
 int rgbState[3] = {0, 0, 0};
