@@ -98,6 +98,25 @@ void SensorArray::readToSerial() {
 
 }
 
+
+int SensorArray::readShortTof(int sensor_index) {
+    return sensors[sensor_index]->readRangeContinuous();
+}
+
+
+int SensorArray::readLongTof() {
+    return long_sensor->readRangeContinuousMillimeters();
+}
+
+
+// Returns angle from 0 to 360 depending on rotation on flat plane
+double SensorArray::readIMUAngle() {
+    sensors_event_t event;
+    bno.getEvent(&event);
+    return event.orientation.x;
+}
+
+
 void SensorArray::_initSensor(int pin, VL6180X* sensor) {
     sensor->init();
     sensor->configureDefault();
