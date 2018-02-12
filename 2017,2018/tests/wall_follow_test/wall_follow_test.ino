@@ -1,6 +1,6 @@
 /**
     A motor, sensor, and PID test.
-    Directs the robot to maintain a position equal to a specified 
+    Directs the robot to maintain a position equal to a specified
     distance from a stationary or moving wall.
 */
 
@@ -9,7 +9,7 @@
 #include <PID_v1.h>
 #include "config.h"
 
-VL6180X *frontIR;
+VL6180X* tofFrontS = new VL6180X;
 
 int testingDistance = 50; // 50 millimeters
 int minNum = 180;
@@ -20,12 +20,11 @@ PID myPID(&Input, &Output, &Setpoint, 2.0, 0.0018, 0, DIRECT);
 unsigned long time;
 
 void setup() {
-    frontIR = new VL6180X;
     Serial.begin(9600);
     delay(1000);
     Serial.println("Initializing");
     // Initialize connection bus
-    Wire.begin(I2C_MASTER, 0, I2C_PINS_16_17, I2C_PULLUP_EXT, 50000);
+    Wire.begin();
 
     // Initialize two motors
     pinMode(pins::motorPowerL, OUTPUT);
@@ -41,12 +40,12 @@ void setup() {
     myPID.SetMode(AUTOMATIC);
 
     // Initialize forward sensor
-    int front = pins::tofFront;
+    int front = pins::tofFrontS;
     pinMode(front, OUTPUT);
     digitalWrite(front, HIGH);
-    frontIR->init();
-    frontIR->configureDefault();
-    frontIR->setScaling(2);
+    tofFrontS->init();
+    tofFrontS->configureDefault();
+    tofFrontS->setScaling(2);
     Serial.println("front sensor connected");
 
 }
@@ -56,7 +55,7 @@ void loop() {
 
     // Read sensor
     Serial.print("front sensor: ");
-    Input = frontIR->readRangeSingleMillimeters() - 180;
+    Input = tofFrontS->readRangeSingleMillimeters() - 180;
     Serial.print(Input);
     Serial.print(" Setpoint: ");
     Serial.println(Setpoint);

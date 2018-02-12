@@ -19,8 +19,8 @@ struct motor {
 void move(std::vector<motor> motors, int direction);
 
 // Constants for test
-int speed = 200;
-int time = 2000;
+const int speed = 150;
+const int time = 1000;
 int flag = 0;
 
 void setup() {
@@ -72,7 +72,7 @@ void move(std::vector<motor> motors, int direction) {
         else {
             Serial.print(motors[i].name);
             Serial.print(" motor moving ");
-            String stringDirection = direction ? "backwards" : "forwards";
+            String stringDirection = direction ? "forwards" : "backwards";
             Serial.print(stringDirection);
             Serial.println("...");
 
