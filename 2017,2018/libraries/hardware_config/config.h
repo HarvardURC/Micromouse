@@ -27,10 +27,10 @@ namespace pins
     const int motorMode = 6;
 
     // encoders
-    const int encoderPinL1 = 3;
-    const int encoderPinL2 = 2;
-    const int encoderPinR1 = 4;
-    const int encoderPinR2 = 5;
+    const int encoderL1 = 3;
+    const int encoderL2 = 2;
+    const int encoderR1 = 5;
+    const int encoderR2 = 4;
 
     // sensors
     const int tofFrontS = 35;
