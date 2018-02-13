@@ -19,8 +19,8 @@ void error(const __FlashStringHelper*err) {
 }
 
 // TODO not sure if this is the best way to declare this
-// Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
-Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
+Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
+// Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
 
 Bluetooth::Bluetooth() {
 	// Define pins
