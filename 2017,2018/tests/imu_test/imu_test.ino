@@ -1,7 +1,6 @@
 /**
-  A time of flight (ToF) sensor test.
-  Outputs to Serial console the distance measured
-  by the left and right sensors.
+  An Inertial Measurement Unit (IMU) sensor test.
+  Outputs to Serial console the readings from the imu sensor.
 */
 
 #include <i2c_t3.h>
@@ -30,7 +29,7 @@ void setup(void)
     
   bno.setExtCrystalUse(true);
 }
- 
+
 void loop(void) 
 {
   /* Get a new sensor event */ 
