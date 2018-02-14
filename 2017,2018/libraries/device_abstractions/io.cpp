@@ -50,29 +50,27 @@ void RGB_LED::_turnOff(int color) {
 }
 
 
-Button::Button(int buttonPin) {
-    buttonP = buttonPin;
-    pinMode(buttonP, INPUT_PULLUP);
+Button::Button(int buttonPin) : _buttonPin(buttonPin) {
+    pinMode(_buttonPin, INPUT_PULLUP);
 }
 
 
 int Button::readButton() {
-    return digitalRead(buttonP);
+    return digitalRead(_buttonPin);
 }
 
 
-Buzzer::Buzzer(int buzzerPin) {
-    buzzerP = buzzerPin;
-    pinMode(buzzerP, OUTPUT);
-    digitalWrite(buzzerP, LOW);
+Buzzer::Buzzer(int buzzerPin) : _buzzerPin(buzzerPin) {
+    pinMode(_buzzerPin, OUTPUT);
+    digitalWrite(_buzzerPin, LOW);
 }
 
 void Buzzer::on() {
-    digitalWrite(buzzerP, HIGH);
+    digitalWrite(_buzzerPin, HIGH);
 }
 
 void Buzzer::off() {
-    digitalWrite(buzzerP, LOW);
+    digitalWrite(_buzzerPin, LOW);
 }
 
 void Buzzer::siren() {

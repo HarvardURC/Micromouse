@@ -33,6 +33,9 @@ class Button {
         Button(int buttonPin);
 
         int readButton();
+
+    private:
+        int _buttonPin;
 };
 
 
@@ -44,6 +47,9 @@ class Buzzer {
         void siren();
         void on();
         void off();
+
+    private:
+        int _buzzerPin;
 };
 
 #endif

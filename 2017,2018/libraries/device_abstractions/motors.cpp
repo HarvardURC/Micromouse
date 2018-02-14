@@ -13,6 +13,8 @@ Motor::Motor(
     int encoderPin1,
     int encoderPin2,
     SensorArray sensors) :
+    _powerPin(powerPin),
+    _directionPin(directionPin),
     _encoder(encoderPin1, encoderPin2),
     _pid(
         &_pidInput,
@@ -24,9 +26,6 @@ Motor::Motor(
         DIRECT),
     _sensors(sensors)
 {
-    _powerPin = powerPin;
-    _directionPin = directionPin;
-
     pinMode(_powerPin, OUTPUT);
     pinMode(_directionPin, OUTPUT);
 
