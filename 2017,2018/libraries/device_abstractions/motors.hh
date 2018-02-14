@@ -1,6 +1,9 @@
 #include <Encoder.h>
 #include <PID_v1.h>
 
+#ifndef motors_hh
+#define motors_hh
+
 class Motor {
     public:
         // Constructor
@@ -58,3 +61,5 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
 };
+
+#endif

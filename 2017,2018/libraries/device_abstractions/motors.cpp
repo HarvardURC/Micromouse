@@ -2,7 +2,9 @@
 #include <PID_v1.h>
 #include "motors.hh"
 
+// The error threshold for the encoder values
 int encoderTolerance = 10000;
+
 
 Motor::Motor(int powerPin, int directionPin, int encoderPin1, int encoderPin2) :
     _encoder(encoderPin1, encoderPin2),
@@ -32,10 +34,14 @@ void Motor::drive(int speed) {
     analogWrite(_powerPin, speed >= 0 ? speed : speed * -1);
 }
 
+
+// Reads the current value of the encoder
 long Motor::readTicks() {
     return _encoder.read();
 }
 
+
+// Moves a number of specified ticks as measured by the encoder
 void Motor::moveTicks(long ticks) {
     // magic number
     int speed = 30;
@@ -51,6 +57,8 @@ void Motor::moveTicks(long ticks) {
 }
 
 
+// Returns the speed the motor should go according to the PID to acheive the
+// setpoint.
 double Motor::getPIDSpeed() {
     Serial.print("Setpoint and input: ");
     Serial.print(pidSetpoint);
@@ -66,6 +74,7 @@ double Motor::getPIDSpeed() {
     }
 }
 
+// Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
 void Motor::moveTicksPID(long ticks) {
     pidSetpoint = ticks;
     _pidInput = _encoder.read();

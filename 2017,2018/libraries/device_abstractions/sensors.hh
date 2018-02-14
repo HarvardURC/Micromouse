@@ -1,5 +1,8 @@
 #include <VL6180X.h>
 
+#ifndef sensors_hh
+#define sensors_hh
+
 class SensorArray {
     public:
         SensorArray(
@@ -23,3 +26,5 @@ class SensorArray {
     private:
         void _initSensor(int pin, VL6180X* sensor);
 };
+
+#endif
