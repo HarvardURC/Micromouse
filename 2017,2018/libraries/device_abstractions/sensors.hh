@@ -12,6 +12,7 @@ class SensorArray {
             int tofFrontLPin,
             int imuRSTPin
         );
+        SensorArray(const SensorArray& sensors);
 
         enum Sensor {
             leftDiag = 0, rightDiag, front

@@ -1,5 +1,6 @@
 #include <Encoder.h>
 #include <PID_v1.h>
+#include "sensors.hh"
 
 #ifndef motors_hh
 #define motors_hh
@@ -7,7 +8,13 @@
 class Motor {
     public:
         // Constructor
-        Motor(int powerPin, int directionPin, int encoderPin1, int encoderPin2);
+        Motor(
+            int powerPin,
+            int directionPin,
+            int encoderPin1,
+            int encoderPin2,
+            SensorArray sensors
+        );
 
         void drive(int speed);
 
@@ -34,6 +41,8 @@ class Motor {
         double _pidProportion = 1;
         double _pidIntegral = 0.0018;
         double _pidDerivative = 0.01;
+
+        SensorArray _sensors;
 };
 
 class Driver {
@@ -48,7 +57,8 @@ class Driver {
             int encoderPinL1,
             int encoderPinL2,
             int encoderPinR1,
-            int encoderPinR2
+            int encoderPinR2,
+            SensorArray sensors
         );
 
         void drive(int speed);
@@ -60,6 +70,7 @@ class Driver {
     private:
         Motor _leftMotor;
         Motor _rightMotor;
+        SensorArray _sensors;
 };
 
 #endif

@@ -1,12 +1,18 @@
 #include <Arduino.h>
 #include <PID_v1.h>
 #include "motors.hh"
+#include "sensors.hh"
 
 // The error threshold for the encoder values
 int encoderTolerance = 10000;
 
 
-Motor::Motor(int powerPin, int directionPin, int encoderPin1, int encoderPin2) :
+Motor::Motor(
+    int powerPin,
+    int directionPin,
+    int encoderPin1,
+    int encoderPin2,
+    SensorArray sensors) :
     _encoder(encoderPin1, encoderPin2),
     _pid(
         &_pidInput,
@@ -15,7 +21,8 @@ Motor::Motor(int powerPin, int directionPin, int encoderPin1, int encoderPin2) :
         _pidProportion,
         _pidIntegral,
         _pidDerivative,
-        DIRECT)
+        DIRECT),
+    _sensors(sensors)
 {
     _powerPin = powerPin;
     _directionPin = directionPin;
@@ -96,9 +103,11 @@ Driver::Driver(
     int encoderPinL1,
     int encoderPinL2,
     int encoderPinR1,
-    int encoderPinR2) :
-    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2),
-    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2)
+    int encoderPinR2,
+    SensorArray sensors) :
+    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
+    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
+    _sensors(sensors)
 {
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);

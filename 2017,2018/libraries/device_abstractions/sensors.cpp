@@ -67,6 +67,10 @@ SensorArray::SensorArray(int tofLeftDiagSPin, int tofRightDiagSPin,
     bno.setExtCrystalUse(true);
 }
 
+SensorArray::SensorArray(const SensorArray& sensors) {
+  return;
+}
+
 void SensorArray::readToSerial() {
     unsigned long start = millis();
     // Prints debug distances for sensors
