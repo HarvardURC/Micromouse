@@ -4,7 +4,7 @@ Should cause a blinking orange LED on the corner of the Teensy board.
 */
 
 #include "config.h"
-#include "rgb.hh"
+#include "io.hh"
 
 using namespace pins;
 

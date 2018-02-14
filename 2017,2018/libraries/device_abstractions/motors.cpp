@@ -107,7 +107,7 @@ void Driver::moveTicks(long ticks) {
     _rightMotor.moveTicks(ticks);
 }
 
-// Buggy
+// Buggy -- does not work
 void Driver::moveTicksPID(long ticks) {
     Serial.begin(9600);
     delay(1000);
@@ -120,6 +120,6 @@ void Driver::moveTicksPID(long ticks) {
         double leftSpeed = _leftMotor.getPIDSpeed();
         double rightSpeed = _rightMotor.getPIDSpeed();
         _leftMotor.drive(leftSpeed);
-        // _rightMotor.drive(rightSpeed);
+        _rightMotor.drive(rightSpeed);
     }
 }

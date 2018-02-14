@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include "config.h"
-#include "rgb.hh"
+#include "io.hh"
 
 int rgbPins[3];
 int rgbState[3] = {0, 0, 0};
+int buttonP;
+int buzzerP;
 
 
 RGB_LED::RGB_LED(int redPin, int greenPin, int bluePin) {
@@ -45,4 +47,36 @@ void RGB_LED::_turnOn(int color) {
 void RGB_LED::_turnOff(int color) {
     pinMode(rgbPins[color], INPUT);
     rgbState[color] = 0;
+}
+
+
+Button::Button(int buttonPin) {
+    buttonP = buttonPin;
+    pinMode(buttonP, INPUT_PULLUP);
+}
+
+
+int Button::readButton() {
+    return digitalRead(buttonP);
+}
+
+
+Buzzer::Buzzer(int buzzerPin) {
+    buzzerP = buzzerPin;
+    pinMode(buzzerP, OUTPUT);
+    digitalWrite(buzzerP, LOW);
+}
+
+void Buzzer::on() {
+    digitalWrite(buzzerP, HIGH);
+}
+
+void Buzzer::off() {
+    digitalWrite(buzzerP, LOW);
+}
+
+void Buzzer::siren() {
+    on();
+    delay(10);
+    off();
 }
