@@ -1,3 +1,5 @@
+#include <QueueArray.h>
+
 #include <vector>
 #include <VL6180X.h>
 #include <i2c_t3.h>
@@ -8,17 +10,139 @@
 #define SOUTH 2
 #define WEST 1
 
+#define CENTER_ROW 7
+#define CENTER_COL 7
+
 std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
 const int threshold = 250;
 
+struct Cell {
+  int row;
+  int column;
+  int floodDistance;
+  bool visited;
+  unsigned char walls;
+};
+
+// CONVERT TO CELL MAP LATER
 unsigned char virtualWalls[256];
+
+Cell cellMap[16][16];
+
+QueueArray<Cell> floodQueue;
 
 void initSensor(int pin, VL6180X *sensor, int address);
 void setBoundaryWalls();
 void printVirtualMaze();
+void initializeCellMap();
+void floodMaze();
+void initializeFloodMaze();
+
+void floodMaze() {
+  initializeFloodMaze();
+
+  // While there are cells left in the queue
+  while (!floodQueue.isEmpty()) {
+    // Removes first cell from the queue
+    Cell frontier = floodQueue.dequeue();
+
+    int fRow = frontier.row;
+    int fCol = frontier.column;
+    int fDistance = frontier.floodDistance;
+    
+    // Check Northern Cell
+    if (fRow > 0) {
+      // If the Northern Cell is not visited, and there is no wall between the frontier and the Northern Cell, enqueue the Northern Cell
+      if (!cellMap[fRow - 1][fCol].visited && (cellMap[fRow - 1][fCol].walls & SOUTH) != SOUTH && (frontier.walls & NORTH) != NORTH) {
+        if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
+          cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
+        }
+        cellMap[fRow - 1][fCol].visited = true;
+        floodQueue.enqueue(cellMap[fRow - 1][fCol]);
+      }
+    }
+
+    // Check Eastern Cell
+    if (fCol < 15) {
+      if (!cellMap[fRow][fCol + 1].visited && (cellMap[fRow][fCol + 1].walls & WEST) != WEST && (frontier.walls & EAST) != EAST) {
+        if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
+          cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
+        }
+      cellMap[fRow][fCol + 1].visited = true;
+      floodQueue.enqueue(cellMap[fRow][fCol + 1]);
+      }
+    }
+    
+    // Check Southern Cell
+    if (fRow < 15) {
+      // If the Southern Cell is not visited, and there is no wall between the frontier and the Southern Cell, enqueue the Southern Cell
+      if (!cellMap[fRow + 1][fCol].visited && (cellMap[fRow + 1][fCol].walls & NORTH) != NORTH && (frontier.walls & SOUTH) != SOUTH) {
+        if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
+          cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
+        }
+        cellMap[fRow + 1][fCol].visited = true;
+        floodQueue.enqueue(cellMap[fRow + 1][fCol]);
+      }
+    }
+
+    // Check Western Cell
+    if (fCol > 0) {
+      if (!cellMap[fRow][fCol - 1].visited && (cellMap[fRow][fCol - 1].walls & EAST) != EAST && (frontier.walls & WEST) != WEST) {
+        if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
+          cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
+        }
+        cellMap[fRow][fCol - 1].visited = true;
+        floodQueue.enqueue(cellMap[fRow][fCol - 1]);
+      }
+    }
+  }
+}
+
+void initializeFloodMaze() {
+  // When we run the flood maze, none of the cells should be visited already
+  for (int i = 0; i < 16; i++) {
+    for (int j = 0; j < 16; j++) {
+      cellMap[i][j].visited = false;
+    }
+  }
+  
+  // Set center to 4 cells in the middle
+  cellMap[CENTER_ROW][CENTER_COLUMN].floodDistance = 0;
+  cellMap[CENTER_ROW][CENTER_COLUMN].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COLUMN]);
+
+  cellMap[CENTER_ROW + 1][CENTER_COLUMN].floodDistance = 0;
+  cellMap[CENTER_ROW + 1][CENTER_COLUMN].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COLUMN]);
+
+  cellMap[CENTER_ROW][CENTER_COLUMN + 1].floodDistance = 0;
+  cellMap[CENTER_ROW][CENTER_COLUMN + 1].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COLUMN]);
+
+  cellMap[CENTER_ROW + 1][CENTER_COLUMN + 1].floodDistance = 0;
+  cellMap[CENTER_ROW + 1][CENTER_COLUMN + 1].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COLUMN]);
+}
+
+void initializeCellMap() {
+  for (short i = 0; i < 16; i++) {
+    for (short j = 0; j < 16; j++) {
+      Cell temp;
+      temp.row = i;
+      temp.column = j;
+      temp.floodDistance = 10000;
+      temp.visited = false;
+      temp.walls = 0;
+
+      // CALL SET BOUNDARY WALLS FOR TEMP.WALLS
+
+      cellMap[i][j] = temp;
+    }
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -38,10 +162,10 @@ void setup() {
     initSensor(sensor_pins[i], sensors[i], i + 1);
   }
 
+  initializeCellMap();
+
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
-
-  
 }
 
 void loop() {
@@ -77,6 +201,7 @@ void initSensor(int pin, VL6180X *sensor, int address) {
     Serial.println(" connected.");
 }
 
+// REWRITE FOR 2 DIMENSIONAL
 void setBoundaryWalls() {
   // NOTE: Top of the maze is set to the the 0th row
   
@@ -128,7 +253,7 @@ void printVirtualColumn(int row, bool isPost) {
     check_west_wall = 0;
     
     if (isPost) {
-      Serial.print("+")
+      Serial.print("+");
       // check north wall in here 
       check_north_wall = virtualWalls[row * 16 + col] & NORTH;
 
@@ -169,6 +294,8 @@ void printVirtualColumn(int row, bool isPost) {
 
   Serial.println();
 }
+
+
 
 
 
