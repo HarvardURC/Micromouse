@@ -1,6 +1,6 @@
 /*
     Tests if the PID can successfully and smoothly reach
-    a goal motor rotation as measued by the encoder. 
+    a goal motor rotation as measued by the encoder.
 */
 
 #include <PID_v1.h>
@@ -8,22 +8,21 @@
 #include "config.h"
 
 //Define Variables we'll be connecting to
-double Setpoint, Input, Output, direction_pin, power_pin;
-Encoder encoderLeft(pins::encoderPinL1, pins::encoderPinL2);
+double Setpoint, Input, Output;
+Encoder encoderLeft(pins::encoderL1, pins::encoderL2);
 
 //Specify the links and initial tuning parameters
-int goal = 87000;
-double proportion = .0006;
+int goal = 1000000;
+double proportion = 0.001;
 double integral = 0;
 double derivative = 0;
 
 PID myPID(&Input, &Output, &Setpoint, proportion, integral, derivative, DIRECT);
-unsigned long time;
 
 void setup()
 {
     Serial.begin(9600);
-    delay(2000);
+    delay(1000);
 
     //set up motors
     pinMode(pins::motorDirectionL, OUTPUT);
@@ -39,34 +38,17 @@ void setup()
 
     //turn the PID on
     myPID.SetMode(AUTOMATIC);
-
-    //timeout
-    startTime = millis();
 }
 
 void loop()
 {
-    time = millis();
     Input = encoderLeft.read();
     myPID.Compute();
 
-    if (millis() - startTime > timeout) {
-      Output = 0;
-    }
-
-    Serial.println(Input);
-
-    if (Output >= 0){
-    direction_pin = HIGH;
-    }
-    else {
-    direction_pin = LOW;
-    }
-  
-    power_pin = abs(Output); 
     Serial.println(Output);
-    //Serial.println(direction_pin);
-    digitalWrite(pins::motorDirectionL, direction_pin);
-    analogWrite(pins::motorPowerL, power_pin);
+
+    digitalWrite(pins::motorDirectionL, Output >= 0 ? HIGH : LOW);
+    analogWrite(pins::motorPowerL, abs(Output));
 }
+
 

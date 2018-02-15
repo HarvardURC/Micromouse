@@ -28,31 +28,32 @@ SensorArray::SensorArray(int tofLeftDiagSPin, int tofRightDiagSPin,
     pinMode(pins::tofFrontL, OUTPUT);
     digitalWrite(pins::tofFrontL, LOW);
 
-    delay(1000);
+    delay(500);
 
     Wire.begin();
 
     // Set sensor addresses
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
       digitalWrite(sensor_pins[i], HIGH);
-      delay(500);
+      delay(400);
       sensors[i]->setAddress(2 * i);
       // Uncomment to debug addresses of sensors
       // Serial.println(sensors[i]->readReg(0x212));
     }
     digitalWrite(pins::tofFrontL, HIGH);
-    delay(500);
+    delay(400);
     long_sensor->setAddress(sensor_pins.size() * 2);
 
     // Initializes sensors
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
-      _initSensor(sensor_pins[i], sensors[i]);
+      _initSensor(i);
     }
     long_sensor->init();
     long_sensor->setTimeout(500);
     long_sensor->startContinuous();
+    Serial.println("frontL online.");
 
-    Serial.println("Orientation Sensor Test"); Serial.println("");
+    Serial.println("IMU online."); Serial.println("");
 
     /* Initialise the IMU */
     if(!bno.begin())
@@ -121,7 +122,8 @@ double SensorArray::readIMUAngle() {
 }
 
 
-void SensorArray::_initSensor(int pin, VL6180X* sensor) {
+void SensorArray::_initSensor(int idx) {
+    VL6180X* sensor = sensors[idx];
     sensor->init();
     sensor->configureDefault();
     sensor->setScaling(2);
@@ -130,7 +132,7 @@ void SensorArray::_initSensor(int pin, VL6180X* sensor) {
     sensor->stopContinuous();
     delay(300);
     sensor->startRangeContinuous(30);
-    Serial.print(pin);
-    Serial.println(" connected.");
+    Serial.print(sensor_names[idx]);
+    Serial.println(" online.");
     delay(1000);
 }

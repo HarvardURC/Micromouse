@@ -25,7 +25,7 @@ class SensorArray {
         double readIMUAngle();
 
     private:
-        void _initSensor(int pin, VL6180X* sensor);
+        void _initSensor(int idx);
 };
 
 #endif

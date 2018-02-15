@@ -28,7 +28,7 @@ class Motor {
         // Gets the output speed for a motor based on the PID values
         double getPIDSpeed();
 
-        double pidSetpoint;
+        void testPID();
 
     private:
         int _powerPin;
@@ -36,13 +36,14 @@ class Motor {
 
         Encoder _encoder;
         PID _pid;
+        SensorArray _sensors;
+
+        double _pidSetpoint;
         double _pidInput;
         double _pidOutput;
-        double _pidProportion = 1;
-        double _pidIntegral = 0.0018;
-        double _pidDerivative = 0.01;
-
-        SensorArray _sensors;
+        double _pidProportion = 0.001;
+        double _pidIntegral = 0.000000001;
+        double _pidDerivative = 0.000000001;
 };
 
 class Driver {
@@ -62,10 +63,15 @@ class Driver {
         );
 
         void drive(int speed);
+        void drive(int speedLeft, int speedRight);
 
         // Moves until the motor for input ticks
         void moveTicks(long ticks);
         void moveTicksPID(long ticks);
+
+        void turnDegrees(double degrees);
+
+        void movePID(double setpoint);
 
     private:
         Motor _leftMotor;
