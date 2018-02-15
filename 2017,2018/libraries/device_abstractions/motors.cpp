@@ -4,7 +4,7 @@
 #include "sensors.hh"
 
 // The error threshold for the encoder values
-int encoderTolerance = 10000;
+int encoderTolerance = 5000;
 
 // Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
 // From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
@@ -36,11 +36,10 @@ Motor::Motor(
     pinMode(_powerPin, OUTPUT);
     pinMode(_directionPin, OUTPUT);
 
+    _pidSetpoint=100000;
     _pid.SetOutputLimits(-30.0, 30.0);
     //turn the PID on
     _pid.SetMode(AUTOMATIC);
-
-    *_pidSetpoint = 200000;
 }
 
 
@@ -57,55 +56,56 @@ long Motor::readTicks() {
 }
 
 
-// // Moves a number of specified ticks as measured by the encoder
-// void Motor::moveTicks(long ticks) {
-//     // magic number
-//     int speed = 30;
-//     _encoder.write(0);
-//     while (_encoder.read() < abs(ticks)) {
-//         Serial.print("Encoder Value for motorpin ");
-//         Serial.print(_powerPin);
-//         Serial.print(" ");
-//         Serial.println(_encoder.read());
-//         drive(ticks > 0 ? speed : -1 * speed);
-//     }
-//     drive(0);
-// }
+// Moves a number of specified ticks as measured by the encoder
+void Motor::moveTicks(long ticks) {
+    // magic number
+    int speed = 30;
+    _encoder.write(0);
+    while (_encoder.read() < abs(ticks)) {
+        Serial.print("Encoder Value for motorpin ");
+        Serial.print(_powerPin);
+        Serial.print(" ");
+        Serial.println(_encoder.read());
+        drive(ticks > 0 ? speed : -1 * speed);
+    }
+    drive(0);
+}
 
 
-// // Returns the speed the motor should go according to the PID to acheive the
-// // setpoint.
-// double Motor::getPIDSpeed() {
-//     Serial.print("Setpoint and input: ");
-//     Serial.print(_pidSetpoint);
-//     Serial.print(" ");
-//     Serial.println(_encoder.read());
-//     _pidInput = _encoder.read();
-//     if (abs(_pidSetpoint - _pidInput) > encoderTolerance) {
-//         _pid.Compute();
-//         return _pidOutput;
-//     }
-//     else {
-//         return 0;
-//     }
-// }
+// Returns the speed the motor should go according to the PID to acheive the
+// setpoint.
+float Motor::getPIDSpeed(float setpoint) {
+    _pidSetpoint = setpoint;
+    Serial.print("Setpoint and input: ");
+    Serial.print(_pidSetpoint);
+    Serial.print(" ");
+    Serial.println(_encoder.read());
+    _pidInput = _encoder.read();
+    _pid.Compute();
+    return _pidOutput;
+}
 
 
-// // Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
-// void Motor::moveTicksPID(long ticks) {
-//     _pidSetpoint = ticks;
-//     _pidInput = _encoder.read();
-//     if (abs(_pidSetpoint - _pidInput) > encoderTolerance) {
-//         _pid.Compute();
-//         Serial.println(_pidInput);
-//         Serial.println(_pidOutput);
-//         drive(_pidOutput);
-//     }
-//     drive(0);
-// }
+// Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
+void Motor::moveTicksPID(long ticks) {
+    _pidSetpoint = ticks;
+    _encoder.write(0);
+    while (abs(_pidSetpoint - _pidInput) > encoderTolerance) {
+        _pidInput = _encoder.read();
+        _pid.Compute();
+        Serial.println(_pidInput);
+        Serial.println(_pidOutput);
+        drive(_pidOutput);
+    }
+    drive(0);
+}
 
+
+// Testing function for if the PID works -- should oscillate at setpoint
+// or stop if our tuning values are awesome.
 void Motor::testPID() {
-    _pidSetpoint = 200000;
+    _pidSetpoint = 1000000;
+    _encoder.write(0);
     _pidInput = _encoder.read();
     Serial.println(_pidInput);
     while (1) {
@@ -164,7 +164,7 @@ void Driver::moveTicksPID(long ticks) {
 
 
 // Untested
-void Driver::turnDegrees(double degrees) {
+void Driver::turnDegrees(float degrees) {
     double initialAngle = _sensors.readIMUAngle();
     movePID(dmod((initialAngle + degrees), 360) - 180);
 }
@@ -172,14 +172,12 @@ void Driver::turnDegrees(double degrees) {
 
 // Moves the motors to adjust to the input setpoint using PID
 // Untested
-void Driver::movePID(double setpoint) {
-    // _leftMotor._pidSetpoint = setpoint;
-    // _rightMotor.pidSetpoint = setpoint;
-    double leftSpeed = 1;
-    double rightSpeed = 1;
+void Driver::movePID(float setpoint) {
+    float leftSpeed = 1;
+    float rightSpeed = 1;
     while (abs(leftSpeed) > 0.5 || abs(rightSpeed) > 0.5) {
-        // double leftSpeed = _leftMotor.getPIDSpeed();
-        double rightSpeed = _rightMotor.getPIDSpeed();
+        // float leftSpeed = _leftMotor.getPIDSpeed(setpoint);
+        float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
         Serial.print("Left motor speed: ");
         Serial.print(leftSpeed);
         Serial.print(" Right motor speed: ");
