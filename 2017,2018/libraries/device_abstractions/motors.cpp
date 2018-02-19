@@ -4,7 +4,11 @@
 #include "sensors.hh"
 
 // The error threshold for the encoder values
-int encoderTolerance = 5000;
+const int encoderTolerance = 5000;
+const unsigned long timeout = 10000;
+const float proportion = 0.0001;
+const float derivative = 0;
+const float integral = 0;
 
 // Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
 // From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
@@ -27,24 +31,25 @@ Motor::Motor(
         &_pidInput,
         &_pidOutput,
         &_pidSetpoint,
-        _pidProportion,
-        _pidIntegral,
-        _pidDerivative,
+        proportion,
+        integral,
+        derivative,
         DIRECT),
     _sensors(sensors)
 {
     pinMode(_powerPin, OUTPUT);
     pinMode(_directionPin, OUTPUT);
 
-    _pidSetpoint=100000;
+    _pidSetpoint = 100000;
+    _pidOutput = 0;
     _pid.SetOutputLimits(-30.0, 30.0);
+    _pid.SetTunings(proportion, integral, derivative);
     //turn the PID on
     _pid.SetMode(AUTOMATIC);
 }
 
 
 void Motor::drive(int speed) {
-    Serial.println(speed);
     digitalWrite(_directionPin, speed > 0);
     analogWrite(_powerPin, speed >= 0 ? speed : speed * -1);
 }
@@ -76,10 +81,6 @@ void Motor::moveTicks(long ticks) {
 // setpoint.
 float Motor::getPIDSpeed(float setpoint) {
     _pidSetpoint = setpoint;
-    Serial.print("Setpoint and input: ");
-    Serial.print(_pidSetpoint);
-    Serial.print(" ");
-    Serial.println(_encoder.read());
     _pidInput = _encoder.read();
     _pid.Compute();
     return _pidOutput;
@@ -89,12 +90,12 @@ float Motor::getPIDSpeed(float setpoint) {
 // Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
 void Motor::moveTicksPID(long ticks) {
     _pidSetpoint = ticks;
+    _pidInput = 0;
     _encoder.write(0);
-    while (abs(_pidSetpoint - _pidInput) > encoderTolerance) {
+    long time = millis();
+    while (abs(_pidSetpoint - _pidInput) > encoderTolerance && millis() - time < timeout) {
         _pidInput = _encoder.read();
         _pid.Compute();
-        Serial.println(_pidInput);
-        Serial.println(_pidOutput);
         drive(_pidOutput);
     }
     drive(0);
@@ -151,15 +152,10 @@ void Driver::drive(int speedLeft, int speedRight) {
 }
 
 
+// Sequentially moves each motor a specified amount of ticks
 void Driver::moveTicks(long ticks) {
     _leftMotor.moveTicks(ticks);
     _rightMotor.moveTicks(ticks);
-}
-
-
-// Buggy -- does not work
-void Driver::moveTicksPID(long ticks) {
-    movePID(ticks);
 }
 
 
@@ -171,17 +167,20 @@ void Driver::turnDegrees(float degrees) {
 
 
 // Moves the motors to adjust to the input setpoint using PID
-// Untested
 void Driver::movePID(float setpoint) {
     float leftSpeed = 1;
     float rightSpeed = 1;
     while (abs(leftSpeed) > 0.5 || abs(rightSpeed) > 0.5) {
-        // float leftSpeed = _leftMotor.getPIDSpeed(setpoint);
+        float leftSpeed = _leftMotor.getPIDSpeed(setpoint);
         float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
-        Serial.print("Left motor speed: ");
-        Serial.print(leftSpeed);
-        Serial.print(" Right motor speed: ");
-        Serial.println(rightSpeed);
+        // Debugging code
+        // Serial.print("Left motor speed: ");
+        // Serial.print(leftSpeed);
+        // Serial.print(" Right motor speed: ");
+        // Serial.print(rightSpeed);
+        // Serial.print(" Setpoint: ");
+        // Serial.println(setpoint);
+        delay(100);
         drive(leftSpeed, rightSpeed);
     }
 }
