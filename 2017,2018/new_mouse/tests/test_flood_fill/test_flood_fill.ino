@@ -16,7 +16,7 @@
 bool findMinotaur = true;
 
 int mouseRow = 0;
-int mouseColumn = 0;
+int mouseCol = 0;
 
 struct Cell {
   int row;
@@ -35,9 +35,64 @@ QueueArray<Cell> floodQueue;
 
 void setBoundaryWalls();
 void printVirtualMaze();
+void printVirtualRow(int row, bool isPostRow);
 void initializeCellMap();
 void floodMaze();
+void Janus();
 void initializeFloodMaze();
+
+// Mouse chooses cell to move to
+void Janus() {
+  // Initialize with arbitrarily large values
+  // floodDistance of surrounding cells
+  // 0 NORTH
+  // 1 EAST
+  // 2 SOUTH
+  // 3 WEST
+  int choices[4] = {1000, 1000, 1000, 1000};
+
+  // TODO check for walls
+  // NORTH
+  if (mouseRow > 0) {
+    choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
+  }
+  // EAST
+  if (mouseCol < 15) {
+    choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
+  }
+  // SOUTH
+  if (mouseRow < 15) {
+    choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
+  }
+  // WEST
+  if (mouseCol > 0) {
+    choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
+  }
+
+  // thePath stores the cell with lowest 
+  int minDistance = 1000;
+  int thePath = 0;
+  for (int i = 0; i < 4; i++) {
+    if (choices[i] < minDistance) {
+      minDistance = choices[i];
+      thePath = i;
+    }
+  }
+
+  // Virtual movement
+  if (thePath == 0) {
+    mouseRow--;
+  } 
+  else if (thePath == 1) {
+    mouseCol++;
+  }
+  else if (thePath == 2) {
+    mouseRow++;
+  }
+  else if (thePath == 3) {
+    mouseCol--;
+  }
+}
 
 void floodMaze() {
   initializeFloodMaze();
@@ -108,6 +163,8 @@ void initializeFloodMaze() {
     }
   }
 
+  // Adham, in case you think this is a bad variable name.
+  // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze 
   if (findMinotaur) {
     // Set center to 4 cells in the middle
     cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
@@ -149,27 +206,36 @@ void initializeCellMap() {
   }
 }
 
+// SETUP
+
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(57600);
   delay(1000);
   Serial.println("We're setting up the map!");
   Serial.println("I'm a map");
 
+  // Initialize Cell values in the CellMap
   initializeCellMap();
 
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
 
+  // I dont want to build a virtual maze generation algo
   cellMap[6][7].walls |= NORTH;
-
-  floodMaze();
-
-  printVirtualMaze();
 }
 
+// LOOP
+
 void loop() {
-  // put your main code here, to run repeatedly: 
+  floodMaze();
+
+  Janus();
+  //mouseRow += 1;
+
+  printVirtualMaze();
+
+  delay(5000);
 }
 
 // REWRITE FOR 2 DIMENSIONAL
@@ -224,7 +290,7 @@ void printVirtualRow(int row, bool isPostRow) {
         Serial.print(" ");
       }
 
-      if (row == mouseRow && col == mouseColumn) {
+      if (row == mouseRow && col == mouseCol) {
         Serial.print(" @ ");
       }
       else {
