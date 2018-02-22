@@ -19,8 +19,8 @@ std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "r
 
 const int threshold = 250;
 
-int mouseRow = 0;
-int mouseColumn = 0;
+int mouseRow = 13;
+int mouseColumn = 12;
 
 struct Cell {
   int row;
@@ -43,6 +43,32 @@ void printVirtualMaze();
 void initializeCellMap();
 void floodMaze();
 void initializeFloodMaze();
+
+void generateWall();
+
+void generateWall() {
+  for (int i = 0; i < 16; i = i + 2) {
+    for (int j = 0; j < 16; j = j + 2) {
+      int nWalls = random(0, 3);
+      for (int k = 0; k < nWalls; ++k) {
+        int d = random (0, 3);
+//        0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
+        if (d == 0) {
+          cellMap[i][j].walls |= NORTH;
+        }
+        else if (d == 1) {
+          cellMap[i][j].walls |= EAST;
+        }
+        else if (d == 2) {
+          cellMap[i][j].walls |= SOUTH;
+        }
+        else {
+          cellMap[i][j].walls |= WEST;
+        }
+      }
+    }
+  }
+}
 
 void floodMaze() {
   initializeFloodMaze();
@@ -177,6 +203,9 @@ void setup() {
 
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
+
+  randomSeed(1);
+  generateWall();
 
   delay(2000);
   floodMaze();
