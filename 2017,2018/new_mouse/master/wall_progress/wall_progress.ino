@@ -19,8 +19,8 @@ std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "r
 
 const int threshold = 250;
 
-int mouseRow = 0;
-int mouseColumn = 0;
+int mouseRow = 13;
+int mouseColumn = 12;
 
 struct Cell {
   int row;
@@ -39,10 +39,12 @@ QueueArray<Cell> floodQueue;
 
 void initSensor(int pin, VL6180X *sensor, int address);
 void setBoundaryWalls();
+void setTestMazeWalls();
 void printVirtualMaze();
 void initializeCellMap();
 void floodMaze();
 void initializeFloodMaze();
+bool checkWall(int row, int col, int dir);
 
 void floodMaze() {
   initializeFloodMaze();
@@ -64,51 +66,80 @@ void floodMaze() {
     int fDistance = frontier.floodDistance;
     
     // Check Northern Cell
-    if (fRow > 0) {
-      // If the Northern Cell is not visited, and there is no wall between the frontier and the Northern Cell, enqueue the Northern Cell
-      if (!cellMap[fRow - 1][fCol].visited && (cellMap[fRow - 1][fCol].walls & SOUTH) != SOUTH && (frontier.walls & NORTH) != NORTH) {
+    if (fRow > 0 && !cellMap[fRow - 1][fCol].visited && !checkWall(fRow, fCol, NORTH)) {
         if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
           cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
         }
         cellMap[fRow - 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow - 1][fCol]);
       }
-    }
 
     // Check Eastern Cell
-    if (fCol < 15) {
-      if (!cellMap[fRow][fCol + 1].visited && (cellMap[fRow][fCol + 1].walls & WEST) != WEST && (frontier.walls & EAST) != EAST) {
-        if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
-          cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
-        }
-      cellMap[fRow][fCol + 1].visited = true;
-      floodQueue.enqueue(cellMap[fRow][fCol + 1]);
+    if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
+      if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
+        cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
+    cellMap[fRow][fCol + 1].visited = true;
+    floodQueue.enqueue(cellMap[fRow][fCol + 1]);
     }
     
     // Check Southern Cell
-    if (fRow < 15) {
-      // If the Southern Cell is not visited, and there is no wall between the frontier and the Southern Cell, enqueue the Southern Cell
-      if (!cellMap[fRow + 1][fCol].visited && (cellMap[fRow + 1][fCol].walls & NORTH) != NORTH && (frontier.walls & SOUTH) != SOUTH) {
-        if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
-          cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
-        }
-        cellMap[fRow + 1][fCol].visited = true;
-        floodQueue.enqueue(cellMap[fRow + 1][fCol]);
+   if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
+      if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
+        cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
       }
+      cellMap[fRow + 1][fCol].visited = true;
+      floodQueue.enqueue(cellMap[fRow + 1][fCol]);
     }
 
     // Check Western Cell
-    if (fCol > 0) {
-      if (!cellMap[fRow][fCol - 1].visited && (cellMap[fRow][fCol - 1].walls & EAST) != EAST && (frontier.walls & WEST) != WEST) {
-        if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
-          cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
-        }
-        cellMap[fRow][fCol - 1].visited = true;
-        floodQueue.enqueue(cellMap[fRow][fCol - 1]);
+    if (fCol > 0 && !cellMap[fRow][fCol - 1].visited && !checkWall(fRow, fCol, WEST)) {
+      if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
+        cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
       }
+      cellMap[fRow][fCol - 1].visited = true;
+      floodQueue.enqueue(cellMap[fRow][fCol - 1]);
     }
   }
+}
+
+// Returns TRUE if wall exists, FALSE if not
+bool checkWall(int row, int col, int dir) {
+  if (dir == NORTH) {
+    if (row > 0) {
+      if (cellMap[row - 1][col].walls & SOUTH) != SOUTH && (cellMap[row][col].walls & NORTH) != NORTH) {
+        return false;
+      }
+    }
+
+    return true;
+  } else if (dir == EAST) {
+    if (col < 15) {
+      if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col] & EAST) != EAST) {
+        return false;
+      }
+    }
+
+    return true;
+  } else if (dir == SOUTH) {
+    if (row < 15) {
+      if (cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
+        return false;
+      }
+    }
+
+    return true;
+  } else if (dir == WEST) {
+    if (col > 0) {
+      if ((cellMap[row][col - 1].walls & EAST) != EAST && (cellMap[row][col] & WEST) != WEST) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 void initializeFloodMaze() {
@@ -175,7 +206,7 @@ void setup() {
 
   initializeCellMap();
 
-  // SET UP BOUNDARY WALLS!!!!! :)
+  // SET UP BOUNDARY WALLS
   setBoundaryWalls();
 
   delay(2000);
@@ -236,6 +267,14 @@ void setBoundaryWalls() {
         }
       }
     }
+}
+
+void setTestMazeWalls() {
+  for (int i = 0; i < 16; i += 2) {
+    for (int j = 0; j < 16; j += 2) {
+      cellMap[i][j].walls |= NORTH;
+    }
+  }
 }
 
 void printVirtualMaze() {
