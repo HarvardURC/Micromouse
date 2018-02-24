@@ -1,8 +1,5 @@
 #include <QueueArray.h>
 
-#include <vector>
-#include <VL6180X.h>
-#include <i2c_t3.h>
 #include <config.h>
 
 #define NORTH 8
@@ -13,14 +10,13 @@
 #define CENTER_ROW 7
 #define CENTER_COL 7
 
-std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
-std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
-std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
+#define START_ROW 0
+#define START_COL 0
 
-const int threshold = 250;
+bool findMinotaur = true;
 
 int mouseRow = 0;
-int mouseColumn = 0;
+int mouseCol = 0;
 
 struct Cell {
   int row;
@@ -37,12 +33,66 @@ Cell cellMap[16][16];
 
 QueueArray<Cell> floodQueue;
 
-void initSensor(int pin, VL6180X *sensor, int address);
 void setBoundaryWalls();
 void printVirtualMaze();
+void printVirtualRow(int row, bool isPostRow);
 void initializeCellMap();
 void floodMaze();
+void Janus();
 void initializeFloodMaze();
+
+// Mouse chooses cell to move to
+void Janus() {
+  // Initialize with arbitrarily large values
+  // floodDistance of surrounding cells
+  // 0 NORTH
+  // 1 EAST
+  // 2 SOUTH
+  // 3 WEST
+  int choices[4] = {1000, 1000, 1000, 1000};
+
+  // TODO check for walls
+  // NORTH
+  if (mouseRow > 0) {
+    choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
+  }
+  // EAST
+  if (mouseCol < 15) {
+    choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
+  }
+  // SOUTH
+  if (mouseRow < 15) {
+    choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
+  }
+  // WEST
+  if (mouseCol > 0) {
+    choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
+  }
+
+  // thePath stores the cell with lowest 
+  int minDistance = 1000;
+  int thePath = 0;
+  for (int i = 0; i < 4; i++) {
+    if (choices[i] < minDistance) {
+      minDistance = choices[i];
+      thePath = i;
+    }
+  }
+
+  // Virtual movement
+  if (thePath == 0) {
+    mouseRow--;
+  } 
+  else if (thePath == 1) {
+    mouseCol++;
+  }
+  else if (thePath == 2) {
+    mouseRow++;
+  }
+  else if (thePath == 3) {
+    mouseCol--;
+  }
+}
 
 void floodMaze() {
   initializeFloodMaze();
@@ -52,13 +102,7 @@ void floodMaze() {
     
     // Removes first cell from the queue
     Cell frontier = floodQueue.dequeue();
-    Serial.print("Row: ");
-    Serial.print(frontier.row);
-    Serial.print(" | Column: ");
-    Serial.print(frontier.column);
-    Serial.print(" | FloodDistance: ");
-    Serial.println(frontier.floodDistance);
-
+  
     int fRow = frontier.row;
     int fCol = frontier.column;
     int fDistance = frontier.floodDistance;
@@ -118,23 +162,32 @@ void initializeFloodMaze() {
       cellMap[i][j].visited = false;
     }
   }
+
+  // Adham, in case you think this is a bad variable name.
+  // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze 
+  if (findMinotaur) {
+    // Set center to 4 cells in the middle
+    cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
+    cellMap[CENTER_ROW][CENTER_COL].visited = true;
+    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
   
-  // Set center to 4 cells in the middle
-  cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
-  cellMap[CENTER_ROW][CENTER_COL].visited = true;
-  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
-
-  cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
-  cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
-  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
-
-  cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
-  cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
-  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
-
-  cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
-  cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
-  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
+    cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
+    cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
+    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
+  
+    cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
+    cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
+    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
+  
+    cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
+    cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
+    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
+  } else {
+    // Set objective cell to start (for runs where we want to reset the robot's position)
+    cellMap[START_ROW][START_COL].floodDistance = 0;
+    cellMap[START_ROW][START_COL].visited = true;
+    floodQueue.enqueue(cellMap[START_ROW][START_COL]);
+  }
 }
 
 void initializeCellMap() {
@@ -153,68 +206,36 @@ void initializeCellMap() {
   }
 }
 
+// SETUP
+
 void setup() {
   // put your setup code here, to run once:
-  //Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
-  Serial.begin(9600);
+  Serial.begin(57600);
   delay(1000);
   Serial.println("We're setting up the map!");
   Serial.println("I'm a map");
-//  Serial.println("Initializing:");
-//
-//  // Sets all sensors to low for initialization
-//  for (unsigned int i = 0; i < sensor_pins.size(); i++) {
-//    pinMode(sensor_pins[i], OUTPUT);
-//    digitalWrite(sensor_pins[i], LOW);
-//  }
-//
-//  // Initializes sensors
-//  for (unsigned int i = 0; i < sensor_pins.size(); i++) {
-//    initSensor(sensor_pins[i], sensors[i], i + 1);
-//  }
 
+  // Initialize Cell values in the CellMap
   initializeCellMap();
 
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
 
-  delay(2000);
-  floodMaze();
-
-  printVirtualMaze();
+  // I dont want to build a virtual maze generation algo
+  cellMap[6][7].walls |= NORTH;
 }
+
+// LOOP
 
 void loop() {
-  // put your main code here, to run repeatedly:  
+  floodMaze();
 
-  for (unsigned int i = 0; i < sensors.size(); i += 2) {
-    if (sensors[i]->readRangeContinuousMillimeters() < threshold) {
-      
-      Serial.print(sensor_names[i]);
-      Serial.print(" ");
-    }
-    if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
-  }
-  Serial.println();
+  Janus();
+  //mouseRow += 1;
 
-  // index 0 = left
-  // index 2 = front
-  // index 4 = right
-}
+  printVirtualMaze();
 
-void initSensor(int pin, VL6180X *sensor, int address) {
-    digitalWrite(pin, HIGH); 
-    sensor->init();
-    sensor->configureDefault();
-    sensor->setScaling(2);
-    sensor->setAddress(address);
-    sensor->setTimeout(500);
-    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
-    sensor->stopContinuous();
-    delay(300);
-    sensor->startRangeContinuous(30);
-    Serial.print(pin);
-    Serial.println(" connected.");
+  delay(5000);
 }
 
 // REWRITE FOR 2 DIMENSIONAL
@@ -269,7 +290,7 @@ void printVirtualRow(int row, bool isPostRow) {
         Serial.print(" ");
       }
 
-      if (row == mouseRow && col == mouseColumn) {
+      if (row == mouseRow && col == mouseCol) {
         Serial.print(" @ ");
       }
       else {
