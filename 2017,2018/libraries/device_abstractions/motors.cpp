@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <elapsedMillis.h>
 #include <PID_v1.h>
 #include "motors.hh"
 #include "sensors.hh"
@@ -135,6 +136,9 @@ Driver::Driver(
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
     _sensors(sensors)
 {
+    curr_xpos = 0.0;
+    curr_ypos = 0.0;
+    curr_angle = 0.0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 }
@@ -182,5 +186,79 @@ void Driver::movePID(float setpoint) {
         // Serial.println(setpoint);
         delay(100);
         drive(leftSpeed, rightSpeed);
+    }
+}
+
+void initializePID(PIDT<float>* pid, float proportion, float integral, float derivative) {
+    pid->SetOutputLimits(-30.0, 30.0);
+    pid->SetTunings(proportion, integral, derivative);
+    //turn the PID on
+    pid->SetMode(AUTOMATIC);
+}
+
+
+void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
+    unsigned int interval = refreshMs;
+    elapsedMillis timeElapsed;
+    // x = x position, y = y position, a = angle
+    // i = input, o = output, s = setpoint
+    float x_i=0, x_o=0, x_s=0, y_i=0, y_o=0, y_s=0, a_i=0, a_o=0, a_s=0;
+    float prop = 0.001;
+    float integ = 0;
+    float der = 0;
+
+    PIDT<float> pid_x(&x_i, &x_o, &x_s, prop, integ, der, DIRECT);
+    PIDT<float> pid_y(&y_i, &y_o, &y_s, prop, integ, der, DIRECT);
+    PIDT<float> pid_a(&a_i, &a_o, &a_s, prop, integ, der, DIRECT);
+    initializePID(&pid_x, prop, integ, der);
+    initializePID(&pid_y, prop, integ, der);
+    initializePID(&pid_a, prop, integ, der);
+
+    x_s = goal_x;
+    y_s = goal_y;
+    a_s = goal_a;
+
+    const float L = 9.25; // centimeters
+
+    while (1) {
+        if (timeElapsed > interval) {
+            x_i = curr_xpos;
+            y_i = curr_ypos;
+            a_i = curr_angle;
+
+            pid_x.Compute();
+            pid_y.Compute();
+            pid_a.Compute();
+
+            float lin_velocity = x_o + y_o;
+            float ang_velocity = a_o;
+
+            Serial.print("x_o: ");
+            Serial.print(x_o);
+            Serial.print(" lin_velocity: ");
+            Serial.print(lin_velocity);
+            Serial.print(" x_s: ");
+            Serial.print(x_s);
+            Serial.print(" xpos: ");
+            Serial.println(curr_xpos);
+
+            // L is width of robot?
+            float v_left = lin_velocity - L * ang_velocity / 2;
+            float v_right = lin_velocity + L * ang_velocity / 2;
+
+            // Serial.print("v_left: ");
+            // Serial.print(v_left);
+            // Serial.print(" v_right: ");
+            // Serial.println(v_right);
+            drive(v_left, v_right);
+            // robot state updates
+            float sample_t = 1 / interval;
+            curr_xpos += (v_left + v_right) / 2  * sample_t * cos(curr_angle);
+            curr_ypos += (v_left + v_right) / 2 * sample_t * sin(curr_angle);
+            curr_angle = dmod((curr_angle + ang_velocity * sample_t), 360);
+
+            // reset sample time
+            timeElapsed = 0;
+        }
     }
 }

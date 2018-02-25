@@ -69,6 +69,14 @@ class Driver {
 
         void movePID(float setpoint);
 
+        void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
+
+
+        // Robot state variables
+        float curr_xpos;
+        float curr_ypos;
+        float curr_angle;
+
     private:
         Motor _leftMotor;
         Motor _rightMotor;
