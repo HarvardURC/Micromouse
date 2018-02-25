@@ -37,7 +37,7 @@ Motor::Motor(
     pinMode(_directionPin, OUTPUT);
 
     _pidSetpoint=100000;
-    _pid.SetOutputLimits(-30.0, 30.0);
+    _pid.SetOutputLimits(-50.0, 50.0);
     //turn the PID on
     _pid.SetMode(AUTOMATIC);
 }
@@ -104,17 +104,21 @@ void Motor::moveTicksPID(long ticks) {
 // Testing function for if the PID works -- should oscillate at setpoint
 // or stop if our tuning values are awesome.
 void Motor::testPID() {
-    _pidSetpoint = 1000000;
+    _pidSetpoint = 100000;
     _encoder.write(0);
     _pidInput = _encoder.read();
     Serial.println(_pidInput);
     while (1) {
         _pidInput = _encoder.read();
         _pid.Compute();
-        Serial.println(_pidSetpoint);
+        Serial.print("Setpoint: ");
+        Serial.print(_pidSetpoint);
+        Serial.print(", input: ");
         Serial.println(_pidInput);
+        Serial.print(", output: ");
         Serial.println(_pidOutput);
         drive(_pidOutput);
+        delay(50);
     }
 }
 

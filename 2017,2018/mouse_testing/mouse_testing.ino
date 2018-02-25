@@ -52,11 +52,12 @@ void loop() {
       // driver->moveTicksPID(1000000);
       // motor->setpoint = 100000;
       // motor->drive(20);
-      motor->testPID();
-      Serial.println("FIN");
+      //motor->testPID();
+      //Serial.println("FIN");
       flag = 1;
     }
-    // Serial.println(motor->getPIDSpeed());
+    Serial.println(motor->getPIDSpeed(0));
+    delay(50);
     // motor->moveTicksPID(1000000);
 
     // Serial.println(motor->moveTicksPID(100000));
@@ -68,7 +69,7 @@ void loop() {
     // }
 
     /* Move ticks testing */
-    // motor->moveTicksPID(-2000000);
+    //motor->moveTicksPID(-2000000);
 
     /* Driver moving testing */
     // driver->drive(40);
