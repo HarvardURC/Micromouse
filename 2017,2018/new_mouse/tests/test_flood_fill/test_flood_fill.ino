@@ -44,6 +44,11 @@ void initializeFloodMaze();
 
 // Mouse chooses cell to move to
 void Janus() {
+  if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
+    Serial.println("we're here");
+    return;
+  }
+  
   // Initialize with arbitrarily large values
   // floodDistance of surrounding cells
   // 0 NORTH
@@ -150,28 +155,28 @@ void floodMaze() {
 bool checkWall(int row, int col, int dir) {
   if (dir == NORTH) {
     if (row > 0) {
-      if (cellMap[row - 1][col].walls & SOUTH) != SOUTH && (cellMap[row][col].walls & NORTH) != NORTH) {
+      if ((cellMap[row - 1][col].walls & SOUTH) != SOUTH && (cellMap[row][col].walls & NORTH) != NORTH) {
         return false;
       }
     }
     return true;
   } else if (dir == EAST) {
     if (col < 15) {
-      if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col] & EAST) != EAST) {
+      if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col].walls & EAST) != EAST) {
         return false;
       }
     }
     return true;
   } else if (dir == SOUTH) {
     if (row < 15) {
-      if (cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
+      if ((cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
         return false;
       }
     }
     return true;
   } else if (dir == WEST) {
     if (col > 0) {
-      if ((cellMap[row][col - 1].walls & EAST) != EAST && (cellMap[row][col] & WEST) != WEST) {
+      if ((cellMap[row][col - 1].walls & EAST) != EAST && (cellMap[row][col].walls & WEST) != WEST) {
         return false;
       }
     }
@@ -249,7 +254,12 @@ void setup() {
 
   // I dont want to build a virtual maze generation algo
   cellMap[6][7].walls |= NORTH;
-  cellMap[5][8].walls |= WEST;
+  cellMap[0][5].walls |= WEST;
+  cellMap[1][5].walls |= WEST;
+  cellMap[2][5].walls |= WEST;
+  cellMap[3][5].walls |= WEST;
+  cellMap[4][5].walls |= WEST;
+  cellMap[5][5].walls |= WEST;
   cellMap[3][4].walls |= SOUTH;
 }
 
@@ -319,7 +329,7 @@ void printVirtualRow(int row, bool isPostRow) {
       }
 
       if (row == mouseRow && col == mouseCol) {
-        Serial.print(" @ ");
+        Serial.print("@@@");
       }
       else {
         Serial.print(" ");
