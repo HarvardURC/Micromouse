@@ -38,6 +38,7 @@ void printVirtualMaze();
 void printVirtualRow(int row, bool isPostRow);
 void initializeCellMap();
 void floodMaze();
+bool checkWall(int row, int col, int dir);
 void Janus();
 void initializeFloodMaze();
 
@@ -53,19 +54,19 @@ void Janus() {
 
   // TODO check for walls
   // NORTH
-  if (mouseRow > 0) {
+  if (!checkWall(mouseRow, mouseCol, NORTH)) {
     choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
   }
   // EAST
-  if (mouseCol < 15) {
+  if (!checkWall(mouseRow, mouseCol, EAST)) {
     choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
   }
   // SOUTH
-  if (mouseRow < 15) {
+  if (!checkWall(mouseRow, mouseCol, SOUTH)) {
     choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
   }
   // WEST
-  if (mouseCol > 0) {
+  if (!checkWall(mouseRow, mouseCol, WEST)) {
     choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
   }
 
@@ -102,45 +103,45 @@ void floodMaze() {
     
     // Removes first cell from the queue
     Cell frontier = floodQueue.dequeue();
-  
+    
     int fRow = frontier.row;
     int fCol = frontier.column;
     int fDistance = frontier.floodDistance;
     
     // Check Northern Cell
     if (fRow > 0 && !cellMap[fRow - 1][fCol].visited && !checkWall(fRow, fCol, NORTH)) {
-        if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
-          cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
-        }
+      if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
+        cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
+      }
         cellMap[fRow - 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow - 1][fCol]);
-      }
-
+    }
+    
     // Check Eastern Cell
     if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
       if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
         cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
-    cellMap[fRow][fCol + 1].visited = true;
-    floodQueue.enqueue(cellMap[fRow][fCol + 1]);
+        cellMap[fRow][fCol + 1].visited = true;
+        floodQueue.enqueue(cellMap[fRow][fCol + 1]);
     }
     
     // Check Southern Cell
-   if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
+    if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
       if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
         cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
       }
-      cellMap[fRow + 1][fCol].visited = true;
-      floodQueue.enqueue(cellMap[fRow + 1][fCol]);
+        cellMap[fRow + 1][fCol].visited = true;
+        floodQueue.enqueue(cellMap[fRow + 1][fCol]);
     }
-
+      
     // Check Western Cell
     if (fCol > 0 && !cellMap[fRow][fCol - 1].visited && !checkWall(fRow, fCol, WEST)) {
       if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
         cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
       }
-      cellMap[fRow][fCol - 1].visited = true;
-      floodQueue.enqueue(cellMap[fRow][fCol - 1]);
+        cellMap[fRow][fCol - 1].visited = true;
+        floodQueue.enqueue(cellMap[fRow][fCol - 1]);
     }
   }
 }
@@ -153,7 +154,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == EAST) {
     if (col < 15) {
@@ -161,7 +161,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == SOUTH) {
     if (row < 15) {
@@ -169,7 +168,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == WEST) {
     if (col > 0) {
@@ -177,7 +175,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   }
 
@@ -252,6 +249,8 @@ void setup() {
 
   // I dont want to build a virtual maze generation algo
   cellMap[6][7].walls |= NORTH;
+  cellMap[5][8].walls |= WEST;
+  cellMap[3][4].walls |= SOUTH;
 }
 
 // LOOP
@@ -264,7 +263,7 @@ void loop() {
 
   printVirtualMaze();
 
-  delay(5000);
+  delay(2000);
 }
 
 // REWRITE FOR 2 DIMENSIONAL
