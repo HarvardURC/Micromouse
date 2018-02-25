@@ -8,9 +8,12 @@
 #include <Encoder.h>
 #include "config.h"
 
+using namespace pins;
+
 //Define Variables we'll be connecting to
 double Setpoint, Input, Output;
-Encoder encoderLeft(pins::encoderL1, pins::encoderL2);
+Encoder encoderLeft(encoderL1, encoderL2);
+Encoder encoderRight(encoderR1, encoderR2);
 
 //Specify the links and initial tuning parameters
 int goal = 1000000;
@@ -26,10 +29,14 @@ void setup()
     delay(1000);
 
     //set up motors
-    pinMode(pins::motorDirectionL, OUTPUT);
-    pinMode(pins::motorPowerL, OUTPUT);
-    pinMode(pins::motorMode, OUTPUT);
-    digitalWrite(pins::motorMode, HIGH);
+    pinMode(motorDirectionR, OUTPUT);
+    pinMode(motorPowerR, OUTPUT);
+
+    pinMode(motorDirectionL, OUTPUT);
+    pinMode(motorPowerL, OUTPUT);
+
+    pinMode(motorMode, OUTPUT);
+    digitalWrite(motorMode, HIGH);
 
     //initialize the variables we're linked to
     Input = 0;
@@ -43,13 +50,27 @@ void setup()
 
 void loop()
 {
-    Input = encoderLeft.read();
-    myPID.Compute();
+    while(millis() < 5000) {
+        Input = encoderLeft.read();
+        myPID.Compute();
 
-    Serial.println(Output);
+        Serial.print("Left motor: ");
+        Serial.println(Output);
 
-    digitalWrite(pins::motorDirectionL, Output >= 0 ? HIGH : LOW);
-    analogWrite(pins::motorPowerL, abs(Output));
+        digitalWrite(motorDirectionL, Output >= 0 ? HIGH : LOW);
+        analogWrite(motorPowerL, abs(Output));
+    }
+    while(millis() < 10000) {
+        Input = encoderRight.read();
+        myPID.Compute();
+
+        Serial.print("Right motor: ");
+        Serial.println(Output);
+
+        digitalWrite(motorDirectionR, Output >= 0 ? HIGH : LOW);
+        analogWrite(motorPowerR, abs(Output));
+    }
+    Serial.println("Finished.");
 }
 
 

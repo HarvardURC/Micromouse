@@ -30,7 +30,6 @@ class Motor {
 
         void testPID();
 
-    private:
         int _powerPin;
         int _directionPin;
 

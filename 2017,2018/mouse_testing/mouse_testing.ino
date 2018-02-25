@@ -1,3 +1,4 @@
+
 #include "config.h"
 #include "io.hh"
 #include "motors.hh"
@@ -6,47 +7,41 @@
 using namespace pins;
 
 Driver* driver;
-Motor* motor;
 SensorArray* sensorArr;
 Buzzer* buzz;
 int flag = 0;
 
 void setup() {
-    Serial.begin(9600);
-    delay(1000);
+  Serial.begin(9600);
+  delay(500);
 
-    sensorArr = new SensorArray(
-      tofLeftDiagS,
-      tofRightDiagS,
-      tofFrontS,
-      tofFrontL,
-      imuRST);
+  sensorArr = new SensorArray(
+    tofLeftDiagS,
+    tofRightDiagS,
+    tofFrontS,
+    tofFrontL,
+    imuRST);
 
-    // driver = new Driver(
-    //   motorPowerL,
-    //   motorDirectionL,
-    //   motorPowerR,
-    //   motorDirectionR,
-    //   motorMode,
-    //   encoderL1,
-    //   encoderL2,
-    //   encoderR1,
-    //   encoderR2,
-    //   *sensorArr);
-    motor = new Motor(
-        motorPowerR,
-        motorDirectionR,
-        encoderR1,
-        encoderR2,
-        *sensorArr);
+  driver = new Driver(
+    motorPowerL,
+    motorDirectionL,
+    motorPowerR,
+    motorDirectionR,
+    motorMode,
+    encoderL1,
+    encoderL2,
+    encoderR1,
+    encoderR2,
+    *sensorArr);
 
-    buzz = new Buzzer(buzzer);
+  buzz = new Buzzer(buzzer);
 
-    pinMode(motorMode, OUTPUT);
-    digitalWrite(motorMode, HIGH);
+  pinMode(motorMode, OUTPUT);
+  digitalWrite(motorMode, HIGH);
 }
 
 void loop() {
+<<<<<<< HEAD
     if (flag == 0) {
       /* PID movement testing */
       // driver->moveTicksPID(1000000);
@@ -80,4 +75,11 @@ void loop() {
     // delay(2000);
     // driver->drive(0);
     // delay(2000);
+=======
+  if (flag == 0) {
+    /* PID movement testing */
+    driver->movePID(1000000);
+    flag = 1;
+  }
+>>>>>>> 7e02cbba78d7e02ca6d7d3749ae03c2fc3a9a0a1
 }
