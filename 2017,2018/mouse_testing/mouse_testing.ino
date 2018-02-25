@@ -1,8 +1,8 @@
-
 #include "config.h"
 #include "io.hh"
 #include "motors.hh"
 #include "sensors.hh"
+#include "bluetooth.hh"
 
 using namespace pins;
 

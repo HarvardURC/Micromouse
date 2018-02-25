@@ -1,11 +1,6 @@
 #include "config.h"
 #include "bluetooth.hh"
 
-#include <SPI.h>
-#include <Adafruit_BLE.h>
-#include <Adafruit_BluefruitLE_SPI.h>
-#include <Adafruit_BluefruitLE_UART.h>
-
 #define BUFSIZE                        	160   	// Size of the read buffer for incoming data
 #define VERBOSE_MODE                   	true  	// If set to 'true' enables debug output
 #define FACTORYRESET_ENABLE         	1		// Reset to forget all previous settings
@@ -22,9 +17,9 @@ void error(const __FlashStringHelper*err) {
 Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
 // Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
 
-Bluetooth::Bluetooth() {
+void bluetoothInitialize() {
 	// Define pins
-	//SPI.setSCK(pins::SCK);	// using alternate SCK pin
+	SPI.setSCK(pins::SCK);	// using alternate SCK pin
     SPI.begin();
 
     Serial.begin(115200);
@@ -83,16 +78,3 @@ Bluetooth::Bluetooth() {
 
     Serial.println(F("******************************"));
 }
-
-int Bluetooth::read() {
-	return ble.read();
-}
-
-void Bluetooth::print(char* output) {
-	ble.print(output);
-}
-
-int Bluetooth::available() {
-	return ble.available();
-}
-
