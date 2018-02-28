@@ -38,6 +38,7 @@ void printVirtualMaze();
 void printVirtualRow(int row, bool isPostRow);
 void initializeCellMap();
 void floodMaze();
+bool checkWall(int row, int col, int dir);
 void Janus();
 void initializeFloodMaze();
 void generateWall();
@@ -69,6 +70,11 @@ void generateWall() {
 
 // Mouse chooses cell to move to
 void Janus() {
+  if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
+    Serial.println("we're here");
+    return;
+  }
+  
   // Initialize with arbitrarily large values
   // floodDistance of surrounding cells
   // 0 NORTH
@@ -79,19 +85,19 @@ void Janus() {
 
   // TODO check for walls
   // NORTH
-  if (mouseRow > 0) {
+  if (!checkWall(mouseRow, mouseCol, NORTH)) {
     choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
   }
   // EAST
-  if (mouseCol < 15) {
+  if (!checkWall(mouseRow, mouseCol, EAST)) {
     choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
   }
   // SOUTH
-  if (mouseRow < 15) {
+  if (!checkWall(mouseRow, mouseCol, SOUTH)) {
     choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
   }
   // WEST
-  if (mouseCol > 0) {
+  if (!checkWall(mouseRow, mouseCol, WEST)) {
     choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
   }
 
@@ -128,57 +134,82 @@ void floodMaze() {
     
     // Removes first cell from the queue
     Cell frontier = floodQueue.dequeue();
-  
+    
     int fRow = frontier.row;
     int fCol = frontier.column;
     int fDistance = frontier.floodDistance;
     
     // Check Northern Cell
-    if (fRow > 0) {
-      // If the Northern Cell is not visited, and there is no wall between the frontier and the Northern Cell, enqueue the Northern Cell
-      if (!cellMap[fRow - 1][fCol].visited && (cellMap[fRow - 1][fCol].walls & SOUTH) != SOUTH && (frontier.walls & NORTH) != NORTH) {
-        if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
-          cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
-        }
+    if (fRow > 0 && !cellMap[fRow - 1][fCol].visited && !checkWall(fRow, fCol, NORTH)) {
+      if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
+        cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
+      }
         cellMap[fRow - 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow - 1][fCol]);
-      }
     }
-
+    
     // Check Eastern Cell
-    if (fCol < 15) {
-      if (!cellMap[fRow][fCol + 1].visited && (cellMap[fRow][fCol + 1].walls & WEST) != WEST && (frontier.walls & EAST) != EAST) {
-        if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
-          cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
-        }
-      cellMap[fRow][fCol + 1].visited = true;
-      floodQueue.enqueue(cellMap[fRow][fCol + 1]);
+    if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
+      if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
+        cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
+        cellMap[fRow][fCol + 1].visited = true;
+        floodQueue.enqueue(cellMap[fRow][fCol + 1]);
     }
     
     // Check Southern Cell
-    if (fRow < 15) {
-      // If the Southern Cell is not visited, and there is no wall between the frontier and the Southern Cell, enqueue the Southern Cell
-      if (!cellMap[fRow + 1][fCol].visited && (cellMap[fRow + 1][fCol].walls & NORTH) != NORTH && (frontier.walls & SOUTH) != SOUTH) {
-        if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
-          cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
-        }
+    if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
+      if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
+        cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
+      }
         cellMap[fRow + 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow + 1][fCol]);
-      }
     }
-
+      
     // Check Western Cell
-    if (fCol > 0) {
-      if (!cellMap[fRow][fCol - 1].visited && (cellMap[fRow][fCol - 1].walls & EAST) != EAST && (frontier.walls & WEST) != WEST) {
-        if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
-          cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
-        }
+    if (fCol > 0 && !cellMap[fRow][fCol - 1].visited && !checkWall(fRow, fCol, WEST)) {
+      if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
+        cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
+      }
         cellMap[fRow][fCol - 1].visited = true;
         floodQueue.enqueue(cellMap[fRow][fCol - 1]);
-      }
     }
   }
+}
+
+// Returns TRUE if wall exists, FALSE if not
+bool checkWall(int row, int col, int dir) {
+  if (dir == NORTH) {
+    if (row > 0) {
+      if ((cellMap[row - 1][col].walls & SOUTH) != SOUTH && (cellMap[row][col].walls & NORTH) != NORTH) {
+        return false;
+      }
+    }
+    return true;
+  } else if (dir == EAST) {
+    if (col < 15) {
+      if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col].walls & EAST) != EAST) {
+        return false;
+      }
+    }
+    return true;
+  } else if (dir == SOUTH) {
+    if (row < 15) {
+      if ((cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
+        return false;
+      }
+    }
+    return true;
+  } else if (dir == WEST) {
+    if (col > 0) {
+      if ((cellMap[row][col - 1].walls & EAST) != EAST && (cellMap[row][col].walls & WEST) != WEST) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
 }
 
 void initializeFloodMaze() {
@@ -252,6 +283,13 @@ void setup() {
 
   // I dont want to build a virtual maze generation algo
   cellMap[6][7].walls |= NORTH;
+  cellMap[0][5].walls |= WEST;
+  cellMap[1][5].walls |= WEST;
+  cellMap[2][5].walls |= WEST;
+  cellMap[3][5].walls |= WEST;
+  cellMap[4][5].walls |= WEST;
+  cellMap[5][5].walls |= WEST;
+  cellMap[3][4].walls |= SOUTH;
 }
 
 // LOOP
@@ -264,7 +302,7 @@ void loop() {
 
   printVirtualMaze();
 
-  delay(5000);
+  delay(2000);
 }
 
 // REWRITE FOR 2 DIMENSIONAL
@@ -320,7 +358,7 @@ void printVirtualRow(int row, bool isPostRow) {
       }
 
       if (row == mouseRow && col == mouseCol) {
-        Serial.print(" @ ");
+        Serial.print("@@@");
       }
       else {
         Serial.print(" ");
