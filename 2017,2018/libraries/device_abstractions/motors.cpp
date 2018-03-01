@@ -3,13 +3,19 @@
 #include <PID_v1.h>
 #include "motors.hh"
 #include "sensors.hh"
+#include "bluetooth.hh"
 
 // The error threshold for the encoder values
 const int encoderTolerance = 5000;
 const unsigned long timeout = 10000;
-const float proportion = 0.0001;
+const float proportion = 0.002;
 const float derivative = 0;
 const float integral = 0;
+const float pidLimit = 70.0;
+// Conversion ratio from encoder ticks to centimeters
+const float ticksToCm = 1. / 8630;
+// Wheel distance
+const float L = 9.25; // centimeters
 
 // Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
 // From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
@@ -43,7 +49,7 @@ Motor::Motor(
 
     _pidSetpoint = 100000;
     _pidOutput = 0;
-    _pid.SetOutputLimits(-30.0, 30.0);
+    _pid.SetOutputLimits(pidLimit * -1, pidLimit);
     _pid.SetTunings(proportion, integral, derivative);
     //turn the PID on
     _pid.SetMode(AUTOMATIC);
@@ -83,6 +89,8 @@ void Motor::moveTicks(long ticks) {
 float Motor::getPIDSpeed(float setpoint) {
     _pidSetpoint = setpoint;
     _pidInput = _encoder.read();
+    Serial.print("Encdoer: ");
+    Serial.println(_pidInput);
     _pid.Compute();
     return _pidOutput;
 }
@@ -174,36 +182,54 @@ void Driver::turnDegrees(float degrees) {
 void Driver::movePID(float setpoint) {
     float leftSpeed = 1;
     float rightSpeed = 1;
+    int start_flag = 0;
     while (abs(leftSpeed) > 0.5 || abs(rightSpeed) > 0.5) {
         float leftSpeed = _leftMotor.getPIDSpeed(setpoint);
         float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
         // Debugging code
-        // Serial.print("Left motor speed: ");
-        // Serial.print(leftSpeed);
-        // Serial.print(" Right motor speed: ");
-        // Serial.print(rightSpeed);
-        // Serial.print(" Setpoint: ");
-        // Serial.println(setpoint);
-        delay(100);
-        drive(leftSpeed, rightSpeed);
+        Serial.print("Left motor speed: ");
+        Serial.print(leftSpeed);
+        Serial.print(" Right motor speed: ");
+        Serial.print(rightSpeed);
+        Serial.print(" Setpoint: ");
+        Serial.println(setpoint);
+        // delay(500);
+        if (abs(leftSpeed) > 1 && abs(rightSpeed) > 1) {
+            start_flag = 1;
+        }
+        if (start_flag) {
+            drive(leftSpeed, rightSpeed);
+        }
     }
 }
 
 void initializePID(PIDT<float>* pid, float proportion, float integral, float derivative) {
-    pid->SetOutputLimits(-30.0, 30.0);
+    pid->SetOutputLimits(pidLimit * -1, pidLimit);
     pid->SetTunings(proportion, integral, derivative);
     //turn the PID on
     pid->SetMode(AUTOMATIC);
 }
 
 
+float fixMotorSpeed(float speed, int limit) {
+    float outspeed = speed;
+    if (speed > limit) {
+        outspeed = limit;
+    }
+    else if (speed < -1 * limit) {
+        outspeed = -1 * limit;
+    }
+    return outspeed;
+}
+
+
 void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     unsigned int interval = refreshMs;
-    elapsedMillis timeElapsed;
+    elapsedMillis timeElapsed = 1000;
     // x = x position, y = y position, a = angle
     // i = input, o = output, s = setpoint
     float x_i=0, x_o=0, x_s=0, y_i=0, y_o=0, y_s=0, a_i=0, a_o=0, a_s=0;
-    float prop = 0.001;
+    float prop = 10;
     float integ = 0;
     float der = 0;
 
@@ -218,10 +244,32 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     y_s = goal_y;
     a_s = goal_a;
 
-    const float L = 9.25; // centimeters
+    long encLeft = 0;
+    long encRight = 0;
+    float v_left = 0.;
+    float v_right = 0.;
+    const int motorLimit = 50;
+    const float errorTolerance = 0.0001;
+    float old_xpos = curr_xpos;
+    float old_ypos = curr_ypos;
 
-    while (1) {
+    do {
         if (timeElapsed > interval) {
+            // robot state updates
+            old_xpos = curr_xpos;
+            old_ypos = curr_ypos;
+            float sample_t = 1. / interval;
+            float true_v_left = (_leftMotor.readTicks() - encLeft) * ticksToCm / sample_t;
+            encLeft = _leftMotor.readTicks();
+            float true_v_right = (_rightMotor.readTicks() - encRight) * ticksToCm / sample_t;
+            encRight = _rightMotor.readTicks();
+            float true_ang_v = (true_v_right - true_v_left) / L;
+            curr_xpos += (true_v_left + true_v_right) / 2  * sample_t * cos(curr_angle);
+            // Serial.print("cur_xpos calculation: ");
+            // Serial.println(sample_t);
+            curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * sin(curr_angle);
+            curr_angle = curr_angle + true_ang_v * sample_t;
+
             x_i = curr_xpos;
             y_i = curr_ypos;
             a_i = curr_angle;
@@ -242,23 +290,34 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             Serial.print(" xpos: ");
             Serial.println(curr_xpos);
 
-            // L is width of robot?
-            float v_left = lin_velocity - L * ang_velocity / 2;
-            float v_right = lin_velocity + L * ang_velocity / 2;
+            Serial.print("y_o: ");
+            Serial.print(y_o);
+            Serial.print(" lin_velocity: ");
+            Serial.print(lin_velocity);
+            Serial.print(" y_s: ");
+            Serial.print(y_s);
+            Serial.print(" ypos: ");
+            Serial.println(curr_ypos);
 
-            // Serial.print("v_left: ");
-            // Serial.print(v_left);
-            // Serial.print(" v_right: ");
-            // Serial.println(v_right);
+            Serial.print(" curr_angle: ");
+            Serial.println(curr_angle * 180 / 3.14);
+
+            // L is width of robot?
+            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2, motorLimit);
+            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2, motorLimit);
+
+            Serial.print("v_left: ");
+            Serial.print(v_left);
+            Serial.print(" v_right: ");
+            Serial.println(v_right);
             drive(v_left, v_right);
-            // robot state updates
-            float sample_t = 1 / interval;
-            curr_xpos += (v_left + v_right) / 2  * sample_t * cos(curr_angle);
-            curr_ypos += (v_left + v_right) / 2 * sample_t * sin(curr_angle);
-            curr_angle = dmod((curr_angle + ang_velocity * sample_t), 360);
 
             // reset sample time
             timeElapsed = 0;
         }
-    }
+    } while (1);
 }
+
+// void driver::updateState() {
+//     return;
+// }

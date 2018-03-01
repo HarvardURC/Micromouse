@@ -81,6 +81,8 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
+
+        // void updateState();
 };
 
 #endif
