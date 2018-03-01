@@ -32,7 +32,7 @@ class Button {
         // Constructor
         Button(int buttonPin);
 
-        int readButton();
+        int read();
 
     private:
         int _buttonPin;

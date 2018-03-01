@@ -55,7 +55,7 @@ Button::Button(int buttonPin) : _buttonPin(buttonPin) {
 }
 
 
-int Button::readButton() {
+int Button::read() {
     return digitalRead(_buttonPin);
 }
 
