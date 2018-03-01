@@ -45,7 +45,7 @@ void generateWall();
 
 void generateWall() {
   for (int i = 0; i < 16; i = i + 2) {
-    for (int j = 0; j < 16; j = j + 2) {
+    for (int j = 0; j < 16; ++j) {
       int nWalls = random(0, 3);
       for (int k = 0; k < nWalls; ++k) {
         int d = random (0, 3);
@@ -278,19 +278,8 @@ void setup() {
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
 
-  randomSeed(1);
+  randomSeed(17);
   generateWall();
-
-  // I dont want to build a virtual maze generation algo
-  cellMap[6][7].walls |= NORTH;
-  cellMap[0][5].walls |= WEST;
-  cellMap[1][5].walls |= WEST;
-  cellMap[2][5].walls |= WEST;
-  cellMap[3][5].walls |= WEST;
-  cellMap[4][5].walls |= WEST;
-  cellMap[5][5].walls |= WEST;
-  cellMap[3][4].walls |= SOUTH;
-}
 
 // LOOP
 
