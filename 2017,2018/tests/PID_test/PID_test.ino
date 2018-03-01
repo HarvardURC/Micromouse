@@ -1,6 +1,7 @@
 /*
     Tests if the PID can successfully and smoothly reach
     a goal motor rotation as measued by the encoder.
+    (bare bones)
 */
 
 #include <PID_v1.h>

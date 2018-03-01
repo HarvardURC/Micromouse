@@ -631,3 +631,52 @@ void printMaze()
   }
   Serial.print ("\n");
 }
+
+/* returns the */
+void scoutNextMove() {
+  unsigned char currentCell = 16 * currentRow + currentCol;
+  int nextDir = chooseNextDir(currentCell, mouseDir);
+  // record the new position
+  currentRow += offsetMap[nextDir] / 16;
+  currentCol += offsetMap[nextDir] % 16;
+  mouseDir = nextDir;
+  return nextDir;
+}
+  
+/* conducts the speedrun */
+void speedRun()
+{
+  // two arrays encode the speed run, with alternating straights and turns (straight first)
+  int straightAways[256];
+  // 0 for right turns, 1 for left turns
+  unsigned char turns[256];
+  int move_index = 0;
+  while (cellMap[(16*currentRow) + currentCol] == 0)
+  {
+    // run the flood-fill algorithm
+    floodMaze();
+    int nextDir = scoutNextMove();
+    // 
+    switch (nextDir)
+    {
+      case 1:
+        turns[move_index] = 0;
+        move_index++;
+        break;
+      case 3:
+        turns[move_index] = 1;
+        move_index++;
+        break;
+    }
+    straightAways[move_index] += 1;
+  }
+  // now actually do the speedRun
+  for (int i; i <= move_index; i++) 
+  {
+    // move the straightaway - big move not implemented
+    straightAways[i];
+    // make the turn
+    makeTurn(turns[move_index]);
+  }
+}
+

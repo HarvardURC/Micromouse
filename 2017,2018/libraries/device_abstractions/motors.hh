@@ -40,6 +40,9 @@ class Motor {
         float _pidSetpoint;
         float _pidInput = 0;
         float _pidOutput = 0;
+        float _pidProportion = 0.01;
+        float _pidIntegral = 0;//.000000001;
+        float _pidDerivative = 0;//.000000001;
 };
 
 class Driver {
