@@ -74,6 +74,10 @@ class Driver {
 
         void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
 
+        void resetState();
+
+        void brake();
+
 
         // Robot state variables
         float curr_xpos;
@@ -84,8 +88,6 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
-
-        // void updateState();
 };
 
 #endif

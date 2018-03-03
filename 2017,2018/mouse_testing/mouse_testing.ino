@@ -11,22 +11,28 @@ SensorArray* sensorArr;
 Buzzer* buzz;
 Button* backButt;
 Button* frontButt;
-int flag = 0;
+RGB_LED* backRgb;
+RGB_LED* frontRgb;
+int test_num = 0;
+int test_level = 0;
 int x = 60;
 int y = 64;
 
+void waitButton();
+void adjustTestLevel();
+
 void setup() {
-  Serial.begin(9600);
-  delay(500);
+    Serial.begin(9600);
+    delay(500);
 
-  // sensorArr = new SensorArray(
-  //   tofLeftDiagS,
-  //   tofRightDiagS,
-  //   tofFrontS,
-  //   tofFrontL,
-  //   imuRST);
+    // sensorArr = new SensorArray(
+    //   tofLeftDiagS,
+    //   tofRightDiagS,
+    //   tofFrontS,
+    //   tofFrontL,
+    //   imuRST);
 
-  driver = new Driver(
+    driver = new Driver(
     motorPowerL,
     motorDirectionL,
     motorPowerR,
@@ -38,42 +44,113 @@ void setup() {
     encoderR2,
     *sensorArr);
 
-  buzz = new Buzzer(buzzer);
-  backButt = new Button(backButton);
-  frontButt = new Button(frontButton);
+    buzz = new Buzzer(buzzer);
+    backButt = new Button(backButton);
+    frontButt = new Button(frontButton);
+    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
+    frontRgb->switchLED(2);
 
-  pinMode(motorMode, OUTPUT);
-  digitalWrite(motorMode, HIGH);
+    pinMode(motorMode, OUTPUT);
+    digitalWrite(motorMode, HIGH);
+
+    adjustTestLevel();
 }
 
 void loop() {
-  if (flag == 0) {
-    /* PID movement testing */
-    // 400 -> 20cm
-    // driver->go(0, -10, 0, 5.0);
-    //driver->go(20, 0, 0, 5.0);
-    // driver->go(20, 0, 3.14 / 2, 5.0);
-    // driver->go(20, 20, 3.14 / 2, 5.0);
-    
-    // 180 degree turn
-    driver->go(0, 0, 3.14, 5.0);
-    
-    flag = 1;
-  }
-    // if (backButt->read() == LOW) {
-    //     y += 2;
-    //     Serial.println("Increase right by 5\n");
-    //     delay(1000);
-    // }
-    // if (frontButt->read() == LOW) {
-    //     y -= 2;
-    //     Serial.println("Decrease right by 5\n");
-    //     delay(1000);
-    // }
-    // Serial.print("Left speed: ");
-    // Serial.print(x);
-    // Serial.print(" Right speed: ");
-    // Serial.println(y);
+    frontRgb->switchLED(2);
+    switch(test_level) {
+        case 0:
+            switch(test_num) {
+                // LEVEL 1 TESTS
+                case 0:
+                    // 10cm forward
+                    driver->go(10, 0, 0);
+                    break;
+                case 1:
+                    // 30cm forward
+                    driver->go(30, 0, 0);
+                    break;
+                case 2:
+                    // 90 degrees left
+                    driver->go(0, 0, 3.14 / 2);
+                    break;
+                case 3:
+                    // 90 degree right
+                    driver->go(0, 0, -1 * 3.14 / 2);
+                    break;
+                case 4:
+                    // 180 turn
+                    driver->go(0, 0, 3.14);
+                    break;
+                case 5:
+                    // 360 turn
+                    driver->go(0, 0, 2*3.14);
+                    break;
+                default:
+                    // nothing
+                    break;
+            }
+            break;
+        case 1:
+            switch(test_num) {
+                // LEVEL 2 TESTS
+                case 0:
+                    driver->go(0, 0, 3.14 / 2);
+                    driver->go(0, 10, 3.14 / 2);
+                case 1:
+                    driver->go(0, 0, 3.14 / 4);
+                    driver->go(10, 10, 3.14 / 4);
+                default:
+                    break;
+            }
+            break;
+        case 2:
+            switch(test_num) {
+                // LEVEL 3 TESTS
+                case 0:
+                    // Back and forth
+                    driver->go(10, 0, 0);
+                    driver->go(10, 0, 3.14);
+                    driver->go(0, 0, 3.14);
+                    driver->go(0, 0, 0);
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
 
-    // driver->drive(x, y);
+    }
+    frontRgb->switchLED(2);
+    driver->resetState();
+    backRgb->flashLED(0);
+    waitButton();
+}
+
+// If the back button is pressed, go to next test case
+// If front button pressed, repeat test case
+void waitButton() {
+    while (1) {
+        if (backButt->read() == LOW) {
+            test_num += 1;
+            break;
+        }
+        if (frontButt->read() == LOW) {
+            break;
+        }
+    }
+    delay(1000);
+}
+
+// Increments the testing level if the front button is pressed
+void adjustTestLevel() {
+    while (backButt->read() != LOW) {
+        if (frontButt->read() == LOW) {
+            test_level += 1;
+            backRgb->flashLED(1);
+            delay(1000);
+        }
+    }
+    delay(1000);
 }
