@@ -51,9 +51,13 @@ void loop() {
     /* PID movement testing */
     // 400 -> 20cm
     // driver->go(0, -10, 0, 5.0);
-    driver->go(20, 0, 0, 5.0);
+    //driver->go(20, 0, 0, 5.0);
     // driver->go(20, 0, 3.14 / 2, 5.0);
     // driver->go(20, 20, 3.14 / 2, 5.0);
+    
+    // 180 degree turn
+    driver->go(0, 0, 3.14, 5.0);
+    
     flag = 1;
   }
     // if (backButt->read() == LOW) {

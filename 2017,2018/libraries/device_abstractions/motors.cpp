@@ -285,8 +285,16 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             float lin_velocity = x_o + y_o;
             float ang_velocity = a_o;
 
+            // cut off loop for tank turns once angle is achieved
+            // MAGIC NUMBER for cutoff
+            float tank_angle_threshold = .2;
+            if (x_s == 0 && y_s == 0 && abs(curr_angle - a_s) < tank_angle_threshold * 3.14/180) {
+              drive(0, 0);
+              break;
+            }
+
             Serial.print("x_o: ");
-            Serial.print(x_o);
+            Serial.print(a_s);
             Serial.print(" lin_velocity: ");
             Serial.print(lin_velocity);
             Serial.print(" x_s: ");
