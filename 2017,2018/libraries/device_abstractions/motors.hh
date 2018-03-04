@@ -76,6 +76,9 @@ class Driver {
 
         void resetState();
 
+        void forward(float distance);
+        void turnLeft(float degrees);
+        void turnRight(float degrees);
         void brake();
 
 

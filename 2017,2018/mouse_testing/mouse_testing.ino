@@ -65,27 +65,28 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     // 10cm forward
-                    driver->go(10, 0, 0);
+                    driver->forward(10);
                     break;
                 case 1:
                     // 30cm forward
-                    driver->go(30, 0, 0);
+                    driver->forward(30);
                     break;
                 case 2:
                     // 90 degrees left
-                    driver->go(0, 0, 3.14 / 2);
+                    driver->turnLeft(90);
                     break;
                 case 3:
                     // 90 degree right
-                    driver->go(0, 0, -1 * 3.14 / 2);
+                    // driver->turnRight(90);
+                    driver->turnRight(90);
                     break;
                 case 4:
                     // 180 turn
-                    driver->go(0, 0, 3.14);
+                    driver->turnLeft(180);
                     break;
                 case 5:
                     // 360 turn
-                    driver->go(0, 0, 2*3.14);
+                    driver->turnRight(360);
                     break;
                 default:
                     // nothing
@@ -96,11 +97,13 @@ void loop() {
             switch(test_num) {
                 // LEVEL 2 TESTS
                 case 0:
-                    driver->go(0, 0, 3.14 / 2);
-                    driver->go(0, 10, 3.14 / 2);
+                    driver->turnLeft(90);
+                    driver->forward(10);
+                    break;
                 case 1:
-                    driver->go(0, 0, 3.14 / 4);
-                    driver->go(10, 10, 3.14 / 4);
+                    driver->turnRight(45);
+                    driver->forward(10);
+                    break;
                 default:
                     break;
             }
@@ -110,10 +113,11 @@ void loop() {
                 // LEVEL 3 TESTS
                 case 0:
                     // Back and forth
-                    driver->go(10, 0, 0);
-                    driver->go(10, 0, 3.14);
-                    driver->go(0, 0, 3.14);
-                    driver->go(0, 0, 0);
+                    driver->forward(20);
+                    driver->turnLeft(180);
+                    driver->forward(20);
+                    driver->turnRight(180);
+                    break;
                 default:
                     break;
             }

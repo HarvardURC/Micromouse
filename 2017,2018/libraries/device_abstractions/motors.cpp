@@ -16,7 +16,8 @@ const float pidLimit = 70.0;
 const float ticksToCm = 1. / 8630;
 // Wheel distance
 const float L = 9.25; // centimeters
-int motorFloor = 25;
+const float degToRad = 3.14159 / 180;
+int motorFloor = 30;
 
 // Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
 // From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
@@ -298,6 +299,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
               break;
             }
 
+            // L is width of robot?
+            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2, motorLimit);
+            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2, motorLimit);
+
+            /* Begin debug code */
             Serial.print("x_o: ");
             Serial.print(a_s);
             Serial.print(" lin_velocity: ");
@@ -319,14 +325,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             Serial.print(" curr_angle: ");
             Serial.println(curr_angle * 180 / 3.14);
 
-            // L is width of robot?
-            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2, motorLimit);
-            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2, motorLimit);
-
             Serial.print("v_left: ");
             Serial.print(v_left);
             Serial.print(" v_right: ");
             Serial.println(v_right);
+            /* End debug code */
+
             drive(v_left, v_right);
 
             // robot state updates
@@ -335,16 +339,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             encLeft = _leftMotor.readTicks();
             float true_v_right = (_rightMotor.readTicks() - encRight) * ticksToCm / sample_t;
             encRight = _rightMotor.readTicks();
+
             float true_ang_v = (true_v_right - true_v_left) / L;
             curr_xpos += (true_v_left + true_v_right) / 2  * sample_t * cos(curr_angle);
-            // Serial.print("cur_xpos calculation: ");
-            // Serial.println(sample_t);
             curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * sin(curr_angle);
             curr_angle = curr_angle + true_ang_v * sample_t;
 
-            // if (withinError(old_xpos, curr_xpos, errorTolerance) &&
-            // withinError(old_ypos, curr_ypos, errorTolerance) &&
-            // withinError(old_angle, curr_angle, errorTolerance) &&
             if ((
             withinError(goal_x, curr_xpos, 0.5) &&
             withinError(goal_y, curr_ypos, 0.5) &&
@@ -359,6 +359,24 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     } while (1);
     brake();
     Serial.println("Done with movement.");
+}
+
+
+void Driver::forward(float distance) {
+    float goal_x = curr_xpos + cos(curr_angle) * distance;
+    float goal_y = curr_ypos + sin(curr_angle) * distance;
+    go(goal_x, goal_y, curr_angle);
+}
+
+
+void Driver::turnLeft(float degrees) {
+    float goal_a = curr_angle + degToRad * degrees;
+    go(curr_xpos, curr_ypos, goal_a);
+}
+
+
+void Driver::turnRight(float degrees) {
+    turnLeft(-1 * degrees);
 }
 
 
