@@ -47,6 +47,7 @@ Motor::Motor(
 {
     pinMode(_powerPin, OUTPUT);
     pinMode(_directionPin, OUTPUT);
+    analogWriteFrequency(_powerPin, 22000);
 
     _pidSetpoint = 100000;
     _pidOutput = 0;
@@ -276,10 +277,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     float v_left = 0.;
     float v_right = 0.;
     const int motorLimit = 50;
-    const float errorTolerance = 0.1; // 10mm
-    float old_xpos = curr_xpos;
-    float old_ypos = curr_ypos;
-    float old_angle = curr_angle;
 
     do {
         if (timeElapsed > interval) {
@@ -333,9 +330,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             drive(v_left, v_right);
 
             // robot state updates
-            old_xpos = curr_xpos;
-            old_ypos = curr_ypos;
-            old_angle = curr_angle;
             float sample_t = 1. / interval;
             float true_v_left = (_leftMotor.readTicks() - encLeft) * ticksToCm / sample_t;
             encLeft = _leftMotor.readTicks();
