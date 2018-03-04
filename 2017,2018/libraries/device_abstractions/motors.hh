@@ -5,6 +5,25 @@
 #ifndef motors_hh
 #define motors_hh
 
+
+class PidController {
+    public:
+        PidController(
+            float proportion,
+            float integral,
+            float derivative
+        );
+
+        void compute();
+
+        float input;
+        float output;
+        float setpoint;
+    private:
+        PIDT<float> _pid;
+};
+
+
 class Motor {
     public:
         // Constructor
@@ -61,6 +80,8 @@ class Driver {
             SensorArray sensors
         );
 
+        // Moves the motors forward at the input PWM value. PWMs to motors
+        // are floored so they cannot write values that won't move the wheels.
         void drive(int speed);
         void drive(int speedLeft, int speedRight);
 
@@ -72,10 +93,17 @@ class Driver {
 
         void movePID(float setpoint);
 
+        void computePids();
+
+        // Directs to the absolute position at goal_x, goal_y with an
+        // angle of goal_a wrt the x-axis
         void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
-
+        // Clears the robot state variables
         void resetState();
+        // Prints out the output, setpoint, and state variables for each pid
+        void debugPidMovement();
 
+        // Tank turn movement functions
         void forward(float distance);
         void turnLeft(float degrees);
         void turnRight(float degrees);
@@ -91,6 +119,9 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
+        PidController _pid_x;
+        PidController _pid_y;
+        PidController _pid_a;
 };
 
 #endif

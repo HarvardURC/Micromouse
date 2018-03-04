@@ -5,19 +5,23 @@
 #include "sensors.hh"
 #include "bluetooth.hh"
 
-// The error threshold for the encoder values
-const int encoderTolerance = 5000;
+/* Globals */
+const int encoderTolerance = 5000; // error threshold for the encoder values
 const unsigned long timeout = 10000;
-const float proportion = 0.002;
-const float derivative = 0;
-const float integral = 0;
-const float pidLimit = 70.0;
-// Conversion ratio from encoder ticks to centimeters
-const float ticksToCm = 1. / 8630;
-// Wheel distance
-const float L = 9.25; // centimeters
-const float degToRad = 3.14159 / 180;
-int motorFloor = 30;
+const float pidLimit = 40.0; // upperlimit on PID output
+const float ticksToCm = 1. / 8630; // conversion ratio
+const float L = 9.25; // wheel distance in `cm`
+const float degToRad = 3.14159 / 180; // converstion ratio
+int motorFloor = 27; // lowest motor PWM value
+
+
+/* PID values */
+float p = 10, i = 0, d = 1; // x and y PIDs
+float p_a = 16, i_a = 0, d_a = 1; // angle PID
+float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
+
+
+/* Helper functions */
 
 // Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
 // From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
@@ -27,6 +31,62 @@ constexpr T dmod (T x, U mod)
     return !mod ? x : static_cast<long long>(x) % mod + x - static_cast<long long>(x);
 }
 
+
+// void initializePID(PIDT<float>* pid, float proportion, float integral, float derivative, float pidLimit) {
+//     pid->SetOutputLimits(pidLimit * -1, pidLimit);
+//     pid->SetTunings(proportion, integral, derivative);
+//     //turn the PID on
+//     pid->SetMode(AUTOMATIC);
+// }
+
+
+int floorPWM(int speed, int floor) {
+    int direction = speed > 0 ? 1 : -1;
+    speed = max(abs(speed), floor) * direction;
+    Serial.print("Driving at: ");
+    Serial.println(speed);
+    return speed;
+}
+
+
+float fixMotorSpeed(float speed, int limit) {
+    float outspeed = speed;
+    if (speed > limit) {
+        outspeed = limit;
+    }
+    else if (speed < -1 * limit) {
+        outspeed = -1 * limit;
+    }
+    return outspeed;
+}
+
+
+// Checks if the two numbers are within a margin of error from each other
+bool withinError(float a, float b, float error) {
+    return abs(b - a) < error;
+}
+
+
+/* PidController functions */
+PidController::PidController(
+    float proportion,
+    float integral,
+    float derivative) :
+    _pid(&input, &output, &setpoint, proportion, integral, derivative, DIRECT)
+{
+    _pid.SetOutputLimits(pidLimit * -1, pidLimit);
+    _pid.SetTunings(proportion, integral, derivative);
+    //turn the PID on
+    _pid.SetMode(AUTOMATIC);
+}
+
+
+void PidController::compute() {
+    _pid.Compute();
+}
+
+
+/* Motor functions */
 Motor::Motor(
     int powerPin,
     int directionPin,
@@ -40,9 +100,9 @@ Motor::Motor(
         &_pidInput,
         &_pidOutput,
         &_pidSetpoint,
-        proportion,
-        integral,
-        derivative,
+        p_m,
+        i_m,
+        d_m,
         DIRECT),
     _sensors(sensors)
 {
@@ -53,7 +113,7 @@ Motor::Motor(
     _pidSetpoint = 100000;
     _pidOutput = 0;
     _pid.SetOutputLimits(pidLimit * -1, pidLimit);
-    _pid.SetTunings(proportion, integral, derivative);
+    _pid.SetTunings(p_m, i_m, d_m);
     //turn the PID on
     _pid.SetMode(AUTOMATIC);
 }
@@ -135,7 +195,7 @@ void Motor::testPID() {
     }
 }
 
-
+/* Driver functions */
 Driver::Driver(
     int powerPinL,
     int directionPinL,
@@ -149,21 +209,16 @@ Driver::Driver(
     SensorArray sensors) :
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
-    _sensors(sensors)
+    _sensors(sensors),
+    _pid_x(p, i, d),
+    _pid_y(p, i, d),
+    _pid_a(p_a, i_a, d_a)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
-}
-
-int floorPWM(int speed, int floor) {
-    int direction = speed > 0 ? 1 : -1;
-    speed = max(abs(speed), floor) * direction;
-    Serial.print("Driving at: ");
-    Serial.println(speed);
-    return speed;
 }
 
 
@@ -225,105 +280,80 @@ void Driver::movePID(float setpoint) {
     }
 }
 
-void initializePID(PIDT<float>* pid, float proportion, float integral, float derivative) {
-    pid->SetOutputLimits(pidLimit * -1, pidLimit);
-    pid->SetTunings(proportion, integral, derivative);
-    //turn the PID on
-    pid->SetMode(AUTOMATIC);
+
+void Driver::computePids() {
+    _pid_x.compute();
+    _pid_y.compute();
+    _pid_a.compute();
 }
 
 
-float fixMotorSpeed(float speed, int limit) {
-    float outspeed = speed;
-    if (speed > limit) {
-        outspeed = limit;
-    }
-    else if (speed < -1 * limit) {
-        outspeed = -1 * limit;
-    }
-    return outspeed;
-}
+void Driver::debugPidMovement() {
+    Serial.print("x output: ");
+    Serial.print(_pid_x.output);
+    Serial.print(" x setpoint: ");
+    Serial.print(_pid_x.setpoint);
+    Serial.print(" xpos: ");
+    Serial.println(curr_xpos);
 
-// Checks if the two numbers are within a margin of error from each other
-bool withinError(float a, float b, float error) {
-    return abs(b - a) < error;
+    Serial.print("y output: ");
+    Serial.print(_pid_y.output);
+    Serial.print(" y setpoint: ");
+    Serial.print(_pid_y.setpoint);
+    Serial.print(" ypos: ");
+    Serial.println(curr_ypos);
+
+    Serial.print(" curr_angle: ");
+    Serial.println(curr_angle / degToRad);
 }
 
 
 void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     unsigned int interval = refreshMs;
     elapsedMillis timeElapsed = 1000;
-    // x = x position, y = y position, a = angle
-    // i = input, o = output, s = setpoint
-    float x_i=0, x_o=0, x_s=0, y_i=0, y_o=0, y_s=0, a_i=0, a_o=0, a_s=0;
-    float prop = 10;
-    float integ = 0;
-    float der = 0;
 
-    PIDT<float> pid_x(&x_i, &x_o, &x_s, prop, integ, der, DIRECT);
-    PIDT<float> pid_y(&y_i, &y_o, &y_s, prop, integ, der, DIRECT);
-    PIDT<float> pid_a(&a_i, &a_o, &a_s, prop, integ, der, DIRECT);
-    initializePID(&pid_x, prop, integ, der);
-    initializePID(&pid_y, prop, integ, der);
-    initializePID(&pid_a, prop, integ, der);
-
-    x_s = goal_x;
-    y_s = goal_y;
-    a_s = goal_a;
+    _pid_x.setpoint = goal_x;
+    _pid_y.setpoint = goal_y;
+    _pid_a.setpoint = goal_a;
 
     _leftMotor._encoder.write(0);
     _rightMotor._encoder.write(0);
-    long encLeft = 0;
-    long encRight = 0;
+    long enc_left = 0;
+    long enc_right = 0;
+
     float v_left = 0.;
     float v_right = 0.;
     const int motorLimit = 50;
+    int end_iter = 0;
 
     do {
         if (timeElapsed > interval) {
-            x_i = curr_xpos;
-            y_i = curr_ypos;
-            a_i = curr_angle;
+            _pid_x.input = curr_xpos;
+            _pid_y.input = curr_ypos;
+            _pid_a.input = curr_angle;
+            computePids();
 
-            pid_x.Compute();
-            pid_y.Compute();
-            pid_a.Compute();
-
-            float lin_velocity = x_o + y_o;
-            float ang_velocity = a_o;
+            float lin_velocity = _pid_x.output + _pid_y.output;
+            float ang_velocity = _pid_a.output;
 
             // cut off loop for tank turns once angle is achieved
             // MAGIC NUMBER for cutoff
             float tank_angle_threshold = .2;
-            if (x_s == 0 && y_s == 0 && abs(curr_angle - a_s) < tank_angle_threshold * 3.14/180) {
+            if (_pid_x.setpoint == 0 && _pid_y.setpoint == 0 &&
+                abs(curr_angle - _pid_a.setpoint) <
+                tank_angle_threshold * 3.14/180)
+            {
               break;
             }
 
-            // L is width of robot?
-            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2, motorLimit);
-            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2, motorLimit);
+            // L is width of robot
+            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2,
+                motorLimit);
+            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2,
+                motorLimit);
 
             /* Begin debug code */
-            Serial.print("x_o: ");
-            Serial.print(a_s);
-            Serial.print(" lin_velocity: ");
-            Serial.print(lin_velocity);
-            Serial.print(" x_s: ");
-            Serial.print(x_s);
-            Serial.print(" xpos: ");
-            Serial.println(curr_xpos);
-
-            Serial.print("y_o: ");
-            Serial.print(y_o);
-            Serial.print(" lin_velocity: ");
-            Serial.print(lin_velocity);
-            Serial.print(" y_s: ");
-            Serial.print(y_s);
-            Serial.print(" ypos: ");
-            Serial.println(curr_ypos);
-
-            Serial.print(" curr_angle: ");
-            Serial.println(curr_angle * 180 / 3.14);
+            debugPidMovement();
 
             Serial.print("v_left: ");
             Serial.print(v_left);
@@ -335,21 +365,30 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
 
             // robot state updates
             float sample_t = 1. / interval;
-            float true_v_left = (_leftMotor.readTicks() - encLeft) * ticksToCm / sample_t;
-            encLeft = _leftMotor.readTicks();
-            float true_v_right = (_rightMotor.readTicks() - encRight) * ticksToCm / sample_t;
-            encRight = _rightMotor.readTicks();
+            float true_v_left = (_leftMotor.readTicks() - enc_left) * ticksToCm / sample_t;
+            enc_left = _leftMotor.readTicks();
+            float true_v_right = (_rightMotor.readTicks() - enc_right) * ticksToCm / sample_t;
+            enc_right = _rightMotor.readTicks();
 
             float true_ang_v = (true_v_right - true_v_left) / L;
             curr_xpos += (true_v_left + true_v_right) / 2  * sample_t * cos(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * sin(curr_angle);
             curr_angle = curr_angle + true_ang_v * sample_t;
 
+            /* If the movement looks like it's reached the goal position
+            or it's converged, stop the movement */
             if ((
-            withinError(goal_x, curr_xpos, 0.5) &&
-            withinError(goal_y, curr_ypos, 0.5) &&
-            withinError(goal_a, curr_angle, 0.1)) ||
-            (v_left < 2 && v_right < 2)) {
+            withinError(goal_x, curr_xpos, 1) &&
+            withinError(goal_y, curr_ypos, 1) &&
+            withinError(goal_a, curr_angle, 0.4)) ||
+            (v_left < 6 && v_right < 6))
+            {
+                end_iter++;
+            }
+            else {
+                end_iter = 0;
+            }
+            if (end_iter > 250) {
                 break;
             }
 
