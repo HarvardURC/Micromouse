@@ -7,11 +7,12 @@
 
 /* Globals */
 const int encoderTolerance = 5000; // error threshold for the encoder values
+const int frontTolerance = 50;
 const unsigned long timeout = 10000;
 const float pidLimit = 40.0; // upperlimit on PID output
 const float ticksToCm = 1. / 8630; // conversion ratio
 const float L = 9.25; // wheel distance in `cm`
-const float degToRad = 3.14159 / 180; // converstion ratio
+const float degToRad = PI / 180; // converstion ratio
 int motorFloor = 27; // lowest motor PWM value
 
 
@@ -43,8 +44,8 @@ constexpr T dmod (T x, U mod)
 int floorPWM(int speed, int floor) {
     int direction = speed > 0 ? 1 : -1;
     speed = max(abs(speed), floor) * direction;
-    Serial.print("Driving at: ");
-    Serial.println(speed);
+    // Serial.print("Driving at: ");
+    // Serial.println(speed);
     return speed;
 }
 
@@ -325,8 +326,14 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     float v_right = 0.;
     const int motorLimit = 50;
     int end_iter = 0;
+    int overflow_count = 0;
 
     do {
+        // if we get too close to a wall in front of us stop all movement
+        // if (_sensors.readLongTof() < frontTolerance) {
+        //     brake();
+        //     break;
+        // }
         if (timeElapsed > interval) {
             _pid_x.input = curr_xpos;
             _pid_y.input = curr_ypos;
@@ -341,7 +348,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             float tank_angle_threshold = .2;
             if (_pid_x.setpoint == 0 && _pid_y.setpoint == 0 &&
                 abs(curr_angle - _pid_a.setpoint) <
-                tank_angle_threshold * 3.14/180)
+                tank_angle_threshold * degToRad)
             {
               break;
             }
@@ -352,13 +359,16 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2,
                 motorLimit);
 
-            /* Begin debug code */
-            debugPidMovement();
+            // float sensor_correction = _sensors.correctionFactor();
+            // v_left *=
 
-            Serial.print("v_left: ");
-            Serial.print(v_left);
-            Serial.print(" v_right: ");
-            Serial.println(v_right);
+            /* Begin debug code */
+            // debugPidMovement();
+
+            // Serial.print("v_left: ");
+            // Serial.print(v_left);
+            // Serial.print(" v_right: ");
+            // Serial.println(v_right);
             /* End debug code */
 
             drive(v_left, v_right);
@@ -373,7 +383,31 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             float true_ang_v = (true_v_right - true_v_left) / L;
             curr_xpos += (true_v_left + true_v_right) / 2  * sample_t * cos(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * sin(curr_angle);
-            curr_angle = curr_angle + true_ang_v * sample_t;
+            float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
+            /* weight for weighted average */
+            float ang_w = 0.5;
+            /* used for if the current angle `a` > 2PI or `a` < 0 to correct
+            the IMU angle. */
+            float overflow = overflow_count * 2 * PI;
+            if (abs(curr_angle - (imu_rads + overflow)) > PI) {
+                if (curr_angle > imu_rads + overflow) {
+                    overflow_count++;
+                }
+                else {
+                    overflow_count--;
+                }
+            }
+            curr_angle = imu_rads + overflow_count * 2 * PI;
+            // ((curr_angle + true_ang_v * sample_t) * ang_w +
+            //     (imu_rads * ang_w + overflow_correction)) / 2;
+            Serial.print("curr_angle: ");
+            Serial.print(curr_angle);
+            Serial.print(" overflow ");
+            Serial.print(overflow_count);
+            Serial.print(" imu_rads: ");
+            Serial.print(imu_rads);
+            Serial.print(" imu_angle: ");
+            Serial.println(imu_rads / degToRad);
 
             /* If the movement looks like it's reached the goal position
             or it's converged, stop the movement */

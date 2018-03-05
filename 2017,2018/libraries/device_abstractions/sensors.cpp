@@ -136,3 +136,12 @@ void SensorArray::_initSensor(int idx) {
     Serial.println(" online.");
     delay(1000);
 }
+
+
+// Calculates a correction factor for the angular velocity to reduce drift
+// x < 1 when turned left and x > 1 when turned right
+// float SensorArray::correctionFactor() {
+//     float left = readShortTof(0);
+//     float right = readShortTof(1);
+//     return left > short_range || right > short_range ? 0 : right / left;
+// }
