@@ -115,6 +115,9 @@ class Driver {
         float curr_ypos;
         float curr_angle;
 
+        // left, middle, right
+        long shortTofWallReadings[3];
+
     private:
         Motor _leftMotor;
         Motor _rightMotor;

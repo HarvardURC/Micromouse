@@ -2,7 +2,6 @@
 #include <elapsedMillis.h>
 #include <PID_v1.h>
 #include "motors.hh"
-#include "sensors.hh"
 #include "bluetooth.hh"
 
 /* Globals */
@@ -326,7 +325,19 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     const int motorLimit = 50;
     int end_iter = 0;
 
+    int read_flag = 0;
+
     do {
+        // stores wall readings at halfway point of movement
+        if (abs(curr_xpos) >= abs(goal_x) / 2 &&
+            abs(curr_ypos) >= abs(goal_y) / 2 &&
+            !read_flag)
+        {
+            for (int i = 0; i < 3; i++) {
+                shortTofWallReadings[i] = _sensors.readShortTof(i);
+            }
+            read_flag = 1;
+        }
         if (timeElapsed > interval) {
             _pid_x.input = curr_xpos;
             _pid_y.input = curr_ypos;
@@ -378,10 +389,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             /* If the movement looks like it's reached the goal position
             or it's converged, stop the movement */
             if ((
-            withinError(goal_x, curr_xpos, 1) &&
-            withinError(goal_y, curr_ypos, 1) &&
-            withinError(goal_a, curr_angle, 0.4)) ||
-            (v_left < 6 && v_right < 6))
+            withinError(goal_x, curr_xpos, 1.2) &&
+            withinError(goal_y, curr_ypos, 1.2) &&
+            withinError(goal_a, curr_angle, 0.5)) ||
+            (v_left < 5 && v_right < 5))
             {
                 end_iter++;
             }

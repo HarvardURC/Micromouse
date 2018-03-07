@@ -10,9 +10,9 @@
 #include "config.h"
 #include "sensors.hh"
 
-std::vector<int> sensor_pins = {pins::tofLeftDiagS, pins::tofRightDiagS, pins::tofFrontS};
+std::vector<int> sensor_pins = {pins::tofLeftDiagS, pins::tofFrontS, pins::tofRightDiagS};
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X};
-std::vector<String> sensor_names = {"leftDiagS", "rightDiagS", "frontS"};
+std::vector<String> sensor_names = {"leftDiagS", "frontS", "rightDiagS",};
 auto long_sensor = new VL53L0X;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);//pins::imuRST);
