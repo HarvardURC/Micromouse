@@ -26,15 +26,20 @@ class Maze {
         void updatePosition(int row, int col);
         void setBoundaryWalls();
 
-        // store the cell values
-        unsigned char cellMap[256];
-        // store the wall bits
-        unsigned char wallMap[256];
-
         // current position
         Position currPos;
-        // Global counter, keeps track of run number to set speed and destination cell
+        /* Global counter, keeps track of run number to set speed and
+         * destination cell */
         int counter = 0;
+
+    private:
+        /* Stores flood-fill information for each cell in the map of the maze */
+        unsigned char cellMap[256];
+
+        /* Stores a map where each entry represents a cell in the maze and each
+         * bit of the first four bits is set if there is a wall at the
+         * corresponding location */
+        unsigned char wallMap[256];
 };
 
 #endif

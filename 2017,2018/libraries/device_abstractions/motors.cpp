@@ -31,14 +31,7 @@ constexpr T dmod (T x, U mod)
 }
 
 
-// void initializePID(PIDT<float>* pid, float proportion, float integral, float derivative, float pidLimit) {
-//     pid->SetOutputLimits(pidLimit * -1, pidLimit);
-//     pid->SetTunings(proportion, integral, derivative);
-//     //turn the PID on
-//     pid->SetMode(AUTOMATIC);
-// }
-
-
+/* Enforces a minimum PWM input to the motors */
 int floorPWM(int speed, int floor) {
     int direction = speed > 0 ? 1 : -1;
     speed = max(abs(speed), floor) * direction;
@@ -48,7 +41,8 @@ int floorPWM(int speed, int floor) {
 }
 
 
-float fixMotorSpeed(float speed, int limit) {
+/* Enforces a maximum PWN input to the motors */
+float ceilingPWM(float speed, int limit) {
     float outspeed = speed;
     if (speed > limit) {
         outspeed = limit;
@@ -173,27 +167,6 @@ void Motor::moveTicksPID(long ticks) {
 }
 
 
-// Testing function for if the PID works -- should oscillate at setpoint
-// or stop if our tuning values are awesome.
-void Motor::testPID() {
-    _pidSetpoint = 100000;
-    _encoder.write(0);
-    _pidInput = _encoder.read();
-    Serial.println(_pidInput);
-    while (1) {
-        _pidInput = _encoder.read();
-        _pid.Compute();
-        Serial.print("Setpoint: ");
-        Serial.print(_pidSetpoint);
-        Serial.print(", input: ");
-        Serial.println(_pidInput);
-        Serial.print(", output: ");
-        Serial.println(_pidOutput);
-        drive(_pidOutput);
-        delay(50);
-    }
-}
-
 /* Driver functions */
 Driver::Driver(
     int powerPinL,
@@ -307,6 +280,7 @@ void Driver::debugPidMovement() {
 }
 
 
+/* Moves based on absolute position on a coordinate grid */
 void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     unsigned int interval = refreshMs;
     elapsedMillis timeElapsed = 1000;
@@ -358,9 +332,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             }
 
             // L is width of robot
-            v_left = fixMotorSpeed(lin_velocity - L * ang_velocity / 2,
+            v_left = ceilingPWM(lin_velocity - L * ang_velocity / 2,
                 motorLimit);
-            v_right = fixMotorSpeed(lin_velocity + L * ang_velocity / 2,
+            v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2,
                 motorLimit);
 
             /* Begin debug code */

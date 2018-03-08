@@ -17,17 +17,21 @@
 // maps 0-3 direction to array offset
 int offsetMap[4] = {16, -1, -16, 1};
 
+
 Position::Position(int r, int c) {
     row = r;
     col = c;
 }
 
 
+/* Converts the `Position` object's coordinates into an offset into
+ * the maze maps */
 int Position::offset() {
     return 16 * row + col;
 }
 
 
+/* Converts a map array offset into a `Position` object */
 Position getPosition(int offset) {
     Position p(offset / 16, offset % 16);
     return p;
@@ -184,6 +188,8 @@ void Maze::printMaze() {
     Serial.print ("\n");
 }
 
+
+/* Resets the robot position in the maze to the start cell */
 void Maze::resetPosition() {
     currPos.row = STARTROW;
     currPos.col = STARTCOL;
@@ -197,7 +203,7 @@ void Maze::updatePosition(int row, int col) {
 }
 
 
-// Converts angle in radians to direction, 0 forward
+/* Converts angle in radians to direction, 0 forward */
 int angleToDir(float angle) {
     return ((int)floor(angle / (PI / 2))) % 4;
 }
