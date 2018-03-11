@@ -13,7 +13,7 @@ Button* backButt;
 Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
-int test_num = 0;
+int test_num = 2;
 int test_level = 0;
 int x = 60;
 int y = 64;
@@ -25,12 +25,12 @@ void setup() {
     Serial.begin(9600);
     delay(500);
 
-    // sensorArr = new SensorArray(
-    //   tofLeftDiagS,
-    //   tofRightDiagS,
-    //   tofFrontS,
-    //   tofFrontL,
-    //   imuRST);
+    sensorArr = new SensorArray(
+      tofLeftDiagS,
+      tofRightDiagS,
+      tofFrontS,
+      tofFrontL,
+      imuRST);
 
     driver = new Driver(
     motorPowerL,

@@ -327,6 +327,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     const int motorLimit = 50;
     int end_iter = 0;
     int overflow_count = 0;
+    bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
 
     do {
         // if we get too close to a wall in front of us stop all movement
@@ -340,7 +341,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             _pid_a.input = curr_angle;
             computePids();
 
-            float lin_velocity = _pid_x.output + _pid_y.output;
+            float lin_velocity = angle_flag ? 0 : _pid_x.output + _pid_y.output;
             float ang_velocity = _pid_a.output;
 
             // cut off loop for tank turns once angle is achieved
@@ -363,12 +364,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             // v_left *=
 
             /* Begin debug code */
-            // debugPidMovement();
+            debugPidMovement();
 
-            // Serial.print("v_left: ");
-            // Serial.print(v_left);
-            // Serial.print(" v_right: ");
-            // Serial.println(v_right);
+            Serial.print("v_left: ");
+            Serial.print(v_left);
+            Serial.print(" v_right: ");
+            Serial.println(v_right);
             /* End debug code */
 
             drive(v_left, v_right);
