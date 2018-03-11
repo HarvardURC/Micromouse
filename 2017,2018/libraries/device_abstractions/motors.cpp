@@ -16,8 +16,8 @@ const float degToRad = PI / 180; // converstion ratio
 
 
 /* PID values */
-float p = 8, i = 0, d = 0; // x and y PIDs  REAL VALS=10, 0, 1
-float p_a = 16, i_a = 0, d_a = 0; // angle PID
+float p = 10, i = 0, d = 1; // x and y PIDs
+float p_a = 16, i_a = 0, d_a = 1; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
 
