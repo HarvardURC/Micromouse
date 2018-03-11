@@ -7,16 +7,16 @@
 /* Globals */
 const int encoderTolerance = 5000; // error threshold for the encoder values
 const unsigned long timeout = 10000;
-const float pidLimit = 40.0; // upperlimit on PID output
+const float pidLimit = 60.0; // upperlimit on PID output
 const float ticksToCm = 1. / 8630; // conversion ratio
 const float L = 9.25; // wheel distance in `cm`
-const float degToRad = 3.14159 / 180; // converstion ratio
-int motorFloor = 27; // lowest motor PWM value
+const float degToRad = 3.14159 / 180; // conversion ratio
+int motorFloor = 10; // lowest motor PWM value
 
 
 /* PID values */
-float p = 10, i = 0, d = 1; // x and y PIDs  REAL VALS=10, 0, 1
-float p_a = 16, i_a = 0, d_a = 1; // angle PID
+float p = 8, i = 0, d = 0; // x and y PIDs  REAL VALS=10, 0, 1
+float p_a = 16, i_a = 0, d_a = 0; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
 
@@ -34,7 +34,7 @@ constexpr T dmod (T x, U mod)
 /* Enforces a minimum PWM input to the motors */
 int floorPWM(int speed, int floor) {
     int direction = speed > 0 ? 1 : -1;
-    speed = max(abs(speed), floor) * direction;
+    speed = abs(speed) >= floor ? abs(speed) * direction : 0;
     Serial.print("Driving at: ");
     Serial.println(speed);
     return speed;
@@ -374,7 +374,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             else {
                 end_iter = 0;
             }
-            if (end_iter > 250) {
+            if (end_iter > 1000) {
                 break;
             }
 
