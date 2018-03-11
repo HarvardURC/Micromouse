@@ -300,6 +300,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     int end_iter = 0;
 
     int read_flag = 0;
+    int angle_flag = curr_xpos == goal_x && curr_ypos == goal_y;
 
     do {
         // stores wall readings at halfway point of movement
@@ -319,7 +320,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             _pid_a.input = curr_angle;
             computePids();
 
-            float lin_velocity = curr_xpos == goal_x && curr_ypos == goal_y ? 0 : _pid_x.output + _pid_y.output;
+            float lin_velocity = angle_flag ? 0 : _pid_x.output + _pid_y.output;
             float ang_velocity = _pid_a.output;
 
             // cut off loop for tank turns once angle is achieved
@@ -337,6 +338,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 motorLimit);
             v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2,
                 motorLimit);
+
+            if (angle_flag) v_right = -1 * v_left;
 
             /* Begin debug code */
             debugPidMovement();

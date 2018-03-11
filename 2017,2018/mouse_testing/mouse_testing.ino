@@ -13,7 +13,7 @@ Button* backButt;
 Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
-int test_num = 0;
+int test_num = 2;
 int test_level = 0;
 bool debug = true;
 
