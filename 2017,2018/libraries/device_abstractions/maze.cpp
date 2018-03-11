@@ -38,6 +38,18 @@ Position getPosition(int offset) {
 }
 
 
+/* Gives the angle the robot needs to turn to go a position diff of p */
+float Position::angFromRelPos() {
+    const float base = PI / 2;
+    if (col) {
+        return col > 0 ? 0 : base * 2;
+    }
+    else {
+        return row > 0 ? base * 3 : base;
+    }
+}
+
+
 Maze::Maze() : currPos(0, 0) {
     initializeMaze();
     setBoundaryWalls();

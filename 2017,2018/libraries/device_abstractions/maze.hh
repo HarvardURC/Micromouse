@@ -5,7 +5,15 @@ class Position {
     public:
         Position(int r, int c);
 
+        Position operator-(const Position& p) {
+            Position pos(0, 0);
+            pos.row = this->row - p.row;
+            pos.col = this->col - p.col;
+            return pos;
+        }
+
         int offset();
+        float angFromRelPos();
 
         int row;
         int col;
