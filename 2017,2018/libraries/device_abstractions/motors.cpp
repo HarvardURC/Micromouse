@@ -415,6 +415,16 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
 }
 
 
+void Driver::relativeGo(float goal_x, float goal_y, float goal_a) {
+    if (goal_a != curr_angle) {
+        float temp_a = atan2(goal_x - curr_xpos, goal_y - curr_ypos);
+        go(curr_xpos, curr_ypos, temp_a);
+        go(goal_x, goal_y, temp_a);
+    }
+    go(goal_x, goal_y, goal_a);
+}
+
+
 void Driver::forward(float distance) {
     float goal_x = curr_xpos + cos(curr_angle) * distance;
     float goal_y = curr_ypos + sin(curr_angle) * distance;

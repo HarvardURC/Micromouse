@@ -7,6 +7,8 @@
 
 using namespace pins;
 
+const float cellSize = 16; // cm
+
 Maze* maze;
 Driver* driver;
 SensorArray* sensorArr;
@@ -16,8 +18,6 @@ Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
-void makeNextMove(Position next);
-void waitButton();
 
 void setup() {
     /* * * * * * * * * * * * * * * * *
@@ -77,7 +77,7 @@ void loop() {
 
     Position next_move = maze->chooseNextCell();
 
-    // makeNextMove(next_move);
+    makeNextMove(next_move);
 
     // update walls
     long tmp[3];
@@ -85,10 +85,11 @@ void loop() {
     maze->addWalls(driver->curr_angle, tmp[0], tmp[1], tmp[2]);
 }
 
-// Unfinished
-void moveNextMove(Position next) {
-    Position curr = maze->currPos;
+
+void makeNextMove(Position next) {
+    Position diff = next - maze->currPos;
     // some combination of go, turn, forward
+    driver->relativeGo(diff.row * cellSize, diff.col * cellSize, diff.angFromRelPos());
 }
 
 
