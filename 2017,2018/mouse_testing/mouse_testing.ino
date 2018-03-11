@@ -25,12 +25,12 @@ void setup() {
     Serial.begin(9600);
     delay(500);
 
-    // sensorArr = new SensorArray(
-    //   tofLeftDiagS,
-    //   tofRightDiagS,
-    //   tofFrontS,
-    //   tofFrontL,
-    //   imuRST);
+    sensorArr = new SensorArray(
+      tofLeftDiagS,
+      tofRightDiagS,
+      tofFrontS,
+      tofFrontL,
+      imuRST);
 
     driver = new Driver(
     motorPowerL,
