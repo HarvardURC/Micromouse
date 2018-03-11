@@ -301,9 +301,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     int end_iter = 0;
     int overflow_count = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
-
     int read_flag = 0;
-    int angle_flag = curr_xpos == goal_x && curr_ypos == goal_y;
 
     do {
         // stores wall readings at halfway point of movement
