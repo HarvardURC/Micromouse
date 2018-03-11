@@ -15,8 +15,8 @@ int motorFloor = 27; // lowest motor PWM value
 
 
 /* PID values */
-float p = 0, i = 0, d = 0; // x and y PIDs  REAL VALS=10, 0, 1
-float p_a = 16, i_a = 0, d_a = 4; // angle PID
+float p = 10, i = 0, d = 1; // x and y PIDs  REAL VALS=10, 0, 1
+float p_a = 16, i_a = 0, d_a = 1; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
 
@@ -303,15 +303,15 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
 
     do {
         // stores wall readings at halfway point of movement
-        if (abs(curr_xpos) >= abs(goal_x) / 2 &&
-            abs(curr_ypos) >= abs(goal_y) / 2 &&
-            !read_flag)
-        {
-            for (int i = 0; i < 3; i++) {
-                shortTofWallReadings[i] = _sensors.readShortTof(i);
-            }
-            read_flag = 1;
-        }
+        // if (abs(curr_xpos) >= abs(goal_x) / 2 &&
+        //     abs(curr_ypos) >= abs(goal_y) / 2 &&
+        //     !read_flag)
+        // {
+        //     for (int i = 0; i < 3; i++) {
+        //         shortTofWallReadings[i] = _sensors.readShortTof(i);
+        //     }
+        //     read_flag = 1;
+        // }
 
         if (timeElapsed > interval) {
             _pid_x.input = curr_xpos;
