@@ -319,7 +319,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             _pid_a.input = curr_angle;
             computePids();
 
-            float lin_velocity = _pid_x.output + _pid_y.output;
+            float lin_velocity = curr_xpos == goal_x && curr_ypos == goal_y ? 0 : _pid_x.output + _pid_y.output;
             float ang_velocity = _pid_a.output;
 
             // cut off loop for tank turns once angle is achieved
