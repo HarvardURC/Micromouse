@@ -15,8 +15,8 @@ RGB_LED* backRgb;
 RGB_LED* frontRgb;
 int test_num = 0;
 int test_level = 0;
-int x = 60;
-int y = 64;
+bool debug = true;
+
 
 void waitButton();
 void adjustTestLevel();
@@ -64,28 +64,27 @@ void loop() {
             switch(test_num) {
                 // LEVEL 1 TESTS
                 case 0:
-                    // 10cm forward
+                    if (debug) Serial.println("10cm forward");
                     driver->forward(10);
                     break;
                 case 1:
-                    // 30cm forward
+                    if (debug) Serial.println("30cm forward");
                     driver->forward(30);
                     break;
                 case 2:
-                    // 90 degrees left
+                    if (debug) Serial.println("90 degrees left");
                     driver->turnLeft(90);
                     break;
                 case 3:
-                    // 90 degree right
-                    // driver->turnRight(90);
+                    if (debug) Serial.println("90 degree right");
                     driver->turnRight(90);
                     break;
                 case 4:
-                    // 180 turn
+                    if (debug) Serial.println("180 degree turn");
                     driver->turnLeft(180);
                     break;
                 case 5:
-                    // 360 turn
+                    if (debug) Serial.println("360 degree turn");
                     driver->turnRight(360);
                     break;
                 default:
@@ -97,10 +96,12 @@ void loop() {
             switch(test_num) {
                 // LEVEL 2 TESTS
                 case 0:
+                    if (debug) Serial.println("Turn left then go forward.");
                     driver->turnLeft(90);
                     driver->forward(10);
                     break;
                 case 1:
+                    if (debug) Serial.println("Turn right 45 deg then forward.");
                     driver->turnRight(45);
                     driver->forward(10);
                     break;
@@ -113,6 +114,7 @@ void loop() {
                 // LEVEL 3 TESTS
                 case 0:
                     // Back and forth
+                    if (debug) Serial.println("Back and forth");
                     driver->forward(20);
                     driver->turnLeft(180);
                     driver->forward(20);
@@ -122,6 +124,15 @@ void loop() {
                     break;
             }
             break;
+        case 3:
+            switch(test_num) {
+                case 0:
+                    Serial.println("Going...");
+                    driver->tankGo(0, 10, 0);
+                    break;
+                default:
+                    break;
+            }
         default:
             break;
 
@@ -153,7 +164,7 @@ void adjustTestLevel() {
         if (frontButt->read() == LOW) {
             test_level += 1;
             backRgb->flashLED(1);
-            delay(1000);
+            delay(500);
         }
     }
     delay(1000);

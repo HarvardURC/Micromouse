@@ -98,6 +98,7 @@ class Driver {
         // Directs to the absolute position at goal_x, goal_y with an
         // angle of goal_a wrt the x-axis
         void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
+        void tankGo(float goal_x, float goal_y, float goal_a);
         // Clears the robot state variables
         void resetState();
         // Prints out the output, setpoint, and state variables for each pid

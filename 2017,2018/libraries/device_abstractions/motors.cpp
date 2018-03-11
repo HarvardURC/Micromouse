@@ -15,8 +15,8 @@ int motorFloor = 27; // lowest motor PWM value
 
 
 /* PID values */
-float p = 10, i = 0, d = 1; // x and y PIDs
-float p_a = 16, i_a = 0, d_a = 1; // angle PID
+float p = 0, i = 0, d = 0; // x and y PIDs  REAL VALS=10, 0, 1
+float p_a = 16, i_a = 0, d_a = 4; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
 
@@ -312,6 +312,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             }
             read_flag = 1;
         }
+
         if (timeElapsed > interval) {
             _pid_x.input = curr_xpos;
             _pid_y.input = curr_ypos;
@@ -401,6 +402,26 @@ void Driver::turnLeft(float degrees) {
 
 void Driver::turnRight(float degrees) {
     turnLeft(-1 * degrees);
+}
+
+
+/* Moves the robot to the input goal state in discrete tank style movements
+ * of move forward and turn */
+void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
+    float temp_a = atan2(goal_y - curr_ypos, goal_x - curr_xpos);
+    Serial.print("temp_a: ");
+    Serial.println(temp_a);
+    if (temp_a != goal_a) {
+        // Turn
+        go(curr_xpos, curr_ypos, temp_a);
+        // Go forward
+        go(goal_x, goal_y, temp_a);
+        // Turn to goal angle
+        go(goal_x, goal_y, goal_a);
+    }
+    else {
+        go(goal_x, goal_y, goal_a);
+    }
 }
 
 
