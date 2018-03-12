@@ -218,9 +218,8 @@ void Maze::resetPosition() {
 }
 
 
-void Maze::updatePosition(int row, int col) {
-    currPos.row = row;
-    currPos.col = col;
+void Maze::updatePosition(Position p) {
+    currPos = p;
 }
 
 
