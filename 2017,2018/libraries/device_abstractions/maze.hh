@@ -13,7 +13,7 @@ class Position {
         }
 
         int offset();
-        float angFromRelPos();
+        float direction();
         void print();
 
         int row;

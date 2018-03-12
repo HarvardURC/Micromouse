@@ -38,8 +38,8 @@ Position getPosition(int offset) {
 }
 
 
-/* Gives the angle the robot needs to turn to go a position diff of p */
-float Position::angFromRelPos() {
+/* Gives the direction in radians of a relative position e.g. (-1, 0) -> PI */
+float Position::direction() {
     const float base = PI / 2;
     if (row) {
         return row > 0 ? 0 : base * 2;
