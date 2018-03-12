@@ -365,7 +365,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * sin(curr_angle);
             float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
             /* weight for weighted average */
-            float ang_w = 0.5;
+            float ang_w = 0.7;
             /* used for if the current angle `a` > 2PI or `a` < 0 to correct
             the IMU angle. */
             float overflow = overflow_count * 2 * PI;
@@ -377,7 +377,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                     overflow_count--;
                 }
             }
-            curr_angle = imu_rads + overflow_count * 2 * PI;
+            curr_angle = ang_w * (imu_rads + overflow_count * 2 * PI) + (1-ang_w) * (curr_angle + true_ang_v * sample_t);
             // ((curr_angle + true_ang_v * sample_t) * ang_w +
             //     (imu_rads * ang_w + overflow_correction)) / 2;
             Serial.print("curr_angle: ");
@@ -402,7 +402,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             else {
                 end_iter = 0;
             }
-            if (end_iter > 1000) {
+            if (end_iter > 500) {
                 break;
             }
 
