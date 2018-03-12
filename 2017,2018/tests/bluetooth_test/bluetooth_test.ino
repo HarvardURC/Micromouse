@@ -7,21 +7,17 @@
 #include <bluetooth.hh>
 
 
-/* ...hardware SPI, using SCK/MOSI/MISO hardware SPI pins and then user selected CS/IRQ/RST */
-// Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
-
-
 void setup() {
     bluetoothInitialize();
 }
 
 
 void loop() {
-    // Check for user input
-    char* output = "test\n";
+  // Check for user input
+  char* output = "test\n";
 
-    // Send data to host via Bluefruit
-    ble.print(output);
+  // Send data to host via Bluefruit
+  ble.print(output);
 
 
   // Echo received data

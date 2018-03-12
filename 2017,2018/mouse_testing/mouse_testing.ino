@@ -22,8 +22,10 @@ void waitButton();
 void adjustTestLevel();
 
 void setup() {
-    Serial.begin(9600);
+    //Serial.begin(9600);
     delay(500);
+    bluetoothInitialize();
+
 
     sensorArr = new SensorArray(
       tofLeftDiagS,
