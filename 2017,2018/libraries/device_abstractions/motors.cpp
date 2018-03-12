@@ -2,7 +2,6 @@
 #include <elapsedMillis.h>
 #include <PID_v1.h>
 #include "motors.hh"
-#include "bluetooth.hh"
 
 /* Globals */
 const int encoderTolerance = 5000; // error threshold for the encoder values
