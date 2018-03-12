@@ -14,6 +14,7 @@ class Position {
 
         int offset();
         float angFromRelPos();
+        void print();
 
         int row;
         int col;

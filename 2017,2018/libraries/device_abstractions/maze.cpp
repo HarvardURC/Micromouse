@@ -11,7 +11,7 @@
 // Starting and ending position
 #define STARTROW 0
 #define STARTCOL 0
-#define ENDROW 5
+#define ENDROW 2
 #define ENDCOL 2
 
 // maps 0-3 direction to array offset
@@ -41,12 +41,21 @@ Position getPosition(int offset) {
 /* Gives the angle the robot needs to turn to go a position diff of p */
 float Position::angFromRelPos() {
     const float base = PI / 2;
-    if (col) {
-        return col > 0 ? 0 : base * 2;
+    if (row) {
+        return row > 0 ? 0 : base * 2;
     }
     else {
-        return row > 0 ? base * 3 : base;
+        return col > 0 ? base * 3 : base;
     }
+}
+
+
+void Position::print() {
+    Serial.print("Position x=");
+    Serial.print(row);
+    Serial.print(" y=");
+    Serial.print(col);
+    Serial.println(".");
 }
 
 
