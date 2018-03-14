@@ -14,7 +14,7 @@ class Position {
 
         int offset();
         float direction();
-        void print();
+        void print(int bluetooth=0);
 
         int row;
         int col;

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "maze.hh"
+#include "bluetooth.hh"
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -14,8 +15,8 @@
 #define ENDROW 2
 #define ENDCOL 2
 
-// maps 0-3 direction to array offset
-int offsetMap[4] = {16, -1, -16, 1};
+// maps 0-3 direction to array offset, 0 is EAST
+int offsetMap[4] = {1, 16, -1, -16};
 
 
 Position::Position(int r, int c) {
@@ -42,20 +43,29 @@ Position getPosition(int offset) {
 float Position::direction() {
     const float base = PI / 2;
     if (row) {
-        return row > 0 ? 0 : base * 2;
+        return row > 0 ? base : base * 3;
     }
     else {
-        return col > 0 ? base * 3 : base;
+        return col > 0 ? 0 : base * 2;
     }
 }
 
 
-void Position::print() {
-    Serial.print("Position x=");
-    Serial.print(row);
-    Serial.print(" y=");
-    Serial.print(col);
-    Serial.println(".");
+void Position::print(int bluetooth) {
+    if (bluetooth) {
+        ble.print("Position x=");
+        ble.print(col);
+        ble.print(" y=");
+        ble.print(row);
+        ble.println(".");
+    }
+    else {
+        Serial.print("Position x=");
+        Serial.print(col);
+        Serial.print(" y=");
+        Serial.print(row);
+        Serial.println(".");
+    }
 }
 
 
@@ -272,10 +282,12 @@ Position Maze::chooseNextCell() {
 
     // Compare through all the neighbors
     for (int i = 0; i < 4; i++) {
+        int test_offset = currPos.offset() + offsetMap[i];
         /* if the there's no wall in the way, and the flood fill value is the
          * lowest set it as the tentative next cell */
-        if (!(wallMap[currPos.offset()] & 1 << i) &&
-            cellMap[currPos.offset() + offsetMap[i]] < lowest)
+        if (test_offset > 0 && test_offset < 255 &&
+            !(wallMap[currPos.offset()] & 1 << i) &&
+            cellMap[test_offset] < lowest)
         {
             int temp_offset = currPos.offset() + offsetMap[i];
             lowest = cellMap[temp_offset];
