@@ -18,6 +18,7 @@ class SensorArray {
             leftDiag = 0, rightDiag, front
         };
 
+        void readToSerialTof();
         void readToSerial();
         // Index = 0 for
         int readShortTof(int sensor_index);

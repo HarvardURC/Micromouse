@@ -69,23 +69,29 @@ SensorArray::SensorArray(int tofLeftDiagSPin, int tofRightDiagSPin,
 }
 
 SensorArray::SensorArray(const SensorArray& sensors) {
-  return;
+    return;
 }
 
-void SensorArray::readToSerial() {
+
+void SensorArray::readToSerialTof() {
     unsigned long start = millis();
     // Prints debug distances for sensors
     for (unsigned int i = 0; i < sensors.size(); i++) {
-      Serial.print(sensor_names[i]);
-      Serial.print(": ");
-      Serial.print(sensors[i]->readRangeContinuous());
-      Serial.print(" ");
-      if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
+        Serial.print(sensor_names[i]);
+        Serial.print(": ");
+        Serial.print(sensors[i]->readRangeContinuous());
+        Serial.print(" ");
+        if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
     }
     Serial.print("frontL: ");
     Serial.print(long_sensor->readRangeContinuousMillimeters());
     Serial.print(" Time taken: ");
     Serial.println(millis() - start);
+}
+
+
+void SensorArray::readToSerial() {
+    readToSerialTof();
 
     /* Get a new sensor event */
     sensors_event_t event;

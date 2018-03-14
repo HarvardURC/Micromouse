@@ -245,7 +245,7 @@ int angleToDir(float angle) {
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {125, 60, 0, 60};
+    int irThresholds[4] = {120, 60, 0, 60};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16
