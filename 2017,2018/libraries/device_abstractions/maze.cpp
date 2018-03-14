@@ -16,7 +16,7 @@
 #define ENDCOL 2
 
 // maps 0-3 direction to array offset, EAST=0, NORTH=1, WEST=2, SOUTH=3
-int offsetMap[4] = {1, 16, -1, -16};
+int offsetMap[4] = {16, -1, -16, 1};
 
 
 Position::Position(int r, int c) {
@@ -39,17 +39,17 @@ Position getPosition(int offset) {
 }
 
 
-/* Gives the direction in radians of a relative position.
+/* Gives the direction in radians of a relative position with 0 at NORTH.
  * A relative position is a point on the unit circle used for indicating
  * direction like those in this set {(0, 1), (1, 0), (-1, 0), (0, -1)}
- * > (-1, 0).direction() -> PI */
+ * > (-1, 0).direction() -> PI / 2 */
 float Position::direction() {
     const float base = PI / 2;
     if (row) {
-        return row > 0 ? base : base * 3;
+        return row > 0 ? 0 : base * 2;
     }
     else {
-        return col > 0 ? 0 : base * 2;
+        return col > 0 ? base * -1 : base;
     }
 }
 
@@ -114,6 +114,9 @@ void Maze::setBoundaryWalls ()
 
 /* Runs the flood-fill algorithm, updating cellMap with distances. */
 void Maze::floodMaze() {
+    ble.print("Walls ");
+    ble.print(wallMap[currPos.offset()]);
+    ble.print("\n");
     // reset the array of values
     for (int i = 0; i < 256; i++) {
         cellMap[i] = 255;
@@ -242,7 +245,7 @@ int angleToDir(float angle) {
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {250, 250, 0, 250};
+    int irThresholds[4] = {125, 60, 0, 60};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16
