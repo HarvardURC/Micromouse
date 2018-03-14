@@ -34,6 +34,8 @@ class Maze {
         void updatePosition(Position p);
         void setBoundaryWalls();
 
+        void printWallsCell(Position p);
+
         /** Constants **/
 
         /* Current cell in the maze of the robot */

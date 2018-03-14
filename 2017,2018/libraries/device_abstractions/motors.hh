@@ -105,6 +105,8 @@ class Driver {
         // Prints out the output, setpoint, and state variables for each pid
         void debugPidMovement();
 
+        void clearWallData();
+
         // Tank turn movement functions
         void forward(float distance);
         void turnLeft(float degrees);
@@ -122,7 +124,6 @@ class Driver {
 
     private:
         void readWalls();
-        void clearWallData();
 
         Motor _leftMotor;
         Motor _rightMotor;

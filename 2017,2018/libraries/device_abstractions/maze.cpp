@@ -15,7 +15,7 @@
 #define ENDROW 2
 #define ENDCOL 2
 
-// maps 0-3 direction to array offset, EAST=0, NORTH=1, WEST=2, SOUTH=3
+// maps 0-3 direction to array offset, NORTH=0, WEST, SOUTH, EAST
 int offsetMap[4] = {16, -1, -16, 1};
 
 
@@ -114,9 +114,6 @@ void Maze::setBoundaryWalls ()
 
 /* Runs the flood-fill algorithm, updating cellMap with distances. */
 void Maze::floodMaze() {
-    ble.print("Walls ");
-    ble.print(wallMap[currPos.offset()]);
-    ble.print("\n");
     // reset the array of values
     for (int i = 0; i < 256; i++) {
         cellMap[i] = 255;
@@ -195,6 +192,25 @@ void Maze::floodMaze() {
 }
 
 
+/* prints what a wall cell looks like to bluetooth */
+void Maze::printWallsCell(Position p) {
+    unsigned char cell = wallMap[p.offset()];
+    char tmp;
+
+    ble.print(" ");
+    tmp = cell & NORTH ? '_' : ' ';
+    ble.println(tmp);
+    tmp = cell & WEST ? '|' : ' ';
+    ble.print(tmp);
+    ble.print(" ");
+    tmp = cell & EAST ? '|': ' ';
+    ble.println(tmp);
+    ble.print(" ");
+    tmp = cell & SOUTH ? '-' : ' ';
+    ble.println(tmp);
+}
+
+
 /* Debug function */
 void Maze::printMaze() {
     for (int i = 0; i < 16; i++) {
@@ -236,7 +252,10 @@ void Maze::updatePosition(Position p) {
 /* Converts angle in radians to relative direction
  * forward=0, left=1 back=2, right=3 */
 int angleToDir(float angle) {
-    return ((int)floor(angle / (PI / 2))) % 4;
+    while (angle < 0) {
+        angle += 2 * PI;
+    }
+    return ((int)floor((angle + PI / 4) / (PI / 2))) % 4;
 }
 
 
@@ -245,7 +264,7 @@ int angleToDir(float angle) {
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {120, 60, 0, 60};
+    int irThresholds[4] = {80, 65, 0, 65};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16
@@ -274,6 +293,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
             }
         }
     }
+    ble.println(" ");
 }
 
 

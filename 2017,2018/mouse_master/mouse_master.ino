@@ -19,7 +19,8 @@ RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
 int flag = 0;
-char command = '0';
+const char init_command = 'a';
+char command = init_command;
 
 
 void setup() {
@@ -77,37 +78,46 @@ void setup() {
 }
 
 void loop() {
-    if (flag == 0) {
+    if (flag >= 0) {
         ble.print("Waiting on command\n");
         waitCommand();
     }
-    if (flag < 4) {
-        // run the flood-fill algorithm
-        maze->floodMaze();
+    // run the flood-fill algorithm
+    maze->floodMaze();
 
-        // determine next cell to move to
-        Position next_move = maze->chooseNextCell();
-        ble.print("Next move -- ");
-        next_move.print(1);
+    // determine next cell to move to
+    Position next_move = maze->chooseNextCell();
+    ble.print("Next move -- ");
+    next_move.print(1);
 
-        // move to that cell
-        makeNextMove(next_move);
-        maze->updatePosition(next_move);
+    // move to that cell
+    makeNextMove(next_move);
+    maze->updatePosition(next_move);
 
-        // update walls
-        long tmp[3];
-        memcpy(driver->shortTofWallReadings, tmp, sizeof(tmp));
-        maze->addWalls(driver->curr_angle, tmp[0], tmp[1], tmp[2]);
-        flag++;
+    // update walls
+    maze->addWalls(
+        driver->curr_angle,
+        driver->shortTofWallReadings[0],
+        driver->shortTofWallReadings[1],
+        driver->shortTofWallReadings[2]);
+    ble.print("Walls:");
+    for (int i = 0; i < 3; i++) {
+        ble.print(driver->shortTofWallReadings[i]);
+        ble.print(" ");
     }
+    ble.println(" ");
+    driver->clearWallData();
+
+    maze->printWallsCell(next_move);
+    flag++;
 }
 
 
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
-    ble.print("Diff direction: ");
-    ble.print(diff.direction());
-    ble.print("\n");
+    // ble.print("Diff direction: ");
+    // ble.print(diff.direction());
+    // ble.print("\n");
 
     driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
     frontRgb->flashLED(1);
@@ -134,16 +144,22 @@ void waitCommand() {
             command = ble.read();
             break;
         }
-        if (command != '0') {
+        if (command != init_command) {
             switch(command) {
-                case '1':
+                // go to next movement
+                case 'g':
                     frontRgb->flashLED(2);
                     delay(1000);
                     frontRgb->flashLED(1);
                     break;
+                // continue without interruption
+                case 'c':
+                    flag = -100;
+                    break;
                 default:
                     break;
             }
+            command = init_command;
             break;
         }
     }

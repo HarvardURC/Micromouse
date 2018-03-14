@@ -286,7 +286,11 @@ void Driver::debugPidMovement() {
 /* reads each of the short tof sensors values into an array for wall checking */
 void Driver::readWalls() {
     for (int i = 0; i < 3; i++) {
-        shortTofWallReadings[i] = _sensors.readShortTof(i);
+        if ((i == 1 && _sensors.readShortTof(i) < shortTofWallReadings[1]) ||
+            (_sensors.readShortTof(i) > shortTofWallReadings[i]))
+        {
+            shortTofWallReadings[i] = _sensors.readShortTof(i);
+        }
     }
 }
 
@@ -296,6 +300,7 @@ void Driver::clearWallData() {
     for (int i = 0; i < 3; i++) {
         shortTofWallReadings[i] = 0;
     }
+    shortTofWallReadings[1] = 1000;
 }
 
 
@@ -304,6 +309,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     unsigned int interval = refreshMs;
     elapsedMillis timeElapsed = 1000;
     elapsedMillis bluetoothTimer = 0;
+    elapsedMillis sensorTimer = 0;
 
     _pid_x.setpoint = goal_x;
     _pid_y.setpoint = goal_y;
@@ -328,11 +334,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     do {
         // stores wall readings at halfway point of movement
         // NOTE: will break if sensors not initialized
-        if (abs(goal_x - curr_xpos) <= abs(goal_x - init_xpos) * 0.75 &&
-            abs(goal_y - curr_ypos) <= abs(goal_y - init_ypos) * 0.75 &&
-            !shortTofWallReadings[0])
+        if ((goal_y != init_ypos || goal_x != init_xpos) && sensorTimer > 120)
         {
+            // ble.print("Walls read at ");
+            // ble.println(curr_ypos);
             readWalls();
+            sensorTimer = 0;
         }
 
         if (timeElapsed > interval) {
@@ -359,6 +366,14 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 motorLimit);
             v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2,
                 motorLimit);
+
+            if (!angle_flag &&
+                fmod(curr_angle, 2 * PI) >= PI / 4 &&
+                fmod(curr_angle, 2 * PI <= 5 * PI / 4))
+            {
+                v_left *= -1;
+                v_right *= -1;
+            }
 
             if (angle_flag) v_right = -1 * v_left;
 
@@ -436,7 +451,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     } while (1);
 
     brake();
-    clearWallData();
     ble.println("Done with movement.");
 }
 
