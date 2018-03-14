@@ -6,6 +6,7 @@
 
 using namespace pins;
 
+/* Robot hardware abstractions */
 Driver* driver;
 SensorArray* sensorArr;
 Buzzer* buzz;
@@ -13,16 +14,17 @@ Button* backButt;
 Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
-int test_num = 2;
+
+/* Global vars */
+int test_num = 0;
 int test_level = 0;
 bool debug = true;
+bool bluetooth = true; // allows operator to set test_level with bluetooth
+char command = '0'; // holds commands from bluetooth
 
-
-void waitButton();
-void adjustTestLevel();
 
 void setup() {
-    //Serial.begin(9600);
+    Serial.begin(9600);
     delay(500);
     bluetoothInitialize();
 
@@ -90,7 +92,7 @@ void loop() {
                     driver->turnRight(360);
                     break;
                 default:
-                    // nothing
+                    buzz->siren();
                     break;
             }
             break;
@@ -108,6 +110,7 @@ void loop() {
                     driver->forward(10);
                     break;
                 default:
+                    buzz->siren();
                     break;
             }
             break;
@@ -123,6 +126,7 @@ void loop() {
                     driver->turnRight(180);
                     break;
                 default:
+                    buzz->siren();
                     break;
             }
             break;
@@ -133,6 +137,26 @@ void loop() {
                     driver->tankGo(0, 10, 0);
                     break;
                 default:
+                    buzz->siren();
+                    break;
+            }
+        case 4:
+            switch(test_num) {
+                // WALL DETECTION TESTS
+                case 0: {
+                    // Only left wall
+                    if (debug) Serial.println("Left wall detection test");
+                    driver->tankGo(10, 0, 0);
+                    int thresholds[3] = {250, 250, 250};
+                    for (int i = 0; i < 3; i++) {
+                        // Flashes green if it detects a wall
+                        resultLed(
+                            driver->shortTofWallReadings[i] < thresholds[i]);
+                    }
+                    break;
+                }
+                default:
+                    buzz->siren();
                     break;
             }
         default:
@@ -142,7 +166,8 @@ void loop() {
     frontRgb->switchLED(2);
     driver->resetState();
     backRgb->flashLED(0);
-    waitButton();
+    if (bluetooth) { waitCommand(); }
+    else { waitButton(); }
 }
 
 // If the back button is pressed, go to next test case
@@ -170,4 +195,34 @@ void adjustTestLevel() {
         }
     }
     delay(1000);
+}
+
+
+/* Waits on a command from bluetooth controller */
+void waitCommand() {
+    while (1) {
+        while (ble.available()) {
+            command = ble.read();
+            break;
+        }
+        if (command != '0') {
+            test_level = (int)command - '0';
+
+            frontRgb->flashLED(2);
+            delay(1000);
+            frontRgb->flashLED(1);
+            break;
+        }
+    }
+}
+
+
+/* Flashes the front LED green if the condition was true else red */
+void resultLed(bool success) {
+    if (success) {
+        frontRgb->flashLED(1);
+    }
+    else {
+        frontRgb->flashLED(0);
+    }
 }
