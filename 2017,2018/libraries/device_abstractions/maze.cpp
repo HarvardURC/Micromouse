@@ -15,7 +15,7 @@
 #define ENDROW 2
 #define ENDCOL 2
 
-// maps 0-3 direction to array offset, 0 is EAST
+// maps 0-3 direction to array offset, EAST=0, NORTH=1, WEST=2, SOUTH=3
 int offsetMap[4] = {1, 16, -1, -16};
 
 
@@ -39,7 +39,10 @@ Position getPosition(int offset) {
 }
 
 
-/* Gives the direction in radians of a relative position e.g. (-1, 0) -> PI */
+/* Gives the direction in radians of a relative position.
+ * A relative position is a point on the unit circle used for indicating
+ * direction like those in this set {(0, 1), (1, 0), (-1, 0), (0, -1)}
+ * > (-1, 0).direction() -> PI */
 float Position::direction() {
     const float base = PI / 2;
     if (row) {
@@ -75,7 +78,7 @@ Maze::Maze() : currPos(0, 0) {
 }
 
 
-/* Initializes the maze. */
+/* Initializes the maze's start position and wallMap to dummy values. */
 void Maze::initializeMaze() {
     // set the robot's position to the start
     currPos.row = STARTROW;
@@ -185,17 +188,11 @@ void Maze::floodMaze() {
 
             stepValue++;
         }
-
-        // Print stack for debug
-        /*Serial.print ("Current Stack\n");
-        for (int i = 0; i < stackPointer; i++)
-        {
-        Serial.print ("Stack Member: %d\n", cellStack[i]);
-        }
-        */
     }
 }
 
+
+/* Debug function */
 void Maze::printMaze() {
     for (int i = 0; i < 16; i++) {
         Serial.print ("---\t");
@@ -233,12 +230,16 @@ void Maze::updatePosition(Position p) {
 }
 
 
-/* Converts angle in radians to direction, 0 forward */
+/* Converts angle in radians to relative direction
+ * forward=0, left=1 back=2, right=3 */
 int angleToDir(float angle) {
     return ((int)floor(angle / (PI / 2))) % 4;
 }
 
 
+/* Takes in three short ToF sensor readings and the orientation of the
+ * robot and determines where the walls are in the current cell and adds
+ * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
     int irThresholds[4] = {250, 250, 0, 250};
@@ -274,7 +275,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
 
 
 /* Chooses the next cell based on the flood-fill algorithm's determination
-* of the adjacent cell which is closest to the destination. */
+ * of the adjacent cell which is closest to the destination. */
 Position Maze::chooseNextCell() {
     // stores the lowest adjacent distance from the destination
     unsigned char lowest = 255;

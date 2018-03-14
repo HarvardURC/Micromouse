@@ -23,7 +23,6 @@ class Position {
 
 class Maze {
     public:
-        // constructor
         Maze();
 
         void initializeMaze();
@@ -35,8 +34,11 @@ class Maze {
         void updatePosition(Position p);
         void setBoundaryWalls();
 
-        // current position
+        /** Constants **/
+
+        /* Current cell in the maze of the robot */
         Position currPos;
+
         /* Global counter, keeps track of run number to set speed and
          * destination cell */
         int counter = 0;
