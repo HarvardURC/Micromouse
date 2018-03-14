@@ -7,7 +7,7 @@
 
 using namespace pins;
 
-const float cellSize = 16; // cm
+const float cellSize = 18; // cm
 
 Maze* maze;
 Driver* driver;
@@ -18,16 +18,21 @@ Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
+int flag = 0;
+char command = '0';
+
 
 void setup() {
     /* * * * * * * * * * * * * * * * *
     * MOUSE HARDWARE INTITALIZATION *
     * * * * * * * * * * * * * * * * **/
+
+
     Serial.begin(9600);
     delay(500);
 
-    pinMode(motorMode, OUTPUT);
-    digitalWrite(motorMode, HIGH);
+    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
+    backRgb->flashLED(0);
 
     maze = new Maze();
 
@@ -65,48 +70,80 @@ void setup() {
     maze->setBoundaryWalls();
 
     backRgb->flashLED(2);
-    Serial.println("Setup done");
+    bluetoothInitialize();
 
+    backRgb->flashLED(1);
+    ble.print("Setup done\n");
 }
 
 void loop() {
-    Serial.println("Looping.");
+    if (flag == 0) {
+        ble.print("Waiting on command\n");
+        waitCommand();
+    }
+    if (flag < 4) {
+        // run the flood-fill algorithm
+        maze->floodMaze();
 
-    // run the flood-fill algorithm
-    maze->floodMaze();
+        // determine next cell to move to
+        Position next_move = maze->chooseNextCell();
+        ble.print("Next move -- ");
+        next_move.print(1);
 
-    Position next_move = maze->chooseNextCell();
+        // move to that cell
+        makeNextMove(next_move);
+        maze->updatePosition(next_move);
 
-    makeNextMove(next_move);
-
-    // update walls
-    long tmp[3];
-    memcpy(driver->shortTofWallReadings, tmp, sizeof(tmp));
-    maze->addWalls(driver->curr_angle, tmp[0], tmp[1], tmp[2]);
+        // update walls
+        long tmp[3];
+        memcpy(driver->shortTofWallReadings, tmp, sizeof(tmp));
+        maze->addWalls(driver->curr_angle, tmp[0], tmp[1], tmp[2]);
+        flag++;
+    }
 }
 
 
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
-    // some combination of go, turn, forward
-    driver->relativeGo(diff.row * cellSize, diff.col * cellSize, diff.angFromRelPos());
+    ble.print("Diff direction: ");
+    ble.print(diff.direction());
+    ble.print("\n");
+
+    driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
+    frontRgb->flashLED(1);
 }
 
 
-void waitButton() {
+/* Waits on a button press */
+void waitButton(Button* but) {
     while (1) {
-        if (backButt->read() == LOW) {
-            frontRgb->flashLED(1);
+        if (but->read() == LOW) {
+            frontRgb->flashLED(2);
             delay(1000);
-            driver->forward(18);
-            frontRgb->flashLED(0);
+            frontRgb->flashLED(1);
             break;
         }
-        if (frontButt->read() == LOW) {
-            frontRgb->flashLED(1);
-            delay(1000);
-            driver->turnLeft(90);
-            frontRgb->flashLED(0);
+    }
+}
+
+
+/* Waits on a command from bluetooth controller */
+void waitCommand() {
+    while (1) {
+        while (ble.available()) {
+            command = ble.read();
+            break;
+        }
+        if (command != '0') {
+            switch(command) {
+                case '1':
+                    frontRgb->flashLED(2);
+                    delay(1000);
+                    frontRgb->flashLED(1);
+                    break;
+                default:
+                    break;
+            }
             break;
         }
     }

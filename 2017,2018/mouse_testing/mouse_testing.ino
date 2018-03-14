@@ -17,36 +17,37 @@ RGB_LED* frontRgb;
 
 /* Global vars */
 int test_num = 0;
-int test_level = 0;
+int test_level = 4;
 bool debug = true;
-bool bluetooth = true; // allows operator to set test_level with bluetooth
-char command = '0'; // holds commands from bluetooth
+bool bluetooth = false; // allows operator to set test_level with bluetooth
+const char init_command = 'a';
+char command = init_command; // holds commands from bluetooth
 
 
 void setup() {
     Serial.begin(9600);
     delay(500);
-    bluetoothInitialize();
+    if (bluetooth) bluetoothInitialize();
 
 
     sensorArr = new SensorArray(
-      tofLeftDiagS,
-      tofRightDiagS,
-      tofFrontS,
-      tofFrontL,
-      imuRST);
+        tofLeftDiagS,
+        tofRightDiagS,
+        tofFrontS,
+        tofFrontL,
+        imuRST);
 
     driver = new Driver(
-    motorPowerL,
-    motorDirectionL,
-    motorPowerR,
-    motorDirectionR,
-    motorMode,
-    encoderL1,
-    encoderL2,
-    encoderR1,
-    encoderR2,
-    *sensorArr);
+        motorPowerL,
+        motorDirectionL,
+        motorPowerR,
+        motorDirectionR,
+        motorMode,
+        encoderL1,
+        encoderL2,
+        encoderR1,
+        encoderR2,
+        *sensorArr);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -132,9 +133,10 @@ void loop() {
             break;
         case 3:
             switch(test_num) {
+                // TANK MOVEMENT TEST
                 case 0:
-                    Serial.println("Going...");
-                    driver->tankGo(0, 10, 0);
+                    if (debug) Serial.println("Going...");
+                    driver->tankGo(10, 0, 0);
                     break;
                 default:
                     buzz->siren();
@@ -146,12 +148,13 @@ void loop() {
                 case 0: {
                     // Only left wall
                     if (debug) Serial.println("Left wall detection test");
-                    driver->tankGo(10, 0, 0);
+                    driver->forward(18);
                     int thresholds[3] = {250, 250, 250};
                     for (int i = 0; i < 3; i++) {
                         // Flashes green if it detects a wall
                         resultLed(
                             driver->shortTofWallReadings[i] < thresholds[i]);
+                        delay(500);
                     }
                     break;
                 }
@@ -166,8 +169,9 @@ void loop() {
     frontRgb->switchLED(2);
     driver->resetState();
     backRgb->flashLED(0);
-    if (bluetooth) { waitCommand(); }
-    else { waitButton(); }
+    // if (bluetooth && command == init_command) { waitCommand(); }
+    // else { waitButton(); }
+    waitButton();
 }
 
 // If the back button is pressed, go to next test case
@@ -205,7 +209,7 @@ void waitCommand() {
             command = ble.read();
             break;
         }
-        if (command != '0') {
+        if (command != init_command) {
             test_level = (int)command - '0';
 
             frontRgb->flashLED(2);
@@ -220,9 +224,9 @@ void waitCommand() {
 /* Flashes the front LED green if the condition was true else red */
 void resultLed(bool success) {
     if (success) {
-        frontRgb->flashLED(1);
+        backRgb->flashLED(1);
     }
     else {
-        frontRgb->flashLED(0);
+        backRgb->flashLED(0);
     }
 }

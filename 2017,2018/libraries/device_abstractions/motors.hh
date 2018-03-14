@@ -77,7 +77,8 @@ class Driver {
             int encoderPinL2,
             int encoderPinR1,
             int encoderPinR2,
-            SensorArray sensors
+            SensorArray sensors,
+            bool bluetoothOn=false
         );
 
         // Moves the motors forward at the input PWM value. PWMs to motors
@@ -98,7 +99,6 @@ class Driver {
         // Directs to the absolute position at goal_x, goal_y with an
         // angle of goal_a wrt the x-axis
         void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
-        void relativeGo(float goal_x, float goal_y, float goal_a);
         void tankGo(float goal_x, float goal_y, float goal_a);
         // Clears the robot state variables
         void resetState();
@@ -121,12 +121,16 @@ class Driver {
         long shortTofWallReadings[3];
 
     private:
+        void readWalls();
+        void clearWallData();
+
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
         PidController _pid_x;
         PidController _pid_y;
         PidController _pid_a;
+        bool bluetoothOn_;
 };
 
 #endif
