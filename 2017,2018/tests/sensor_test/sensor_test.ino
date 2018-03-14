@@ -1,10 +1,9 @@
 /**
   A time of flight (ToF) sensor test.
   Outputs to Serial console the distance measured
-  by the left and right sensors.
+  by the ToF sensors.
 */
 
-#include <vector>
 #include "config.h"
 #include "sensors.hh"
 
@@ -23,7 +22,6 @@ void setup() {
 }
 
 void loop() {
-    unsigned long start = millis();
     sensorArr->readToSerialTof();
     delay(10);
 }
