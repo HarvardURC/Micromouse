@@ -451,7 +451,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     } while (1);
 
     brake();
-    ble.println("Done with movement.");
+    if (bluetoothOn_) ble.println("Done with movement.");
 }
 
 
