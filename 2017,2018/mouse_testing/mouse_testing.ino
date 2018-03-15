@@ -17,7 +17,7 @@ RGB_LED* frontRgb;
 
 /* Global vars */
 int test_num = 0;
-int test_level = 4;
+int test_level = 0;
 bool debug = true;
 bool bluetooth = false; // allows operator to set test_level with bluetooth
 const char init_command = 'a';
@@ -47,7 +47,8 @@ void setup() {
         encoderL2,
         encoderR1,
         encoderR2,
-        *sensorArr);
+        *sensorArr,
+        false);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -138,10 +139,23 @@ void loop() {
                     if (debug) Serial.println("Going...");
                     driver->tankGo(10, 0, 0);
                     break;
+                case 1:
+                    if (debug) Serial.println("Going...");
+                    driver->tankGo(-10, 0, 0);
+                    break;
+                case 2:
+                    if (debug) Serial.println("Going...");
+                    driver->tankGo(0, 10, 0);
+                    break;
+                case 3:
+                    if (debug) Serial.println("Going...");
+                    driver->tankGo(0, -10, 0);
+                    break;
                 default:
                     buzz->siren();
                     break;
             }
+            break;
         case 4:
             switch(test_num) {
                 // WALL DETECTION TESTS
@@ -162,6 +176,7 @@ void loop() {
                     buzz->siren();
                     break;
             }
+            break;
         default:
             break;
 
