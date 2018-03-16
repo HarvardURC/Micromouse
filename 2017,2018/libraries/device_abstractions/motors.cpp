@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
 #include <PID_v1.h>
+#include <cmath>
 #include "motors.hh"
 #include "bluetooth.hh"
 
@@ -348,31 +349,39 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             _pid_a.input = curr_angle;
             computePids();
 
-            float lin_velocity = angle_flag ? 0 : _pid_x.output + _pid_y.output;
+            // use distance formula to get positive linear velocity
+            float lin_velocity = angle_flag ? 0 : sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
             float ang_velocity = _pid_a.output;
 
             // cut off loop for tank turns once angle is achieved
             // MAGIC NUMBER for cutoff
             float tank_angle_threshold = .2;
-            if (_pid_x.setpoint == 0 && _pid_y.setpoint == 0 &&
+            /* if (angle_flag &&
                 abs(curr_angle - _pid_a.setpoint) <
                 tank_angle_threshold * degToRad)
             {
               break;
-            }
+            }*/
 
             // L is width of robot
             v_left = ceilingPWM(lin_velocity - L * ang_velocity / 2,
                 motorLimit);
             v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2,
                 motorLimit);
-
-            if (!angle_flag &&
-                fmod(curr_angle, 2 * PI) >= PI / 4 &&
-                fmod(curr_angle, 2 * PI <= 5 * PI / 4))
+            // check if robot faces setpoint to determine which way to move
+            // note: this is a bit forced, but I think it makes it simpler to think about
+            // SEE TEMP_A IN TANKGO, THIS IS THE SAME CONCEPT
+            float travel_angle = atan2(goal_y - curr_ypos, goal_x - curr_xpos);
+            float angle_diff = abs(fmod(curr_angle, 2 * PI) - fmod(travel_angle, 2 * PI));
+            if (!angle_flag && (angle_diff < PI / 2 || angle_diff > 3 * PI / 2))
             {
-                v_left *= -1;
-                v_right *= -1;
+                // moving forward - force motors forward
+                v_left *= abs(v_left);
+                v_right *= abs(v_right);
+            } else {
+                // moving backwards - force motors backwards
+                v_left *= -1 * abs(v_left);
+                v_right *= -1 * abs(v_right);
             }
 
             if (angle_flag) v_right = -1 * v_left;
@@ -476,6 +485,8 @@ void Driver::turnRight(float degrees) {
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
 void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
+    // I THINK IT SHOULD BE THIS
+    //float temp_a = atan2(goal_y - curr_ypos, goal_x - curr_xpos);
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
     if (bluetoothOn_) {
         ble.print("goal_a: ");
@@ -489,6 +500,7 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
         // Go forward
         go(goal_x, goal_y, temp_a);
         // Turn to goal angle
+        // DO WE WANT THIS?????
         go(goal_x, goal_y, goal_a);
     }
     else {
