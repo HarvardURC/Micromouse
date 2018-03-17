@@ -376,18 +376,18 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             if (!angle_flag && (angle_diff < PI / 2 || angle_diff > 3 * PI / 2))
             {
                 // moving forward - force motors forward
-                v_left *= abs(v_left);
-                v_right *= abs(v_right);
+                v_left = abs(v_left);
+                v_right = abs(v_right);
             } else {
                 // moving backwards - force motors backwards
-                v_left *= -1 * abs(v_left);
-                v_right *= -1 * abs(v_right);
+                v_left = -1 * abs(v_left);
+                v_right = -1 * abs(v_right);
             }
 
             if (angle_flag) v_right = -1 * v_left;
 
             /* Begin debug code */
-            // debugPidMovement();
+            debugPidMovement();
 
             if (bluetoothOn_ && bluetoothTimer >= 1000) {
                 ble.print("v_left: ");
