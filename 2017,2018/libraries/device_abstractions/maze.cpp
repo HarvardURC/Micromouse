@@ -72,7 +72,7 @@ void Position::print(int bluetooth) {
 }
 
 
-Maze::Maze() : currPos(0, 0) {
+Maze::Maze() : currPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL) {
     initializeMaze();
     setBoundaryWalls();
 }
@@ -162,7 +162,8 @@ void Maze::floodMaze() {
 
             // Serial.print ("Flood Cell: %d\n", curCell);
 
-            // Add all unvisited, available uneighbors to the stack for the next step
+            /* Add all unvisited, available uneighbors to the stack
+             * for the next step */
             for (int i = 0; i < 4; i++) {
                 unsigned char adjCell = curCell + offsetMap[i];
                 if (adjCell >= 0 && adjCell < 256 && cellMap[adjCell] == 255 &&
@@ -264,7 +265,7 @@ int angleToDir(float angle) {
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {80, 65, 0, 65};
+    int irThresholds[4] = {80, 75, 0, 75};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16
@@ -277,7 +278,8 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
         if (i != 2) {
             int dir = (mouseDir + i) % 4;
 
-            // the offset of adjacent cell in the direction of the current sensor
+            /* the offset of adjacent cell in the direction
+             * of the current sensor */
             int oppositeCell = currPos.offset() + offsetMap[dir];
 
             // if IR threshold is exceeded

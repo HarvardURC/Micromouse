@@ -12,6 +12,14 @@ class Position {
             return pos;
         }
 
+        bool operator==(const Position& p) {
+            return p.row == this->row && p.col == this->col;
+        }
+
+        bool operator!=(const Position& p) {
+            return !(*this == p);
+        }
+
         int offset();
         float direction();
         void print(int bluetooth=0);
@@ -40,6 +48,7 @@ class Maze {
 
         /* Current cell in the maze of the robot */
         Position currPos;
+        Position goalPos;
 
         /* Global counter, keeps track of run number to set speed and
          * destination cell */
