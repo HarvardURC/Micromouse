@@ -1,4 +1,4 @@
-#include "config.h"
+  #include "config.h"
 #include "io.hh"
 #include "motors.hh"
 #include "sensors.hh"
@@ -27,7 +27,7 @@ char command = init_command; // holds commands from bluetooth
 void setup() {
     Serial.begin(9600);
     delay(500);
-    if (bluetooth) bluetoothInitialize();
+    // if (bluetooth) bluetoothInitialize();
 
 
     sensorArr = new SensorArray(

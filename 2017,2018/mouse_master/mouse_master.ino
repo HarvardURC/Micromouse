@@ -54,7 +54,8 @@ void setup() {
     encoderL2,
     encoderR1,
     encoderR2,
-    *sensorArr);
+    *sensorArr,
+    true);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -78,38 +79,40 @@ void setup() {
 }
 
 void loop() {
-    if (flag >= 0) {
-        ble.print("Waiting on command\n");
-        waitCommand();
+    if (maze->currPos != maze->goalPos) {
+        if (flag >= 0) {
+            ble.print("Waiting on command\n");
+            waitCommand();
+        }
+        // run the flood-fill algorithm
+        maze->floodMaze();
+
+        // determine next cell to move to
+        Position next_move = maze->chooseNextCell();
+        ble.print("Next move -- ");
+        next_move.print(1);
+
+        // move to that cell
+        makeNextMove(next_move);
+        maze->updatePosition(next_move);
+
+        // update walls
+        maze->addWalls(
+            driver->curr_angle,
+            driver->shortTofWallReadings[0],
+            driver->shortTofWallReadings[1],
+            driver->shortTofWallReadings[2]);
+        ble.print("Walls:");
+        for (int i = 0; i < 3; i++) {
+            ble.print(driver->shortTofWallReadings[i]);
+            ble.print(" ");
+        }
+        ble.println(" ");
+        driver->clearWallData();
+
+        maze->printWallsCell(next_move);
+        flag++;
     }
-    // run the flood-fill algorithm
-    maze->floodMaze();
-
-    // determine next cell to move to
-    Position next_move = maze->chooseNextCell();
-    ble.print("Next move -- ");
-    next_move.print(1);
-
-    // move to that cell
-    makeNextMove(next_move);
-    maze->updatePosition(next_move);
-
-    // update walls
-    maze->addWalls(
-        driver->curr_angle,
-        driver->shortTofWallReadings[0],
-        driver->shortTofWallReadings[1],
-        driver->shortTofWallReadings[2]);
-    ble.print("Walls:");
-    for (int i = 0; i < 3; i++) {
-        ble.print(driver->shortTofWallReadings[i]);
-        ble.print(" ");
-    }
-    ble.println(" ");
-    driver->clearWallData();
-
-    maze->printWallsCell(next_move);
-    flag++;
 }
 
 
