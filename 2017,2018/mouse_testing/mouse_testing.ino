@@ -1,8 +1,8 @@
-  #include "config.h"
+#include "config.h"
 #include "io.hh"
 #include "motors.hh"
 #include "sensors.hh"
-#include "bluetooth.hh"
+//#include "bluetooth.hh"
 
 using namespace pins;
 
@@ -220,10 +220,10 @@ void adjustTestLevel() {
 /* Waits on a command from bluetooth controller */
 void waitCommand() {
     while (1) {
-        while (ble.available()) {
+        /*while (ble.available()) {
             command = ble.read();
             break;
-        }
+        }*/
         if (command != init_command) {
             test_level = (int)command - '0';
 
