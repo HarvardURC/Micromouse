@@ -9,13 +9,13 @@
 const int encoderTolerance = 5000; // error threshold for the encoder values
 const int frontTolerance = 50;
 const unsigned long timeout = 10000;
-const float pidLimit = 60.0; // upperlimit on PID output
+const float pidLimit = 50.0; // upperlimit on PID output
 const float ticksToCm = 1. / 8630; // conversion ratio
 const float L = 9.25; // wheel distance in `cm`
 const int motorLimit = 50; // highest motor PWM value
 const int motorFloor = 0; // lowest motor PWM value (IN TUNING)
 const int motorCloseEnough = 25; // motor value considered close to target (IN TUNING)
-const float perpendicular_threshold = .05; // range to 90 degrees to terminate move
+const float perpendicular_threshold = .06; // range to 90 degrees to terminate move
 const float degToRad = PI / 180; // converstion ratio
 const int sensorRefreshTime = 120; // milliseconds
 const int convergenceTime = 250; // milliseconds
@@ -24,9 +24,9 @@ const float errorY = errorX;
 const float errorA = 0.6; // radians
 const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
 
-
+// todo: print imu/angle error / tune pids
 /* PID values */
-float p = 6, i = .5, d = 1; // x and y PIDs
+float p = 12, i = 0, d = 0; // x and y PIDs
 float p_a = 18, i_a = 0, d_a = 1; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
@@ -380,14 +380,13 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             sensorTimer > sensorRefreshTime &&
             sensorCounter < 4)
         {
-          /*
             if (bluetoothOn_) {
                 ble.print("Walls read at ");
                 ble.print("x=");
                 ble.println(curr_xpos);
                 ble.print("y=");
                 ble.println(curr_ypos);
-            }*/
+            }
             readWalls();
             sensorTimer = 0;
             sensorCounter++;
@@ -406,10 +405,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 float ang_velocity = _pid_a.output;
 
                 // L is width of robot
-                v_left = ceilingPWM(lin_velocity - L * ang_velocity / 2,
-                    motorLimit);
-                v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2,
-                    motorLimit);
+                // makes sure ceiling doesnt drown out angle correction!!!
+                // (this technically makes it soft ceiling though, it can go up to 2*c max)
+                Serial.print("ang_velocity: ");
+                Serial.println(ang_velocity);
+                v_left = ceilingPWM(lin_velocity - L * ang_velocity / 2, motorLimit);
+                v_right = ceilingPWM(lin_velocity + L * ang_velocity / 2, motorLimit);
 
                 // (same calcuation as temp_a in tankGo)
                 float travel_angle = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
@@ -417,17 +418,23 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 if (!angle_flag && (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
                 {
                     // moving forward - force motors forward
-                    v_left = abs(v_left);
-                    v_right = abs(v_right);
+                    if (v_left + v_right < 0) {
+                      v_left = -1 * v_left;
+                      v_right = -1 * v_right;
+                    }
                 } else {
                     // moving backwards - force motors backwards
-                    v_left = -1 * abs(v_left);
-                    v_right = -1 * abs(v_right);
+                    if (v_left + v_right > 0) {
+                      v_left = -1 * v_left;
+                      v_right = -1 * v_right;
+                    }
                 }
 
-                // move wheels in opposite directions for tank turns
+                // move wheels opposite (and equal?) for tank turns
                 if (angle_flag) {
-                  float angle_error = fmod(goal_a, 2 * PI) - fmod(curr_angle, 2 * PI);
+                  //v_right = -1 * v_left;
+
+                  /*float angle_error = fmod(goal_a, 2 * PI) - fmod(curr_angle, 2 * PI);
                   // turning left is shorter
                   if ((angle_error >= 0 && angle_error <= PI) || angle_error <= -1 * PI) {
                     v_left = -1 * abs(v_left);
@@ -437,21 +444,20 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                   else if((angle_error < 0 && angle_error > -1 * PI) || angle_error > PI) {
                     v_left = abs(v_left);
                     v_right = -1 * abs(v_right);
-                  }
+                  }*/
                 }
 
                 /* Begin debug code */
                 debugPidMovement();
                 Serial.print("Timer: ");
                 Serial.println(fuckupTimer);
-                /*
                 if (bluetoothOn_ && bluetoothTimer >= 1000) {
                     ble.print("v_left: ");
                     ble.print(v_left);
                     ble.print(" v_right: ");
                     ble.println(v_right);
                     bluetoothTimer = 0;
-                }*/
+                }
                 if (!bluetoothOn_) {
                     Serial.print("v_left: ");
                     Serial.print(v_left);
@@ -516,7 +522,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     } while (1);
 
     brake();
-    //if (bluetoothOn_) ble.println("Done with movement.");
+    if (bluetoothOn_) ble.println("Done with movement.");
 }
 
 
@@ -543,13 +549,13 @@ void Driver::turnRight(float degrees) {
  * of move forward and turn */
 void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
-    /*
+
     if (bluetoothOn_) {
         ble.print("goal_a: ");
         ble.print(goal_a);
         ble.print(" temp_a: ");
         ble.println(temp_a);
-    }*/
+    }
     if (fabs(temp_a - curr_angle) < PI / 10) {
         // Turn
         go(curr_xpos, curr_ypos, temp_a);
