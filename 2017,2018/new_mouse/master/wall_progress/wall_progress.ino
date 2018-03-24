@@ -46,32 +46,6 @@ void floodMaze();
 void initializeFloodMaze();
 bool checkWall(int row, int col, int dir);
 
-void generateWall();
-
-void generateWall() {
-  for (int i = 0; i < 16; i = i + 2) {
-    for (int j = 0; j < 16; j = j + 2) {
-      int nWalls = random(0, 3);
-      for (int k = 0; k < nWalls; ++k) {
-        int d = random (0, 3);
-//        0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
-        if (d == 0) {
-          cellMap[i][j].walls |= NORTH;
-        }
-        else if (d == 1) {
-          cellMap[i][j].walls |= EAST;
-        }
-        else if (d == 2) {
-          cellMap[i][j].walls |= SOUTH;
-        }
-        else {
-          cellMap[i][j].walls |= WEST;
-        }
-      }
-    }
-  }
-}
-
 void floodMaze() {
   initializeFloodMaze();
 
@@ -137,7 +111,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == EAST) {
     if (col < 15) {
@@ -145,7 +118,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == SOUTH) {
     if (row < 15) {
@@ -153,7 +125,6 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
   } else if (dir == WEST) {
     if (col > 0) {
@@ -161,10 +132,7 @@ bool checkWall(int row, int col, int dir) {
         return false;
       }
     }
-
     return true;
-  }
-
   return false;
 }
 
@@ -257,9 +225,18 @@ void loop() {
   }
   Serial.println();
 
-  // index 0 = left
-  // index 2 = front
-  // index 4 = right
+  // If (PID_error == 0)
+    // Add surrounding walls to cellMap
+    // floodMaze();
+    // Janus();
+    // Change Janus to suggest direction of lowest floodDistance
+    // Turn the Mouse
+    // Once Mouse is done turning, advance 1 cell
+    // PID_Error != 0
+    
+
+
+  
 }
 
 void initSensor(int pin, VL6180X *sensor, int address) {

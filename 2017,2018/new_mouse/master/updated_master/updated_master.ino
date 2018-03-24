@@ -1,6 +1,7 @@
 #include <QueueArray.h>
 
 #include <config.h>
+#include <vector>
 
 #define NORTH 8
 #define EAST 4
@@ -18,6 +19,14 @@ bool findMinotaur = true;
 int mouseRow = 0;
 int mouseCol = 0;
 
+// 0 NORTH
+// 1 EAST
+// 2 SOUTH
+// 3 WEST
+int mouseDir = 0;
+
+const int wallThreshold = 250;
+
 struct Cell {
   int row;
   int column;
@@ -25,6 +34,10 @@ struct Cell {
   bool visited;
   unsigned char walls;
 };
+
+// {left, leftDiagonal, front, rightDiagonal, right}
+std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
+std::vector<int> sensorReadings = {1000, 1000, 1000, 1000, 1000};
 
 // CONVERT TO CELL MAP LATER
 unsigned char virtualWalls[256];
@@ -39,17 +52,52 @@ void printVirtualRow(int row, bool isPostRow);
 void initializeCellMap();
 void floodMaze();
 bool checkWall(int row, int col, int dir);
+void senseWalls();
 void Janus();
 void initializeFloodMaze();
 void generateWall();
 
+void turn(int desired);
+
+// SETUP
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(57600);
+  delay(1000);
+  Serial.println("We're setting up the map!");
+  Serial.println("I'm a map");
+
+  // Initialize Cell values in the CellMap
+  initializeCellMap();
+
+  // SET UP BOUNDARY WALLS!!!!! :)
+  setBoundaryWalls();
+
+  // randomSeed(17);
+  // generateWall();
+}
+
+// LOOP
+void loop() {
+  senseWalls();
+  
+  floodMaze();
+
+  Janus();
+  //mouseRow += 1;
+
+  printVirtualMaze();
+
+  delay(2000);
+}
+
 void generateWall() {
+  // 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
   for (int i = 0; i < 16; i = i + 2) {
     for (int j = 0; j < 16; ++j) {
       int nWalls = random(0, 3);
       for (int k = 0; k < nWalls; ++k) {
         int d = random (0, 3);
-//        0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
         if (d == 0) {
           cellMap[i][j].walls |= NORTH;
         }
@@ -66,7 +114,6 @@ void generateWall() {
     }
   }
 }
-
 
 // Mouse chooses cell to move to
 void Janus() {
@@ -111,21 +158,46 @@ void Janus() {
     }
   }
 
+  // 0 NORTH
+  // 1 EAST
+  // 2 SOUTH
+  // 3 WEST
+  // We want thePath == mouseDir
+
+  turn(thePath);
+  // moveForward();
+
+  // TODO update mouseRow and mouseCol in moveForward()
+
   // Virtual movement
-  if (thePath == 0) {
-    mouseRow--;
+  // if (thePath == 0) {
+  //   mouseRow--;
+  // } 
+  // else if (thePath == 1) {
+  //   mouseCol++;
+  // }
+  // else if (thePath == 2) {
+  //   mouseRow++;
+  // }
+  // else if (thePath == 3) {
+  //   mouseCol--;
+  // }
+}
+
+void turn(int desired) {
+  int difference = (desired - mouseDir + 4) % 4;
+
+  if (difference == 1) {
+    // motors->turnRight();
   } 
-  else if (thePath == 1) {
-    mouseCol++;
-  }
-  else if (thePath == 2) {
-    mouseRow++;
-  }
-  else if (thePath == 3) {
-    mouseCol--;
+  else if (difference == 3) {
+    // motors->turnLeft();
+  } 
+  else if (difference == 2) {
+    // motors->turnAround();
   }
 
-  
+  mouseDir = desired;
 }
 
 void floodMaze() {
@@ -266,37 +338,6 @@ void initializeCellMap() {
   }
 }
 
-// SETUP
-
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(57600);
-  delay(1000);
-  Serial.println("We're setting up the map!");
-  Serial.println("I'm a map");
-
-  // Initialize Cell values in the CellMap
-  initializeCellMap();
-
-  // SET UP BOUNDARY WALLS!!!!! :)
-  setBoundaryWalls();
-
-  randomSeed(17);
-  generateWall();
-}
-
-// LOOP
-void loop() {
-  floodMaze();
-
-  Janus();
-  //mouseRow += 1;
-
-  printVirtualMaze();
-
-  delay(2000);
-}
-
 // REWRITE FOR 2 DIMENSIONAL
 void setBoundaryWalls() {
   // NOTE: Top of the maze is set to the the 0th row
@@ -372,6 +413,72 @@ void printVirtualRow(int row, bool isPostRow) {
   Serial.println();
 }
 
+void senseWalls() {
+  // get sensor readings
+  for (int i = 0; i < sensors.size(); i++) {
+    sensorReadings[i] = sensors[i]->readRangeContinuousMillimeters();
+  }
+
+  // compare LEFT with threshold
+  if (sensorReadings[0] < wallThreshold) {
+    // NORTH
+    if (mouseDir == 0) {
+      cellMap[mouseRow][mouseCol] |= WEST;
+    } 
+    // EAST
+    else if (mouseDir == 1) {
+      cellMap[mouseRow][mouseCol] |= NORTH;
+    } 
+    // SOUTH
+    else if (mouseDir == 2) {
+      cellMap[mouseRow][mouseCol] |= EAST;
+    }
+    // WEST
+    else if (mouseDir == 3) {
+      cellMap[mouseRow][mouseCol] |= SOUTH;
+    }
+  }
+
+  // compare FRONT with threshold
+  if (sensorReadings[2] < wallThreshold) {
+    // NORTH
+    if (mouseDir == 0) {
+      cellMap[mouseRow][mouseCol] |= NORTH;
+    } 
+    // EAST
+    else if (mouseDir == 1) {
+      cellMap[mouseRow][mouseCol] |= EAST;
+    } 
+    // SOUTH
+    else if (mouseDir == 2) {
+      cellMap[mouseRow][mouseCol] |= SOUTH;
+    }
+    // WEST
+    else if (mouseDir == 3) {
+      cellMap[mouseRow][mouseCol] |= WEST;
+    }
+  }
+
+  // compare RIGHT with threshold
+  if (sensorReadings[4] < wallThreshold) {
+    // NORTH
+    if (mouseDir == 0) {
+      cellMap[mouseRow][mouseCol] |= EAST;
+    } 
+    // EAST
+    else if (mouseDir == 1) {
+      cellMap[mouseRow][mouseCol] |= SOUTH;
+    } 
+    // SOUTH
+    else if (mouseDir == 2) {
+      cellMap[mouseRow][mouseCol] |= WEST;
+    }
+    // WEST
+    else if (mouseDir == 3) {
+      cellMap[mouseRow][mouseCol] |= NORTH;
+    }
+  }
+}
 
 
 
