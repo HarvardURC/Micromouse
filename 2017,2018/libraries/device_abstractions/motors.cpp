@@ -9,6 +9,7 @@
 const int encoderTolerance = 5000; // error threshold for the encoder values
 const int frontTolerance = 50;
 const unsigned long timeout = 10000;
+const int pidSampleTime = 5; // parameter to PID library
 const float pidLimit = 50.0; // upperlimit on PID output
 const float ticksToCm = 1. / 8630; // conversion ratio
 const float L = 9.25; // wheel distance in `cm`
@@ -27,7 +28,7 @@ const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
 // todo: print imu/angle error / tune pids
 /* PID values */
 float p = 12, i = 0, d = 0; // x and y PIDs
-float p_a = 18, i_a = 0, d_a = 1; // angle PID
+float p_a = 18, i_a = 0, d_a = 0; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 
 
@@ -78,6 +79,7 @@ PidController::PidController(
 {
     _pid.SetOutputLimits(pidLimit * -1, pidLimit);
     _pid.SetTunings(proportion, integral, derivative);
+    _pid.SetSampleTime(pidSampleTime);
     this->input = 0;
     this->output = 0;
     this->setpoint = 0;
@@ -295,10 +297,18 @@ void Driver::debugPidMovement() {
     Serial.print(" ypos: ");
     Serial.println(curr_ypos);
 
+    Serial.print("a input: ");
+    Serial.print(_pid_a.input);
+    Serial.print(" a output: ");
+    Serial.print(_pid_a.output);
     Serial.print(" a setpoint: ");
+    Serial.print(_pid_a.setpoint);
+    Serial.print(" apos: ");
+    Serial.println(curr_angle);
+    /*Serial.print(" a setpoint: ");
     Serial.print(_pid_a.setpoint / degToRad);
     Serial.print(" curr_angle: ");
-    Serial.println(curr_angle / degToRad);
+    Serial.println(curr_angle / degToRad);*/
 }
 
 
@@ -405,8 +415,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 float ang_velocity = _pid_a.output;
 
                 // L is width of robot
-                // makes sure ceiling doesnt drown out angle correction!!!
-                // (this technically makes it soft ceiling though, it can go up to 2*c max)
+                // todo: makes sure ceiling doesnt drown out angle correction
                 Serial.print("ang_velocity: ");
                 Serial.println(ang_velocity);
                 v_left = ceilingPWM(lin_velocity - L * ang_velocity / 2, motorLimit);
@@ -466,7 +475,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 }
                 /* End debug code */
 
-                drive(v_left, v_right);
+                //drive(v_left, v_right);
 
                 // robot state updates
                 float sample_t = 1. / interval;
