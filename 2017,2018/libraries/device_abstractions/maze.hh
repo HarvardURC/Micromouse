@@ -39,6 +39,7 @@ class Maze {
         void printMaze();
         Position chooseNextCell();
         void resetPosition();
+        void swapGoal();
         void updatePosition(Position p);
         void setBoundaryWalls();
 
