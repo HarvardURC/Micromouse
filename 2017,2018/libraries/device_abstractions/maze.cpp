@@ -250,6 +250,19 @@ void Maze::updatePosition(Position p) {
 }
 
 
+/* switches the goal position between the goal and the start */
+void Maze::swapGoal() {
+    if (goalPos.row == ENDROW && goalPos.col == ENDCOL) {
+        goalPos.row = STARTROW;
+        goalPos.col = STARTCOL;
+    }
+    else {
+        goalPos.row = ENDROW;
+        goalPos.col = ENDCOL;
+    }
+}
+
+
 /* Converts angle in radians to relative direction
  * forward=0, left=1 back=2, right=3 */
 int angleToDir(float angle) {
@@ -269,33 +282,35 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16
-    wallMap[currPos.offset()] &= 15;
-    int mouseDir = angleToDir(angle);
+    if (wallMap[currPos.offset()] > 16) {
+        wallMap[currPos.offset()] &= 15;
+        int mouseDir = angleToDir(angle);
 
-    // for each of the 4 directions
-    for (int i = 0; i < 4; i++) {
-        // but not backwards because there's no back sensor
-        if (i != 2) {
-            int dir = (mouseDir + i) % 4;
+        // for each of the 4 directions
+        for (int i = 0; i < 4; i++) {
+            // but not backwards because there's no back sensor
+            if (i != 2) {
+                int dir = (mouseDir + i) % 4;
 
-            /* the offset of adjacent cell in the direction
-             * of the current sensor */
-            int oppositeCell = currPos.offset() + offsetMap[dir];
+                /* the offset of adjacent cell in the direction
+                 * of the current sensor */
+                int oppositeCell = currPos.offset() + offsetMap[dir];
 
-            // if IR threshold is exceeded
-            if (irReadings[i] < irThresholds[i]) {
-                // set wall for current cell
-                wallMap[currPos.offset()] |= 1 << dir;
+                // if IR threshold is exceeded
+                if (irReadings[i] < irThresholds[i]) {
+                    // set wall for current cell
+                    wallMap[currPos.offset()] |= 1 << dir;
 
-                // set wall for opposite cell if valid
-                if (oppositeCell >= 0 && oppositeCell < 256)
-                {
-                  wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
+                    // set wall for opposite cell if valid
+                    if (oppositeCell >= 0 && oppositeCell < 256)
+                    {
+                      wallMap[oppositeCell] |= 1 << ((dir + 2) % 4);
+                    }
                 }
             }
         }
+        ble.println(" ");
     }
-    ble.println(" ");
 }
 
 

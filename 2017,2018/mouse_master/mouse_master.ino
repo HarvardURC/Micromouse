@@ -19,6 +19,7 @@ RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
 int flag = 0;
+int swap_flag = 0; // if true return to the start
 const char init_command = 'a';
 char command = init_command;
 
@@ -79,40 +80,41 @@ void setup() {
 }
 
 void loop() {
-    if (maze->currPos != maze->goalPos) {
-        if (flag >= 0) {
-            ble.print("Waiting on command\n");
-            waitCommand();
-        }
-        // run the flood-fill algorithm
-        maze->floodMaze();
-
-        // determine next cell to move to
-        Position next_move = maze->chooseNextCell();
-        ble.print("Next move -- ");
-        next_move.print(1);
-
-        // move to that cell
-        makeNextMove(next_move);
-        maze->updatePosition(next_move);
-
-        // update walls
-        maze->addWalls(
-            driver->curr_angle,
-            driver->shortTofWallReadings[0],
-            driver->shortTofWallReadings[1],
-            driver->shortTofWallReadings[2]);
-        ble.print("Walls:");
-        for (int i = 0; i < 3; i++) {
-            ble.print(driver->shortTofWallReadings[i]);
-            ble.print(" ");
-        }
-        ble.println(" ");
-        driver->clearWallData();
-
-        maze->printWallsCell(next_move);
-        flag++;
+    if (maze->currPos == maze->goalPos) {
+        maze->swapGoal();
     }
+    if (flag >= 0) {
+        ble.print("Waiting on command\n");
+        waitCommand();
+    }
+    // run the flood-fill algorithm
+    maze->floodMaze();
+
+    // determine next cell to move to
+    Position next_move = maze->chooseNextCell();
+    ble.print("Next move -- ");
+    next_move.print(1);
+
+    // move to that cell
+    makeNextMove(next_move);
+    maze->updatePosition(next_move);
+
+    // update walls
+    maze->addWalls(
+        driver->curr_angle,
+        driver->shortTofWallReadings[0],
+        driver->shortTofWallReadings[1],
+        driver->shortTofWallReadings[2]);
+    ble.print("Walls:");
+    for (int i = 0; i < 3; i++) {
+        ble.print(driver->shortTofWallReadings[i]);
+        ble.print(" ");
+    }
+    ble.println(" ");
+    driver->clearWallData();
+
+    maze->printWallsCell(next_move);
+    flag++;
 }
 
 
