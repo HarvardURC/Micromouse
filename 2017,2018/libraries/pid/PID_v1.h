@@ -37,7 +37,7 @@ class PIDT
                                                //the arduino pwm limits
 
 		mapOutput = false;
-		
+
         SampleTime = SAMPLETIME;               //default Controller Sample Time is 0.1 seconds
 
         SetControllerDirection(ControllerDirection);
@@ -45,7 +45,7 @@ class PIDT
 
         lastTime = millis()-SampleTime;
         Initialize();
-		
+
 		//turn on by default
 		SetMode(AUTOMATIC);
     }
@@ -77,11 +77,11 @@ class PIDT
 
           if(output > outMax) output = outMax;
           else if(output < outMin) output = outMin;
-		  
+
 		  if(mapOutput) {
 			 output = map(output, outMin, outMax, mapMin, mapMax);
 		  }
-		  
+
           *myOutput = output;
 
           /*Remember some variables for next time*/
@@ -158,7 +158,7 @@ class PIDT
            else if(ITerm < outMin) ITerm= outMin;
        }
     }
-	
+
    /* SetOutputMapping(...)****************************************************
     * 	This function will alter the output to be mapped to selected range. For example, if user wants
 	*	to have output mapped to (0-1500) or other range using map(x, lowLimit, highLimit, newLow, newHigh)
@@ -228,7 +228,7 @@ class PIDT
 
     void Initialize()
     {
-       ITerm = *myOutput;
+       ITerm = 0;//*myOutput;
        lastInput = *myInput;
        if(ITerm > outMax) ITerm = outMax;
        else if(ITerm < outMin) ITerm = outMin;
@@ -259,4 +259,3 @@ class PIDT
 
 typedef PIDT<double> PID;
 #endif
-
