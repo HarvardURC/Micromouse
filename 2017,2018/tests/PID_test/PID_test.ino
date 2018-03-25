@@ -7,6 +7,7 @@
 #include <Encoder.h>
 #include "config.h"
 
+//NOTE: need to change the PID library to use floats, not doubles!
 //Define Variables we'll be connecting to
 float Setpoint, Input, Output, direction_pin, power_pin;
 Encoder encoderLeft(pins::encoderPinL1, pins::encoderPinL2);
