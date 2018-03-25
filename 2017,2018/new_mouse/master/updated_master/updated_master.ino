@@ -1,6 +1,8 @@
 #include <QueueArray.h>
 
+#include <VL6180X.h>
 #include <config.h>
+#include <i2c_t3.h>
 #include <vector>
 
 #define NORTH 8
@@ -25,7 +27,7 @@ int mouseCol = 0;
 // 3 WEST
 int mouseDir = 0;
 
-const int wallThreshold = 250;
+const int wallThreshold = 280;
 
 struct Cell {
   int row;
@@ -36,7 +38,6 @@ struct Cell {
 };
 
 // {left, leftDiagonal, front, rightDiagonal, right}
-std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<int> sensorReadings = {1000, 1000, 1000, 1000, 1000};
 
 // CONVERT TO CELL MAP LATER
@@ -56,22 +57,42 @@ void senseWalls();
 void Janus();
 void initializeFloodMaze();
 void generateWall();
-
+void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
+
+std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
+std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
+std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
 // SETUP
 void setup() {
   // put your setup code here, to run once:
+  Wire.begin();
   Serial.begin(57600);
   delay(1000);
+
+  // Sets all sensors to low for initialization
+  for (unsigned int i = 0; i < sensor_pins.size(); i++) {
+    pinMode(sensor_pins[i], OUTPUT);
+    digitalWrite(sensor_pins[i], LOW);
+  }
+
+  // Initializes sensors
+  for (unsigned int i = 0; i < sensor_pins.size(); i++) {
+    initSensor(sensor_pins[i], sensors[i], i + 1);
+    Serial.println(i);
+  }
+  
   Serial.println("We're setting up the map!");
   Serial.println("I'm a map");
 
   // Initialize Cell values in the CellMap
   initializeCellMap();
+  Serial.println("Made it past initializing cell map!");
 
   // SET UP BOUNDARY WALLS!!!!! :)
   setBoundaryWalls();
+  Serial.println("Made it past set boundary walls!");
 
   // randomSeed(17);
   // generateWall();
@@ -80,13 +101,18 @@ void setup() {
 // LOOP
 void loop() {
   senseWalls();
-  
-  floodMaze();
+  Serial.println("Made it past sense walls");
 
+  floodMaze();
+  Serial.println("Made it past floodmaze");
+  
   Janus();
+  Serial.println("Made it past janus");
+  
   //mouseRow += 1;
 
   printVirtualMaze();
+  Serial.println("Made it past print virtual maze");
 
   delay(2000);
 }
@@ -121,7 +147,7 @@ void Janus() {
     Serial.println("we're here");
     return;
   }
-  
+
   // Initialize with arbitrarily large values
   // floodDistance of surrounding cells
   // 0 NORTH
@@ -148,7 +174,7 @@ void Janus() {
     choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
   }
 
-  // thePath stores the cell with lowest 
+  // thePath stores the cell with lowest
   int minDistance = 1000;
   int thePath = 0;
   for (int i = 0; i < 4; i++) {
@@ -172,7 +198,7 @@ void Janus() {
   // Virtual movement
   // if (thePath == 0) {
   //   mouseRow--;
-  // } 
+  // }
   // else if (thePath == 1) {
   //   mouseCol++;
   // }
@@ -189,10 +215,10 @@ void turn(int desired) {
 
   if (difference == 1) {
     // motors->turnRight();
-  } 
+  }
   else if (difference == 3) {
     // motors->turnLeft();
-  } 
+  }
   else if (difference == 2) {
     // motors->turnAround();
   }
@@ -205,14 +231,14 @@ void floodMaze() {
 
   // While there are cells left in the queue
   while (!floodQueue.isEmpty()) {
-    
+
     // Removes first cell from the queue
     Cell frontier = floodQueue.dequeue();
-    
+
     int fRow = frontier.row;
     int fCol = frontier.column;
     int fDistance = frontier.floodDistance;
-    
+
     // Check Northern Cell
     if (fRow > 0 && !cellMap[fRow - 1][fCol].visited && !checkWall(fRow, fCol, NORTH)) {
       if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
@@ -221,7 +247,7 @@ void floodMaze() {
         cellMap[fRow - 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow - 1][fCol]);
     }
-    
+
     // Check Eastern Cell
     if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
       if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
@@ -230,7 +256,7 @@ void floodMaze() {
         cellMap[fRow][fCol + 1].visited = true;
         floodQueue.enqueue(cellMap[fRow][fCol + 1]);
     }
-    
+
     // Check Southern Cell
     if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
       if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
@@ -239,7 +265,7 @@ void floodMaze() {
         cellMap[fRow + 1][fCol].visited = true;
         floodQueue.enqueue(cellMap[fRow + 1][fCol]);
     }
-      
+
     // Check Western Cell
     if (fCol > 0 && !cellMap[fRow][fCol - 1].visited && !checkWall(fRow, fCol, WEST)) {
       if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
@@ -296,21 +322,21 @@ void initializeFloodMaze() {
   }
 
   // Adham, in case you think this is a bad variable name.
-  // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze 
+  // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze
   if (findMinotaur) {
     // Set center to 4 cells in the middle
     cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
     cellMap[CENTER_ROW][CENTER_COL].visited = true;
     floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
-  
+
     cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
     cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
     floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
-  
+
     cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
     cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
     floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
-  
+
     cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
     cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
     floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
@@ -372,13 +398,13 @@ void printVirtualMaze() {
 // isPost boolean variables flags whether we are printing a row with vertical walls or horizontal walls
 void printVirtualRow(int row, bool isPostRow) {
   for (int col = 0; col < 16; col++) {
-    
+
     if (isPostRow) {
       Serial.print("+");
 
       if (((cellMap[row][col].walls & NORTH) == NORTH) || (row > 0 && (cellMap[row - 1][col].walls & SOUTH) == SOUTH)) {
         Serial.print("---");
-      } 
+      }
       else {
         Serial.print("   ");
       }
@@ -399,7 +425,7 @@ void printVirtualRow(int row, bool isPostRow) {
         if (cellMap[row][col].floodDistance < 10) {
           Serial.print(" ");
         }
-       
+
       }
     }
   }
@@ -417,25 +443,26 @@ void senseWalls() {
   // get sensor readings
   for (int i = 0; i < sensors.size(); i++) {
     sensorReadings[i] = sensors[i]->readRangeContinuousMillimeters();
+    Serial.println(sensorReadings[i]);
   }
 
   // compare LEFT with threshold
   if (sensorReadings[0] < wallThreshold) {
     // NORTH
     if (mouseDir == 0) {
-      cellMap[mouseRow][mouseCol] |= WEST;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= WEST;
+    }
     // EAST
     else if (mouseDir == 1) {
-      cellMap[mouseRow][mouseCol] |= NORTH;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= NORTH;
+    }
     // SOUTH
     else if (mouseDir == 2) {
-      cellMap[mouseRow][mouseCol] |= EAST;
+      cellMap[mouseRow][mouseCol].walls |= EAST;
     }
     // WEST
     else if (mouseDir == 3) {
-      cellMap[mouseRow][mouseCol] |= SOUTH;
+      cellMap[mouseRow][mouseCol].walls |= SOUTH;
     }
   }
 
@@ -443,19 +470,19 @@ void senseWalls() {
   if (sensorReadings[2] < wallThreshold) {
     // NORTH
     if (mouseDir == 0) {
-      cellMap[mouseRow][mouseCol] |= NORTH;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= NORTH;
+    }
     // EAST
     else if (mouseDir == 1) {
-      cellMap[mouseRow][mouseCol] |= EAST;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= EAST;
+    }
     // SOUTH
     else if (mouseDir == 2) {
-      cellMap[mouseRow][mouseCol] |= SOUTH;
+      cellMap[mouseRow][mouseCol].walls |= SOUTH;
     }
     // WEST
     else if (mouseDir == 3) {
-      cellMap[mouseRow][mouseCol] |= WEST;
+      cellMap[mouseRow][mouseCol].walls |= WEST;
     }
   }
 
@@ -463,26 +490,34 @@ void senseWalls() {
   if (sensorReadings[4] < wallThreshold) {
     // NORTH
     if (mouseDir == 0) {
-      cellMap[mouseRow][mouseCol] |= EAST;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= EAST;
+    }
     // EAST
     else if (mouseDir == 1) {
-      cellMap[mouseRow][mouseCol] |= SOUTH;
-    } 
+      cellMap[mouseRow][mouseCol].walls |= SOUTH;
+    }
     // SOUTH
     else if (mouseDir == 2) {
-      cellMap[mouseRow][mouseCol] |= WEST;
+      cellMap[mouseRow][mouseCol].walls |= WEST;
     }
     // WEST
     else if (mouseDir == 3) {
-      cellMap[mouseRow][mouseCol] |= NORTH;
+      cellMap[mouseRow][mouseCol].walls |= NORTH;
     }
   }
 }
 
-
-
-
-
-
-
+void initSensor(int pin, VL6180X *sensor, int address) {
+    digitalWrite(pin, HIGH);
+    sensor->init();
+    sensor->configureDefault();
+    sensor->setScaling(2);
+    sensor->setAddress(address);
+    sensor->setTimeout(500);
+    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
+    sensor->stopContinuous();
+    delay(300);
+    sensor->startRangeContinuous(30);
+    Serial.print(pin);
+    Serial.println(" connected.");
+}

@@ -17,11 +17,11 @@ void wait(int ms);
 void initSensor(int pin, VL6180X *sensor, int address);
 
 void setup() {
-  Wire.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 100000);
+  Wire.begin();
   Serial.begin(9600);
   delay(1000);
   Serial.println("Initializing:");
-
+  
   // Sets all sensors to low for initialization
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
     pinMode(sensor_pins[i], OUTPUT);
@@ -31,6 +31,7 @@ void setup() {
   // Initializes sensors
   for (unsigned int i = 0; i < sensor_pins.size(); i++) {
     initSensor(sensor_pins[i], sensors[i], i + 1);
+    Serial.println(i);
   }
 }
 
@@ -62,7 +63,7 @@ void wait(int ms)
 }
 
 void initSensor(int pin, VL6180X *sensor, int address) {
-    digitalWrite(pin, HIGH); 
+    digitalWrite(pin, HIGH);
     sensor->init();
     sensor->configureDefault();
     sensor->setScaling(2);

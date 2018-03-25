@@ -19,7 +19,7 @@ struct motor {
 void move(std::vector<motor> motors, int direction);
 
 // Constants for test
-int speed = 255;
+int speed = 512;
 int time = 1000;
 int flag = 0;
 
@@ -38,7 +38,7 @@ void setup() {
     pinMode(pins::motorDirectionL, OUTPUT);
     pinMode(pins::motorPowerR, OUTPUT);
     pinMode(pins::motorDirectionR, OUTPUT);
-
+    analogWriteResolution(12); // Set ADC resolution to 12, analogWrite range 0-4095
     Serial.println("Motors initialized.");
 }
 
