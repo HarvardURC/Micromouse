@@ -8,7 +8,7 @@
 #define SIGN(x) 2 * (x > 0) - 1
 
 /* Globals */
-const bool debug = true;
+const bool debug = true; // set to true for serial debugging statements
 const int encoderTolerance = 5000; // error threshold for the encoder values
 const int frontTolerance = 50;
 const unsigned long timeout = 10000;
@@ -42,7 +42,8 @@ float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 template<typename T, typename U>
 constexpr T dmod (T x, U mod)
 {
-    return !mod ? x : static_cast<long long>(x) % mod + x - static_cast<long long>(x);
+    return !mod ? x :
+        static_cast<long long>(x) % mod + x - static_cast<long long>(x);
 }
 
 
@@ -183,7 +184,9 @@ void Motor::moveTicksPID(long ticks) {
     _pidInput = 0;
     _encoder.write(0);
     long time = millis();
-    while (abs(_pidSetpoint - _pidInput) > encoderTolerance && millis() - time < timeout) {
+    while (abs(_pidSetpoint - _pidInput) > encoderTolerance &&
+        millis() - time < timeout)
+    {
         _pidInput = _encoder.read();
         _pid.Compute();
         drive(_pidOutput);
@@ -265,12 +268,14 @@ void Driver::movePID(float setpoint) {
         float leftSpeed = _leftMotor.getPIDSpeed(setpoint);
         float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
         // Debugging code
-        Serial.print("Left motor speed: ");
-        Serial.print(leftSpeed);
-        Serial.print(" Right motor speed: ");
-        Serial.print(rightSpeed);
-        Serial.print(" Setpoint: ");
-        Serial.println(setpoint);
+        if (debug) {
+            Serial.print("Left motor speed: ");
+            Serial.print(leftSpeed);
+            Serial.print(" Right motor speed: ");
+            Serial.print(rightSpeed);
+            Serial.print(" Setpoint: ");
+            Serial.println(setpoint);
+        }
         // delay(500);
         if (fabs(leftSpeed) > 1 && fabs(rightSpeed) > 1) {
             start_flag = 1;
@@ -398,11 +403,15 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     elapsedMillis fuckupTimer = 0;
     int sensorCounter = 0;
 
-    Serial.print("Old goal_a: ");
-    Serial.print(goal_a);
+    if (debug) {
+        Serial.print("Old goal_a: ");
+        Serial.print(goal_a);
+    }
     goal_a = minTurn(goal_a, curr_angle);
-    Serial.print(" New goal_a: ");
-    Serial.println(goal_a);
+    if (debug) {
+        Serial.print(" New goal_a: ");
+        Serial.println(goal_a);
+    }
 
     _leftMotor._encoder.write(0);
     _rightMotor._encoder.write(0);
@@ -444,7 +453,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 pidTimer = 0;
 
                 // use distance formula to get positive linear velocity
-                float lin_velocity = angle_flag ? 0 : sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
+                float lin_velocity = angle_flag ? 0 :
+                    sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
                 float ang_velocity = _pid_a.output;
 
                 // L is width of robot
@@ -455,9 +465,14 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 v_right = ceilingPWM(v_right, v_left, motorLimit);
 
                 // (same calcuation as temp_a in tankGo)
-                float travel_angle = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
-                float angle_diff = fabs(fmod(curr_angle, 2 * PI) - fmod(travel_angle, 2 * PI));
-                if (!angle_flag && (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
+                float travel_angle = atan2(
+                    -1*(goal_x - curr_xpos), goal_y - curr_ypos);
+
+                float angle_diff = fabs(fmod(curr_angle, 2 * PI) -
+                    fmod(travel_angle, 2 * PI));
+
+                if (!angle_flag &&
+                    (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
                 {
                   // moving forward - force motors forward
                   if (v_left + v_right < 0) {
@@ -476,23 +491,24 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 //if (angle_flag) {v_right = -1 * v_left;}
 
                 /* Begin debug code */
-                Serial.print("Timer: ");
-                Serial.println(fuckupTimer);
-                Serial.print("ang_velocity: ");
-                Serial.println(ang_velocity);
-                debugPidMovement();
-                if (bluetoothOn_ && bluetoothTimer >= 1000) {
-                  ble.print("v_left: ");
-                  ble.print(v_left);
-                  ble.print(" v_right: ");
-                  ble.println(v_right);
-                  bluetoothTimer = 0;
+                if (debug) {
+                    Serial.print("Timer: ");
+                    Serial.println(fuckupTimer);
+                    Serial.print("ang_velocity: ");
+                    Serial.println(ang_velocity);
+                    debugPidMovement();
+
+                    Serial.print("v_left: ");
+                    Serial.print(v_left);
+                    Serial.print(" v_right: ");
+                    Serial.println(v_right);
                 }
-                if (!bluetoothOn_) {
-                  Serial.print("v_left: ");
-                  Serial.print(v_left);
-                  Serial.print(" v_right: ");
-                  Serial.println(v_right);
+                if (bluetoothOn_ && bluetoothTimer >= 1000) {
+                    ble.print("v_left: ");
+                    ble.print(v_left);
+                    ble.print(" v_right: ");
+                    ble.println(v_right);
+                    bluetoothTimer = 0;
                 }
                 /* End debug code */
 
@@ -507,12 +523,13 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 (v_left < motorCloseEnough && v_right < motorCloseEnough) ||
                 // perpendicular to goal direction means it's either
                 // right next to destination, or it's hopeless anyway
-                (!angle_flag && fabs(angle_diff - PI / 2) <= perpendicular_threshold))
+                (!angle_flag &&
+                    fabs(angle_diff - PI / 2) <= perpendicular_threshold))
                 {
-                  end_iter++;
+                    end_iter++;
                 }
                 else {
-                  end_iter = 0;
+                    end_iter = 0;
                 }
                 if (end_iter > convergenceTime) {
                   break;
@@ -521,14 +538,18 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
 
             // robot state updates
             float sample_t = 1. / interval;
-            float true_v_left = (_leftMotor.readTicks() - enc_left) * ticksToCm / sample_t;
+            float true_v_left = (_leftMotor.readTicks() - enc_left) *
+                ticksToCm / sample_t;
             enc_left = _leftMotor.readTicks();
-            float true_v_right = (_rightMotor.readTicks() - enc_right) * ticksToCm / sample_t;
+            float true_v_right = (_rightMotor.readTicks() - enc_right) *
+                ticksToCm / sample_t;
             enc_right = _rightMotor.readTicks();
 
             float true_ang_v = (true_v_right - true_v_left) / L;
-            curr_xpos += (true_v_left + true_v_right) / 2  * sample_t * -1 * sin(curr_angle);
-            curr_ypos += (true_v_left + true_v_right) / 2 * sample_t * cos(curr_angle);
+            curr_xpos += (true_v_left + true_v_right) / 2  *
+                sample_t * -1 * sin(curr_angle);
+            curr_ypos += (true_v_left + true_v_right) / 2 *
+                sample_t * cos(curr_angle);
             float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
 
             /* used for if the current angle `a` > 2PI or `a` < 0 to correct
@@ -570,7 +591,6 @@ void Driver::turnLeft(float degrees) {
 void Driver::turnRight(float degrees) {
     turnLeft(-1 * degrees);
 }
-
 
 
 /* Moves the robot to the input goal state in discrete tank style movements
