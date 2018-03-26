@@ -2,7 +2,7 @@
 #include "io.hh"
 #include "motors.hh"
 #include "sensors.hh"
-#include "bluetooth.hh"
+// #include "bluetooth.hh"
 #include "maze.hh"
 
 using namespace pins;
@@ -56,7 +56,7 @@ void setup() {
     encoderR1,
     encoderR2,
     *sensorArr,
-    true);
+    false);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -73,10 +73,10 @@ void setup() {
     maze->setBoundaryWalls();
 
     backRgb->flashLED(2);
-    bluetoothInitialize();
+    // bluetoothInitialize();
 
     backRgb->flashLED(1);
-    ble.print("Setup done\n");
+    // ble.print("Setup done\n");
 }
 
 void loop() {
@@ -84,16 +84,16 @@ void loop() {
         maze->swapGoal();
     }
     if (flag >= 0) {
-        ble.print("Waiting on command\n");
-        waitCommand();
+        // ble.print("Waiting on command\n");
+        waitButton(backButt);
     }
     // run the flood-fill algorithm
     maze->floodMaze();
 
     // determine next cell to move to
     Position next_move = maze->chooseNextCell();
-    ble.print("Next move -- ");
-    next_move.print(1);
+    // ble.print("Next move -- ");
+    // next_move.print(1);
 
     // move to that cell
     makeNextMove(next_move);
@@ -105,24 +105,27 @@ void loop() {
         driver->shortTofWallReadings[0],
         driver->shortTofWallReadings[1],
         driver->shortTofWallReadings[2]);
-    ble.print("Walls:");
-    for (int i = 0; i < 3; i++) {
-        ble.print(driver->shortTofWallReadings[i]);
-        ble.print(" ");
-    }
-    ble.println(" ");
+    // ble.print("Walls:");
+    // for (int i = 0; i < 3; i++) {
+    //     ble.print(driver->shortTofWallReadings[i]);
+    //     ble.print(" ");
+    // }
+    // ble.println(" ");
     driver->clearWallData();
 
-    maze->printWallsCell(next_move);
+    // maze->printWallsCell(next_move);
     flag++;
 }
 
 
+/* Given the position of the next cell, converts the position to x, y
+ * coordinates in centimeters and runs tankGo() to for precise movement
+ * in the mapping phase.
+ */
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
     // ble.print("Diff direction: ");
-    // ble.print(diff.direction());
-    // ble.print("\n");
+    // ble.println(diff.direction());
 
     driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
     frontRgb->flashLED(1);
@@ -135,6 +138,7 @@ void waitButton(Button* but) {
         if (but->read() == LOW) {
             frontRgb->flashLED(2);
             delay(1000);
+            flag = -100;
             frontRgb->flashLED(1);
             break;
         }
@@ -143,29 +147,29 @@ void waitButton(Button* but) {
 
 
 /* Waits on a command from bluetooth controller */
-void waitCommand() {
-    while (1) {
-        while (ble.available()) {
-            command = ble.read();
-            break;
-        }
-        if (command != init_command) {
-            switch(command) {
-                // go to next movement
-                case 'g':
-                    frontRgb->flashLED(2);
-                    delay(1000);
-                    frontRgb->flashLED(1);
-                    break;
-                // continue without interruption
-                case 'c':
-                    flag = -100;
-                    break;
-                default:
-                    break;
-            }
-            command = init_command;
-            break;
-        }
-    }
-}
+// void waitCommand() {
+//     while (1) {
+//         while (ble.available()) {
+//             command = ble.read();
+//             break;
+//         }
+//         if (command != init_command) {
+//             switch(command) {
+//                 // go to next movement
+//                 case 'g':
+//                     frontRgb->flashLED(2);
+//                     delay(1000);
+//                     frontRgb->flashLED(1);
+//                     break;
+//                 // continue without interruption
+//                 case 'c':
+//                     flag = -100;
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             command = init_command;
+//             break;
+//         }
+//     }
+// }

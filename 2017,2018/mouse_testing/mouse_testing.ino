@@ -141,11 +141,11 @@ void loop() {
                     break;
                 case 1:
                     if (debug) Serial.println("Going...");
-                    driver->tankGo(-10, 0, 0);
+                    driver->tankGo(0, 10, 0);
                     break;
                 case 2:
                     if (debug) Serial.println("Going...");
-                    driver->tankGo(0, 10, 0);
+                    driver->tankGo(-10, 0, 0);
                     break;
                 case 3:
                     if (debug) Serial.println("Going...");

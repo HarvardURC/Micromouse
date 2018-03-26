@@ -309,7 +309,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
                 }
             }
         }
-        ble.println(" ");
+        // ble.println(" ");
     }
 }
 
