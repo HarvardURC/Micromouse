@@ -71,7 +71,7 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     if (debug) Serial.println("10cm forward");
-                    driver->forward(10);
+                    driver->forward(18);
                     break;
                 case 1:
                     if (debug) Serial.println("30cm forward");
