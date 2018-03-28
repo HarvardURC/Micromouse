@@ -110,6 +110,8 @@ class Driver {
 
         void clearWallData();
 
+        void realign(int goal_dist);
+
         // Tank turn movement functions
         void forward(float distance);
         void turnLeft(float degrees);
@@ -134,6 +136,7 @@ class Driver {
         PidController _pid_x;
         PidController _pid_y;
         PidController _pid_a;
+        PidController _pid_front_tof;
         bool bluetoothOn_;
 
         float _v_left = 0;

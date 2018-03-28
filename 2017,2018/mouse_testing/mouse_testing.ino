@@ -167,18 +167,10 @@ void loop() {
             break;
         case 4:
             switch(test_num) {
-                // WALL DETECTION TESTS
+                // REALIGN TEST
                 case 0: {
-                    // Only left wall
-                    if (debug) Serial.println("Left wall detection test");
-                    driver->forward(18);
-                    int thresholds[3] = {250, 250, 250};
-                    for (int i = 0; i < 3; i++) {
-                        // Flashes green if it detects a wall
-                        resultLed(
-                            driver->shortTofWallReadings[i] < thresholds[i]);
-                        delay(500);
-                    }
+                    if (debug) Serial.println("Realign test");
+                    driver->realign(20);
                     break;
                 }
                 default:

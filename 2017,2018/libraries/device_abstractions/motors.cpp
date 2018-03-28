@@ -33,6 +33,7 @@ const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
 float p = 12, i = 0, d = 0; // x and y PIDs
 float p_a = 12, i_a = 0, d_a = 0; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
+float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
 
 
 /* Helper functions */
@@ -213,7 +214,8 @@ Driver::Driver(
     _sensors(sensors),
     _pid_x(p, i, d),
     _pid_y(p, i, d),
-    _pid_a(p_a, i_a, d_a)
+    _pid_a(p_a, i_a, d_a),
+    _pid_front_tof(p_tof, i_tof, d_tof)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
@@ -623,10 +625,42 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
     else {
         go(goal_x, goal_y, goal_a);
     }
+
+    // Re-align if touching the wall
+    if (_sensors.readShortTof(1) < 20) {
+        realign(20);
+    }
 }
 
 
 void Driver::resetState() {
     this->curr_xpos = 0;
     this->curr_ypos = 0;
+}
+
+
+void Driver::realign(int goal_dist) {
+    const int wall_error = 3;
+    _pid_front_tof.setpoint = goal_dist;
+    int counter = 0;
+    while (1) {
+        float dist = _sensors.readShortTof(1);
+        // end condition
+        if (dist < goal_dist + wall_error && dist > goal_dist - wall_error) {
+            counter++;
+        }
+        else {
+            counter = 0;
+        }
+
+        if (counter >= convergenceTime) {
+            break;
+        }
+
+        _pid_front_tof.input = dist;
+        _pid_front_tof.compute();
+        float pwm = -1 * _pid_front_tof.output;
+        drive(pwm, pwm);
+    }
+    brake();
 }
