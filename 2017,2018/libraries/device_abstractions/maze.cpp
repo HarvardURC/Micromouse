@@ -72,7 +72,8 @@ void Position::print(int bluetooth) {
 }
 
 
-Maze::Maze() : currPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL) {
+Maze::Maze() : startPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL),
+    currPos(STARTROW, STARTCOL) {
     initializeMaze();
     setBoundaryWalls();
 }
@@ -134,11 +135,13 @@ void Maze::floodMaze() {
 
     // if we're on an even run, set the destination to be the center of the maze
     if (counter % 2 == 0) {
-        stackPointer = 4;
+        stackPointer = 1;
         cellStack[0] = (16 * ENDROW) + ENDCOL;
-        cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
-        cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
-        cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
+        // stackPointer = 4;
+        // cellStack[0] = (16 * ENDROW) + ENDCOL;
+        // cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
+        // cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
+        // cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
     }
     // otherwise, the destination is the start of the maze
     else {
@@ -250,19 +253,6 @@ void Maze::updatePosition(Position p) {
 }
 
 
-/* switches the goal position between the goal and the start */
-void Maze::swapGoal() {
-    if (goalPos.row == ENDROW && goalPos.col == ENDCOL) {
-        goalPos.row = STARTROW;
-        goalPos.col = STARTCOL;
-    }
-    else {
-        goalPos.row = ENDROW;
-        goalPos.col = ENDCOL;
-    }
-}
-
-
 /* Converts angle in radians to relative direction
  * forward=0, left=1 back=2, right=3 */
 int angleToDir(float angle) {
@@ -309,7 +299,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
                 }
             }
         }
-        // ble.println(" ");
+        ble.println(" ");
     }
 }
 
@@ -324,15 +314,15 @@ Position Maze::chooseNextCell() {
     // Compare through all the neighbors
     for (int i = 0; i < 4; i++) {
         int test_offset = currPos.offset() + offsetMap[i];
+
         /* if the there's no wall in the way, and the flood fill value is the
          * lowest set it as the tentative next cell */
         if (test_offset > 0 && test_offset < 255 &&
             !(wallMap[currPos.offset()] & 1 << i) &&
             cellMap[test_offset] < lowest)
         {
-            int temp_offset = currPos.offset() + offsetMap[i];
-            lowest = cellMap[temp_offset];
-            lowestPos = getPosition(temp_offset);
+            lowest = cellMap[test_offset];
+            lowestPos = getPosition(test_offset);
         }
     }
 
