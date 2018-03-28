@@ -29,6 +29,9 @@ void setup() {
     delay(500);
     // if (bluetooth) bluetoothInitialize();
 
+    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
+    backRgb->flashLED(0);
+
 
     sensorArr = new SensorArray(
         tofLeftDiagS,
@@ -55,10 +58,12 @@ void setup() {
     frontButt = new Button(frontButton);
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
-    frontRgb->switchLED(2);
 
     pinMode(motorMode, OUTPUT);
     digitalWrite(motorMode, HIGH);
+
+    backRgb->flashLED(1);
+    frontRgb->switchLED(2);
 
     adjustTestLevel();
 }
@@ -95,6 +100,7 @@ void loop() {
                     break;
                 default:
                     buzz->siren();
+                    goNextTests();
                     break;
             }
             break;
@@ -113,6 +119,7 @@ void loop() {
                     break;
                 default:
                     buzz->siren();
+                    goNextTests();
                     break;
             }
             break;
@@ -129,6 +136,7 @@ void loop() {
                     break;
                 default:
                     buzz->siren();
+                    goNextTests();
                     break;
             }
             break;
@@ -153,6 +161,7 @@ void loop() {
                     break;
                 default:
                     buzz->siren();
+                    goNextTests();
                     break;
             }
             break;
@@ -188,6 +197,14 @@ void loop() {
     // else { waitButton(); }
     waitButton();
 }
+
+
+
+void goNextTests() {
+    test_level++;
+    test_num = 0;
+}
+
 
 // If the back button is pressed, go to next test case
 // If front button pressed, repeat test case
