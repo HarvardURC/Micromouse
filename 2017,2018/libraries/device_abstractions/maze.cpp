@@ -241,10 +241,11 @@ void Maze::printMaze() {
 
 
 /* Resets the robot position in the maze to the start cell */
-void Maze::resetPosition() {
+void Maze::reset() {
     currPos.row = STARTROW;
     currPos.col = STARTCOL;
-    counter -= counter % 2;
+    initializeMaze();
+    counter = 0;
 }
 
 

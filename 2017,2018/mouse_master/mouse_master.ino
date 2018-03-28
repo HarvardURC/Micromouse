@@ -164,7 +164,15 @@ void waitCommand() {
         }
         if (command != init_command) {
             switch(command) {
-                // go to next movement
+                // reset maze
+                case 'r':
+                    flag = 0;
+                    driver->resetState();
+                    maze->reset();
+                    command = init_command;
+                    ble.print("Maze reset\n");
+                    break;
+                // go to next cell
                 case 'g':
                     frontRgb->flashLED(2);
                     delay(1000);
@@ -177,8 +185,10 @@ void waitCommand() {
                 default:
                     break;
             }
-            command = init_command;
-            break;
+            if (command != init_command) {
+                command = init_command;
+                break;
+            }
         }
     }
 }
