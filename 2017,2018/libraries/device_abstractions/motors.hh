@@ -100,6 +100,9 @@ class Driver {
         // angle of goal_a wrt the x-axis
         void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
         void tankGo(float goal_x, float goal_y, float goal_a);
+        // sets _v_left and _v_right variables based on x, y, a PIDs
+        void calculateInputPWM(bool angle_flag,
+            float goal_x, float goal_y, float angle_diff);
         // Clears the robot state variables
         void resetState();
         // Prints out the output, setpoint, and state variables for each pid
@@ -132,6 +135,9 @@ class Driver {
         PidController _pid_y;
         PidController _pid_a;
         bool bluetoothOn_;
+
+        float _v_left = 0;
+        float _v_right = 0;
 };
 
 #endif

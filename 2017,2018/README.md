@@ -24,6 +24,7 @@ Config files for the robot that are populated with Teensy pin numbers.
 #### Commands
 - 'g' : make a single cell movement
 - 'c' : continue the mapping the maze until reaching the goal, and then return to the start
+- 'r' : resets the internal maze and robot state to start a fresh mapping run
 
 ### mouse_testing
 #### Setup

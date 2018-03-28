@@ -325,6 +325,11 @@ void Driver::debugPidMovement() {
     Serial.print(_pid_a.setpoint / degToRad);
     Serial.print(" curr_angle: ");
     Serial.println(curr_angle / degToRad);*/
+
+    Serial.print("_v_left: ");
+    Serial.print(_v_left);
+    Serial.print(" _v_right: ");
+    Serial.println(_v_right);
 }
 
 
@@ -393,6 +398,42 @@ float minTurn(float goal_angle, float curr_angle) {
 }
 
 
+void Driver::calculateInputPWM(bool angle_flag,
+    float goal_x, float goal_y, float angle_diff)
+{
+    // use distance formula to get positive linear velocity
+    float lin_velocity = angle_flag ? 0 :
+        sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
+    float ang_velocity = _pid_a.output;
+
+    Serial.print("ang_velocity: ");
+    Serial.println(ang_velocity);
+
+    // L is width of robot
+    // todo: makes sure ceiling doesnt drown out angle correction
+    _v_left = lin_velocity - L * ang_velocity / 2;
+    _v_right = lin_velocity + L * ang_velocity / 2;
+    _v_left = ceilingPWM(_v_left, _v_right, motorLimit);
+    _v_right = ceilingPWM(_v_right, _v_left, motorLimit);
+
+    if (!angle_flag &&
+    (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
+    {
+        // moving forward - force motors forward
+        if (_v_left + _v_right < 0) {
+        _v_left = -1 * _v_left;
+        _v_right = -1 * _v_right;
+    }
+    } else if (!angle_flag) {
+        // moving backwards - force motors backwards
+        if (_v_left + _v_right > 0) {
+            _v_left = -1 * _v_left;
+            _v_right = -1 * _v_right;
+        }
+    }
+}
+
+
 /* Moves based on absolute position on a coordinate grid */
 void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     unsigned int interval = refreshMs;
@@ -423,8 +464,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
-    float v_left = 0;
-    float v_right = 0;
     int end_iter = 0;
     int overflow_count = floor(curr_angle / (2 * PI));
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
@@ -446,23 +485,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
         if (timeElapsed > interval) {
             // do all pid output related on a separate loop
             if (pidTimer > pidSampleTime) {
+                pidTimer = 0;
+
                 _pid_x.input = fabs(curr_xpos - init_xpos);
                 _pid_y.input = fabs(curr_ypos - init_ypos);
                 _pid_a.input = curr_angle;
                 computePids();
-                pidTimer = 0;
-
-                // use distance formula to get positive linear velocity
-                float lin_velocity = angle_flag ? 0 :
-                    sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
-                float ang_velocity = _pid_a.output;
-
-                // L is width of robot
-                // todo: makes sure ceiling doesnt drown out angle correction
-                v_left = lin_velocity - L * ang_velocity / 2;
-                v_right = lin_velocity + L * ang_velocity / 2;
-                v_left = ceilingPWM(v_left, v_right, motorLimit);
-                v_right = ceilingPWM(v_right, v_left, motorLimit);
 
                 // (same calcuation as temp_a in tankGo)
                 float travel_angle = atan2(
@@ -471,48 +499,23 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 float angle_diff = fabs(fmod(curr_angle, 2 * PI) -
                     fmod(travel_angle, 2 * PI));
 
-                if (!angle_flag &&
-                    (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
-                {
-                  // moving forward - force motors forward
-                  if (v_left + v_right < 0) {
-                    v_left = -1 * v_left;
-                    v_right = -1 * v_right;
-                  }
-                } else if (!angle_flag) {
-                  // moving backwards - force motors backwards
-                  if (v_left + v_right > 0) {
-                    v_left = -1 * v_left;
-                    v_right = -1 * v_right;
-                  }
-                }
-
-                // move wheels opposite (and equal?) for tank turns
-                //if (angle_flag) {v_right = -1 * v_left;}
+                calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
+                drive(_v_left, _v_right);
 
                 /* Begin debug code */
                 if (debug) {
                     Serial.print("Timer: ");
                     Serial.println(fuckupTimer);
-                    Serial.print("ang_velocity: ");
-                    Serial.println(ang_velocity);
                     debugPidMovement();
-
-                    Serial.print("v_left: ");
-                    Serial.print(v_left);
-                    Serial.print(" v_right: ");
-                    Serial.println(v_right);
                 }
                 if (bluetoothOn_ && bluetoothTimer >= 1000) {
-                    ble.print("v_left: ");
-                    ble.print(v_left);
-                    ble.print(" v_right: ");
-                    ble.println(v_right);
+                    ble.print("_v_left: ");
+                    ble.print(_v_left);
+                    ble.print(" _v_right: ");
+                    ble.println(_v_right);
                     bluetoothTimer = 0;
                 }
                 /* End debug code */
-
-                drive(v_left, v_right);
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
@@ -520,7 +523,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 withinError(goal_x, curr_xpos, errorX) &&
                 withinError(goal_y, curr_ypos, errorY) &&
                 withinError(goal_a, curr_angle, errorA)) ||
-                (v_left < motorCloseEnough && v_right < motorCloseEnough) ||
+                (_v_left < motorCloseEnough && _v_right < motorCloseEnough) ||
                 // perpendicular to goal direction means it's either
                 // right next to destination, or it's hopeless anyway
                 (!angle_flag &&
@@ -532,7 +535,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                     end_iter = 0;
                 }
                 if (end_iter > convergenceTime) {
-                  break;
+                    break;
                 }
             }
 
