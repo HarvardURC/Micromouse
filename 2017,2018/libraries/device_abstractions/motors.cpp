@@ -14,24 +14,24 @@ const int frontTolerance = 50;
 const unsigned long timeout = 10000;
 const int pidSampleTime = 5; // parameter to PID library
 const float pidLimit = 50.0; // upperlimit on PID output
-const float ticksToCm = 1. / 8630; // conversion ratio
+const float ticksToCm = 1. / 8300; // conversion ratio 8360
 const float L = 9.25; // wheel distance in `cm`
 const int motorLimit = 50; // highest motor PWM value
-const int motorFloor = 25; // lowest motor PWM value (IN TUNING)
-const int motorCloseEnough = 15; // motor value considered close to target (IN TUNING)
-const float perpendicular_threshold = .06; // range to 90 degrees to terminate move
+const int motorFloor = 20; // lowest motor PWM value (IN TUNING)
+const int motorCloseEnough = 20; // motor value considered close to target (IN TUNING) 15
+const float perpendicular_threshold = 0.5; // range to 90 degrees to terminate move
 const float degToRad = PI / 180; // converstion ratio
 const int sensorRefreshTime = 120; // milliseconds
-const int convergenceTime = 20; // milliseconds
-const float errorX = 0.9; // centimeters
+const int convergenceTime = 100; // milliseconds
+const float errorX = 0.9; // centimeters .9
 const float errorY = errorX;
-const float errorA = 0.2; // radians
-const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
+const float errorA = 0.2; // radians .2
+const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
 
 // todo: print imu/angle error / tune pids
 /* PID values */
 float p = 12, i = 0, d = 0; // x and y PIDs
-float p_a = 12, i_a = 0, d_a = 0; // angle PID
+float p_a = 20, i_a = 0, d_a = 0; // angle PID
 float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
 
@@ -418,6 +418,12 @@ void Driver::calculateInputPWM(bool angle_flag,
     _v_left = ceilingPWM(_v_left, _v_right, motorLimit);
     _v_right = ceilingPWM(_v_right, _v_left, motorLimit);
 
+    /*if (angle_flag){
+        float mag = (fabs(_v_right) + fabs(_v_right)) / 2;
+        _v_right = SIGN(_v_right) * mag;
+        _v_left = -SIGN(_v_right) * mag;
+    }*/
+
     if (!angle_flag &&
     (angle_diff <= PI / 2 || angle_diff >= 3 * PI / 2))
     {
@@ -521,15 +527,14 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
-                if ((
-                withinError(goal_x, curr_xpos, errorX) &&
-                withinError(goal_y, curr_ypos, errorY) &&
-                withinError(goal_a, curr_angle, errorA)) ||
-                (_v_left < motorCloseEnough && _v_right < motorCloseEnough) ||
-                // perpendicular to goal direction means it's either
-                // right next to destination, or it's hopeless anyway
-                (!angle_flag &&
-                    fabs(angle_diff - PI / 2) <= perpendicular_threshold))
+                if ((withinError(goal_x, curr_xpos, errorX) &&
+                     withinError(goal_y, curr_ypos, errorY) &&
+                     withinError(goal_a, curr_angle, errorA)) ||
+                    (_v_left < motorCloseEnough && _v_right < motorCloseEnough) ||
+                    // perpendicular to goal direction means it's either
+                    // right next to destination, or it's hopeless anyway
+                    (!angle_flag &&
+                        fabs(angle_diff - PI / 2) <= perpendicular_threshold))
                 {
                     end_iter++;
                 }
@@ -600,6 +605,7 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
+ // goal_a parameter obselete!!
 void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
@@ -618,12 +624,13 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
 
     if (fabs(temp_a - curr_angle) > PI / 12) {
         // Turn
+        Serial.println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
         // Go forward
         go(goal_x, goal_y, temp_a);
     }
     else {
-        go(goal_x, goal_y, goal_a);
+        go(goal_x, goal_y, temp_a);
     }
 
     // Re-align if touching the wall
