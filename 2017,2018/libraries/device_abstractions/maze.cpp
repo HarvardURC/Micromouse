@@ -13,7 +13,7 @@
 #define STARTROW 0
 #define STARTCOL 0
 #define ENDROW 2
-#define ENDCOL 2
+#define ENDCOL 5
 
 // maps 0-3 direction to array offset, NORTH=0, WEST, SOUTH, EAST
 int offsetMap[4] = {16, -1, -16, 1};
@@ -75,7 +75,6 @@ void Position::print(int bluetooth) {
 Maze::Maze() : startPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL),
     currPos(STARTROW, STARTCOL) {
     initializeMaze();
-    setBoundaryWalls();
 }
 
 
@@ -90,6 +89,7 @@ void Maze::initializeMaze() {
     {
         wallMap[i] = 240;
     }
+    setBoundaryWalls();
 }
 
 /* Sets up wallMap with the boundary walls of the maze. */
@@ -111,6 +111,9 @@ void Maze::setBoundaryWalls ()
     for (int i = 0; i < 241; i += 16) {
         wallMap[i] |= WEST;
     }
+
+    // setup initial cell
+    wallMap[0] |= EAST;
 }
 
 /* Runs the flood-fill algorithm, updating cellMap with distances. */
@@ -269,7 +272,7 @@ int angleToDir(float angle) {
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
      // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {80, 75, 0, 75};
+    int irThresholds[4] = {90, 90, 0, 90};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16

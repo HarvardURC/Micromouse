@@ -22,11 +22,17 @@ const int motorCloseEnough = 20; // motor value considered close to target (IN T
 const float perpendicular_threshold = 0.5; // range to 90 degrees to terminate move
 const float degToRad = PI / 180; // converstion ratio
 const int sensorRefreshTime = 120; // milliseconds
-const int convergenceTime = 100; // milliseconds
+const int convergenceTime = 20; // milliseconds
 const float errorX = 0.9; // centimeters .9
 const float errorY = errorX;
 const float errorA = 0.2; // radians .2
 const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
+const float cellSize = 18; // size in cm of cell
+const float frontSensorToWheelAxis = 4.75; // cm
+// the distance from the center of the cell to the wall where sensor reads
+const float distCenterToInnerWall = 8.5;
+// how far from wall to align to be in the center of the cell in cm
+const float alignDist = distCenterToInnerWall - frontSensorToWheelAxis;
 
 // todo: print imu/angle error / tune pids
 /* PID values */
@@ -483,7 +489,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
          * NOTE: will break if sensors not initialized */
         if ((goal_y != init_ypos || goal_x != init_xpos) &&
             sensorTimer > sensorRefreshTime &&
-            sensorCounter < 4)
+            sensorCounter < 3)
         {
             readWalls();
             sensorTimer = 0;
@@ -633,8 +639,9 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
         go(goal_x, goal_y, temp_a);
     }
 
-    // Re-align if touching the wall
-    if (_sensors.readShortTof(1) < 20) {
+    // Re-align if near the wall
+    if (shortTofWallReadings[1] < 80 &&
+        !withinError(_sensors.readShortTof(1), alignDist, 2)) {
         realign(20);
     }
 }
@@ -670,4 +677,17 @@ void Driver::realign(int goal_dist) {
         drive(pwm, pwm);
     }
     brake();
+
+    // correct state based on which wall it realigned on
+    int direction = round(fmod(curr_angle, 2 * PI) / (PI / 2));
+
+    // Pointing east or west -> x-axis
+    if (direction % 2 == 1) {
+        int current_col = round(curr_xpos / cellSize);
+        curr_xpos = current_col * cellSize;
+    }
+    else {
+        int current_row = round(curr_ypos / cellSize);
+        curr_ypos = current_row * cellSize;
+    }
 }
