@@ -1,9 +1,12 @@
+#include <elapsedMillis.h>
+#include "bluetooth.hh"
 #include "config.h"
 #include "io.hh"
+#include "maze.hh"
 #include "motors.hh"
 #include "sensors.hh"
-#include "bluetooth.hh"
-#include "maze.hh"
+
+#define BUFSIZE 20
 
 using namespace pins;
 
@@ -20,9 +23,9 @@ RGB_LED* frontRgb;
 
 int flag = 0;
 int swap_flag = 0; // if true return to the start
-const char init_command = 'a';
-char command = init_command;
+char command[BUFSIZE];
 bool bluetooth = true;
+bool tuning = false;
 
 
 void setup() {
@@ -75,6 +78,7 @@ void setup() {
     backRgb->flashLED(2);
     if (bluetooth) {
         bluetoothInitialize();
+        command[0] = '\0';
     }
 
     backRgb->flashLED(1);
@@ -85,12 +89,12 @@ void loop() {
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         ble.println("Swapping goal....");
-
         if (maze->currPos == maze->startPos) {
             driver->resetState();
             flag = 0;
         }
     }
+
     if (flag >= 0) {
         ble.println("Waiting on command");
         // waitButton(backButt);
@@ -157,38 +161,66 @@ void waitButton(Button* but) {
 
 /* Waits on a command from bluetooth controller */
 void waitCommand() {
+    const int notifyTime = 4000;
+    elapsedMillis timer = 0;
     while (1) {
-        while (ble.available()) {
-            command = ble.read();
-            break;
+        if (timer > notifyTime) {
+            ble.println("Waiting on command...");
+            timer = 0;
         }
-        if (command != init_command) {
-            switch(command) {
-                // reset maze
-                case 'r':
-                    flag = 0;
-                    driver->resetState();
-                    maze->reset();
-                    command = init_command;
-                    ble.print("Maze reset\n");
-                    break;
-                // go to next cell
-                case 'g':
-                    frontRgb->flashLED(2);
-                    delay(1000);
-                    frontRgb->flashLED(1);
-                    break;
-                // continue without interruption
-                case 'c':
-                    flag = -100;
-                    break;
-                default:
-                    break;
+
+        while (ble.available()) {
+            ble.readline(command, BUFSIZE);
+        }
+
+        if (command[0] != '\0') {
+            // reset maze
+            if (!strcmp(command, "r")) {
+                flag = 0;
+                driver->resetState();
+                maze->reset();
+                ble.print("Maze reset.\n");
             }
-            if (command != init_command) {
-                command = init_command;
+            // go to next cell
+            else if (!strcmp(command, "g")) {
+                frontRgb->flashLED(2);
+                delay(1000);
+                frontRgb->flashLED(1);
                 break;
             }
+            // continue without interruption
+            else if (!strcmp(command, "c")) {
+                flag = -100;
+                break;
+            }
+            // move forward
+            else if (!strcmp(command, "w")) {
+                driver->forward(cellSize);
+            }
+            // turn left
+            else if (!strcmp(command, "a")) {
+                driver->turnLeft(90);
+            }
+            // turn right
+            else if (!strcmp(command, "d")) {
+                driver->turnRight(90);
+            }
+            // go backward
+            else if (!strcmp(command, "s")) {
+                driver->forward(-1 * cellSize);
+            }
+            else if (!strcmp(command, "celebrate")) {
+                for (size_t j = 0; j < 10; j++) {
+                    for (size_t i = 0; i < 2; i++) {
+                        frontRgb->flashLED(i);
+                        backRgb->flashLED(i);
+                        delay(50);
+                    }
+                }
+            }
+
+            timer = 0;
         }
+        command[0] = '\0';
     }
 }
