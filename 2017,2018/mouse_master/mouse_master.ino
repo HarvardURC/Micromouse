@@ -89,6 +89,7 @@ void loop() {
         maze->counter++;
         ble.println("Swapping goal....");
         if (maze->currPos == maze->startPos) {
+            command[0] = '\0';
             driver->resetState();
             flag = 0;
         }
@@ -196,7 +197,8 @@ void waitCommand() {
                 break;
             }
             // continue without interruption
-            else if (commandIs("continue")) {
+            else if (commandIs("start")) {
+                ble.println("Running maze.");
                 flag = -100;
                 break;
             }
@@ -211,10 +213,6 @@ void waitCommand() {
             // turn right
             else if (commandIs("d")) {
                 driver->turnRight(90);
-            }
-            // go backward
-            else if (commandIs("s")) {
-                driver->forward(-1 * cellSize);
             }
             else if (commandIs("celebrate")) {
                 for (size_t j = 0; j < 10; j++) {
@@ -238,16 +236,16 @@ void waitCommand() {
                     i = pid->integral;
                     d = pid->derivative;
 
-                    char* token = strtok(command, " ");
-                    if (!strcmp(token, "proportion")) {
+                    const char* token = strtok(command, " ");
+                    if (commandIs(token, "proportion")) {
                         token = strtok(NULL, " ");
                         p = atof(token);
                     }
-                    else if (!strcmp(token, "integral")) {
+                    else if (commandIs(token, "integral")) {
                         token = strtok(NULL, " ");
                         i = atof(token);
                     }
-                    else if (!strcmp(token, "derivative")) {
+                    else if (commandIs(token, "derivative")) {
                         token = strtok(NULL, " ");
                         d = atof(token);
                     }
@@ -289,7 +287,7 @@ void waitCommand() {
             }
             else if (commandIs("help")) {
                 ble.println("Possible commands: "
-                    "[go, continue, reset, w, a, s, d, tune, celebrate, quit]");
+                    "[go, start, reset, w, a, d, tune, celebrate, quit]");
             }
             else {
                 ble.println(
@@ -303,5 +301,9 @@ void waitCommand() {
 }
 
 bool commandIs(const char* cmd) {
-    return !strcmp(command, cmd);
+    return !strcmp(command, cmd) || command[0] == cmd[0];
+}
+
+bool commandIs(const char* token, const char* cmd) {
+    return !strcmp(token, cmd) || token[0] == cmd[0];
 }
