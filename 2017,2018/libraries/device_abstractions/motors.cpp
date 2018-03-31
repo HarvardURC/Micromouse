@@ -26,7 +26,7 @@ const int convergenceTime = 20; // milliseconds
 const float errorX = 0.9; // centimeters .9
 const float errorY = errorX;
 const float errorA = 0.2; // radians .2
-const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
+const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
 const float cellSize = 18; // size in cm of cell
 const float frontSensorToWheelAxis = 4.75; // cm
 // the distance from the center of the cell to the wall where sensor reads
