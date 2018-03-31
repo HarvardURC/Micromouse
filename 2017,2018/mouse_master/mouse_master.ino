@@ -25,7 +25,6 @@ int flag = 0;
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE];
 bool bluetooth = true;
-bool tuning = false;
 
 
 void setup() {
@@ -161,8 +160,16 @@ void waitButton(Button* but) {
 
 /* Waits on a command from bluetooth controller */
 void waitCommand() {
-    const int notifyTime = 4000;
+    // command interface menu vals
+    int tuning = -1;
+    float p = 0;
+    float i = 0;
+    float d = 0;
+    PidController* pid;
+
+    const int notifyTime = 8000;
     elapsedMillis timer = 0;
+
     while (1) {
         if (timer > notifyTime) {
             ble.println("Waiting on command...");
@@ -175,41 +182,41 @@ void waitCommand() {
 
         if (command[0] != '\0') {
             // reset maze
-            if (!strcmp(command, "r")) {
+            if (commandIs("reset")) {
                 flag = 0;
                 driver->resetState();
                 maze->reset();
                 ble.print("Maze reset.\n");
             }
             // go to next cell
-            else if (!strcmp(command, "g")) {
+            else if (commandIs("go")) {
                 frontRgb->flashLED(2);
                 delay(1000);
                 frontRgb->flashLED(1);
                 break;
             }
             // continue without interruption
-            else if (!strcmp(command, "c")) {
+            else if (commandIs("continue")) {
                 flag = -100;
                 break;
             }
             // move forward
-            else if (!strcmp(command, "w")) {
+            else if (commandIs("w")) {
                 driver->forward(cellSize);
             }
             // turn left
-            else if (!strcmp(command, "a")) {
+            else if (commandIs("a")) {
                 driver->turnLeft(90);
             }
             // turn right
-            else if (!strcmp(command, "d")) {
+            else if (commandIs("d")) {
                 driver->turnRight(90);
             }
             // go backward
-            else if (!strcmp(command, "s")) {
+            else if (commandIs("s")) {
                 driver->forward(-1 * cellSize);
             }
-            else if (!strcmp(command, "celebrate")) {
+            else if (commandIs("celebrate")) {
                 for (size_t j = 0; j < 10; j++) {
                     for (size_t i = 0; i < 2; i++) {
                         frontRgb->flashLED(i);
@@ -218,9 +225,83 @@ void waitCommand() {
                     }
                 }
             }
+            else if (commandIs("tune")) {
+                tuning = 0;
+                ble.println("Pick PID to tune. [linear, angular, front tof]");
+            }
+            else if (commandIs("quit")) {
+                tuning = -1;
+            }
+            else if (tuning >= 0) {
+                if (tuning > 0) {
+                    p = pid->proportion;
+                    i = pid->integral;
+                    d = pid->derivative;
+
+                    char* token = strtok(command, " ");
+                    if (!strcmp(token, "proportion")) {
+                        token = strtok(NULL, " ");
+                        p = atof(token);
+                    }
+                    else if (!strcmp(token, "integral")) {
+                        token = strtok(NULL, " ");
+                        i = atof(token);
+                    }
+                    else if (!strcmp(token, "derivative")) {
+                        token = strtok(NULL, " ");
+                        d = atof(token);
+                    }
+                    pid->setTunings(p, i, d);
+                }
+                else if (tuning == 0) {
+                    if (commandIs("linear")) {
+                        tuning = 1;
+                    }
+                    else if (commandIs("angular")) {
+                        tuning = 2;
+                    }
+                    else if (commandIs("front tof")) {
+                        tuning = 3;
+                    }
+                }
+
+                switch(tuning) {
+                    case 1: {
+                        pid = &driver->_pid_x;
+                        ble.print("linear: ");
+                        break;
+                    }
+                    case 2: {
+                        pid = &driver->_pid_a;
+                        ble.print("angular: ");
+                        break;
+                    }
+                    case 3: {
+                        pid = &driver->_pid_front_tof;
+                        ble.print("front tof: ");
+                        break;
+                    }
+                }
+                pid->printTunings();
+                ble.println(
+                    "Pick var to tune. [proportion, integral, derivative]");
+                ble.println("Ex: 'proportion  10.5'");
+            }
+            else if (commandIs("help")) {
+                ble.println("Possible commands: "
+                    "[go, continue, reset, w, a, s, d, tune, celebrate, quit]");
+            }
+            else {
+                ble.println(
+                    "Invalid command. See the README for valid commands.");
+            }
 
             timer = 0;
         }
         command[0] = '\0';
     }
+}
+
+bool commandIs(const char* cmd) {
+    return !strcmp(command, cmd);
 }

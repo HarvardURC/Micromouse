@@ -14,7 +14,19 @@ class PidController {
             float derivative
         );
 
+        void operator=(const PidController& pid) {
+            proportion = pid.proportion;
+            integral = pid.integral;
+            derivative = pid.derivative;
+        }
+
         void compute();
+        void setTunings(float p, float i, float d);
+        void printTunings();
+
+        float proportion;
+        float integral;
+        float derivative;
 
         float input;
         float output;
@@ -127,16 +139,17 @@ class Driver {
         // left, middle, right
         long shortTofWallReadings[3];
 
+        PidController _pid_x;
+        PidController _pid_y;
+        PidController _pid_a;
+        PidController _pid_front_tof;
+
     private:
         void readWalls();
 
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
-        PidController _pid_x;
-        PidController _pid_y;
-        PidController _pid_a;
-        PidController _pid_front_tof;
         bool bluetoothOn_;
 
         float _v_left = 0;

@@ -34,12 +34,13 @@ const float distCenterToInnerWall = 8.5;
 // how far from wall to align to be in the center of the cell in cm
 const float alignDist = distCenterToInnerWall - frontSensorToWheelAxis;
 
-// todo: print imu/angle error / tune pids
 /* PID values */
-float p = 12, i = 0, d = 0; // x and y PIDs
+float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
 float p_a = 20, i_a = 0, d_a = 0; // angle PID
-float p_m = 0.002, i_m = 0, d_m = 0; // motor/encoder PIDs
 float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
+
+// motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
+float p_m = 0.002, i_m = 0, d_m = 0;
 
 
 /* Helper functions */
@@ -99,6 +100,9 @@ PidController::PidController(
     _pid.SetOutputLimits(pidLimit * -1, pidLimit);
     _pid.SetTunings(proportion, integral, derivative);
     _pid.SetSampleTime(pidSampleTime);
+    this->proportion = proportion;
+    this->integral = integral;
+    this->derivative = derivative;
     this->input = 0;
     this->output = 0;
     this->setpoint = 0;
@@ -109,6 +113,24 @@ PidController::PidController(
 
 void PidController::compute() {
     _pid.Compute();
+}
+
+void PidController::setTunings(float p, float i, float d) {
+    this->_pid.SetTunings(p, i, d);
+    this->proportion = p;
+    this->integral = i;
+    this->derivative = d;
+}
+
+void PidController::printTunings() {
+    if (ble.isConnected()) {
+        ble.print("Proportion: ");
+        ble.print(this->proportion);
+        ble.print(" Integral: ");
+        ble.print(this->integral);
+        ble.print(" Derivative: ");
+        ble.println(this->derivative);
+    }
 }
 
 
@@ -218,8 +240,8 @@ Driver::Driver(
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
     _sensors(sensors),
-    _pid_x(p, i, d),
-    _pid_y(p, i, d),
+    _pid_x(p_l, i_l, d_l),
+    _pid_y(p_l, i_l, d_l),
     _pid_a(p_a, i_a, d_a),
     _pid_front_tof(p_tof, i_tof, d_tof)
 {
@@ -477,6 +499,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     _pid_x.setpoint = fabs(goal_x - init_xpos);
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
+
+    _pid_x.printTunings();
 
     int end_iter = 0;
     int overflow_count = floor(curr_angle / (2 * PI));
