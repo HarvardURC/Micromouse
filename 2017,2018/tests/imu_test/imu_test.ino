@@ -11,6 +11,12 @@
   
 Adafruit_BNO055 bno = Adafruit_BNO055(55);//pins::imuRST);
  
+uint8_t sys;
+uint8_t gyro;
+uint8_t accel;
+uint8_t mag;
+
+
 void setup(void) 
 {
   Serial.begin(9600);
@@ -32,6 +38,7 @@ void setup(void)
 
 void loop(void) 
 {
+  bno.getCalibration(&sys, &gyro, &accel, &mag);
   /* Get a new sensor event */ 
   sensors_event_t event; 
   bno.getEvent(&event);
@@ -44,6 +51,15 @@ void loop(void)
   Serial.print("\tZ: ");
   Serial.print(event.orientation.z, 4);
   Serial.println("");
+  Serial.print("Calibration: ");
+  Serial.print("sys: ");
+  Serial.print(sys);
+  Serial.print("gyro: ");
+  Serial.print(gyro);
+  Serial.print("accel: ");
+  Serial.print(accel);
+  Serial.print("mag: ");
+  Serial.println(mag);
   
   delay(100);
 }
