@@ -13,7 +13,7 @@
 #define STARTROW 0
 #define STARTCOL 0
 #define ENDROW 2
-#define ENDCOL 5
+#define ENDCOL 0
 
 // maps 0-3 direction to array offset, NORTH=0, WEST, SOUTH, EAST
 int offsetMap[4] = {16, -1, -16, 1};
@@ -310,23 +310,49 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
 
 /* Chooses the next cell based on the flood-fill algorithm's determination
  * of the adjacent cell which is closest to the destination. */
-Position Maze::chooseNextCell() {
+Position Maze::chooseNextCell(Position pos) {
     // stores the lowest adjacent distance from the destination
     unsigned char lowest = 255;
+    int dir = 0;
     Position lowestPos = {0, 0};
 
     // Compare through all the neighbors
     for (int i = 0; i < 4; i++) {
-        int test_offset = currPos.offset() + offsetMap[i];
+        int test_offset = pos.offset() + offsetMap[i];
 
         /* if the there's no wall in the way, and the flood fill value is the
          * lowest set it as the tentative next cell */
-        if (test_offset > 0 && test_offset < 255 &&
-            !(wallMap[currPos.offset()] & 1 << i) &&
+        if (test_offset >= 0 && test_offset <= 255 &&
+            !(wallMap[pos.offset()] & 1 << i) &&
             cellMap[test_offset] < lowest)
         {
             lowest = cellMap[test_offset];
             lowestPos = getPosition(test_offset);
+            dir = i;
+        }
+    }
+
+    // long straight of ways
+    if (counter > 0) {
+        int n_cells = 1;
+        while (n_cells < 16) {
+            // test if next cell is valid, if it is set it to lowestPos
+            int test_offset = pos.offset() + offsetMap[dir] * (n_cells + 1);
+            int lowest_offset = pos.offset() + offsetMap[dir] * n_cells;
+
+            if (test_offset >= 0 && test_offset <= 255 &&
+                !(wallMap[lowest_offset] & 1 << dir) &&
+                cellMap[test_offset] < lowest)
+            {
+                lowest = cellMap[test_offset];
+                lowestPos = getPosition(test_offset);
+                n_cells++;
+                ble.print("Keeping ");
+                lowestPos.print(1);
+            }
+            else {
+                break;
+            }
         }
     }
 

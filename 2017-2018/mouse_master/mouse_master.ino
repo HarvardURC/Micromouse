@@ -84,16 +84,19 @@ void setup() {
 }
 
 void loop() {
-    if (maze->currPos == maze->goalPos ||
+    if (maze->currPos == maze->goalPos && maze->counter % 2 == 0 ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         ble.println("Swapping goal....");
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
-            driver->resetState();
+                driver->resetState();
             flag = 0;
         }
     }
+
+    ble.print("Flag: ");
+    ble.println(flag);
 
     if (flag >= 0) {
         ble.println("Waiting on command");
@@ -104,7 +107,7 @@ void loop() {
     maze->floodMaze();
 
     // determine next cell to move to
-    Position next_move = maze->chooseNextCell();
+    Position next_move = maze->chooseNextCell(maze->currPos);
     ble.print("Next move -- ");
     next_move.print(bluetooth);
 
@@ -298,6 +301,7 @@ void waitCommand() {
         }
         command[0] = '\0';
     }
+    command[0] = '\0';
 }
 
 bool commandIs(const char* cmd) {

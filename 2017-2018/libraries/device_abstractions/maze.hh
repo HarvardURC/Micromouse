@@ -37,7 +37,7 @@ class Maze {
         void floodMaze();
         void addWalls(float angle, long leftDiag, long front, long rightDiag);
         void printMaze();
-        Position chooseNextCell();
+        Position chooseNextCell(Position pos);
         void reset();
         void updatePosition(Position p);
         void setBoundaryWalls();

@@ -26,7 +26,7 @@ const int convergenceTime = 20; // milliseconds
 const float errorX = 0.9; // centimeters .9
 const float errorY = errorX;
 const float errorA = 0.2; // radians .2
-const float angWeight = 1; // ratio of IMU vs. encoder measurements for angle
+const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
 const float cellSize = 18; // size in cm of cell
 const float frontSensorToWheelAxis = 4.75; // cm
 // the distance from the center of the cell to the wall where sensor reads
@@ -500,8 +500,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
-    _pid_x.printTunings();
-
     int end_iter = 0;
     int overflow_count = floor(curr_angle / (2 * PI));
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
@@ -674,6 +672,7 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
 void Driver::resetState() {
     this->curr_xpos = 0;
     this->curr_ypos = 0;
+    this->curr_angle = 0;
 }
 
 
