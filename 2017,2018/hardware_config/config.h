@@ -21,10 +21,10 @@ namespace pins
     const int tofLeftDiag = 22;
     const int tofLeft = 23;
     // encoders
-    const int encoderPinL1 = 7;
-    const int encoderPinL2 = 8;
-    const int encoderPinR1 = 2;
-    const int encoderPinR2 = 1;
+    const int encoderPinL1 = 1;
+    const int encoderPinL2 = 2;
+    const int encoderPinR1 = 7;
+    const int encoderPinR2 = 8;
     // button
     const int button = 29;
 }
