@@ -84,7 +84,7 @@ void setup() {
 }
 
 void loop() {
-    if (maze->currPos == maze->goalPos && maze->counter % 2 == 0 ||
+    if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         ble.println("Swapping goal....");
@@ -94,9 +94,6 @@ void loop() {
             flag = 0;
         }
     }
-
-    ble.print("Flag: ");
-    ble.println(flag);
 
     if (flag >= 0) {
         ble.println("Waiting on command");
@@ -187,6 +184,11 @@ void waitCommand() {
         if (command[0] != '\0') {
             // reset maze
             if (commandIs("reset")) {
+                flag = 0;
+                driver->resetState();
+                ble.println("Robot state reset. Ready for next run.");
+            }
+            else if (commandIs("fullreset")) {
                 flag = 0;
                 driver->resetState();
                 maze->reset();

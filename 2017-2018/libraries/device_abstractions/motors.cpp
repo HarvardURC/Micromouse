@@ -38,6 +38,7 @@ const float alignDist = distCenterToInnerWall - frontSensorToWheelAxis;
 float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
 float p_a = 20, i_a = 0, d_a = 0; // angle PID
 float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
+float p_diag = 2, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
 
 // motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
 float p_m = 0.002, i_m = 0, d_m = 0;
@@ -243,7 +244,8 @@ Driver::Driver(
     _pid_x(p_l, i_l, d_l),
     _pid_y(p_l, i_l, d_l),
     _pid_a(p_a, i_a, d_a),
-    _pid_front_tof(p_tof, i_tof, d_tof)
+    _pid_front_tof(p_tof, i_tof, d_tof),
+    _pid_diag_tof(p_diag, i_diag, d_diag)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
@@ -662,9 +664,9 @@ void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
     }
 
     // Re-align if near the wall
-    if (shortTofWallReadings[1] < 80 &&
-        !withinError(_sensors.readShortTof(1), alignDist, 2)) {
-        realign(20);
+    if (_sensors.readShortTof(1) < 80 &&
+        !withinError(_sensors.readShortTof(1), 18, 2)) {
+        realign(18);
     }
 }
 
@@ -678,12 +680,22 @@ void Driver::resetState() {
 
 void Driver::realign(int goal_dist) {
     const int wall_error = 3;
+    const int front_threshold = 30;
+    const int diag_correction = 4;
     _pid_front_tof.setpoint = goal_dist;
+    // right diag reads less than left diag
+    _pid_diag_tof.setpoint = diag_correction;
     int counter = 0;
     while (1) {
-        float dist = _sensors.readShortTof(1);
+        float front_dist = _sensors.readShortTof(1);
+        float left_diag_dist = _sensors.readShortTof(0);
+        float right_diag_dist = _sensors.readShortTof(2);
+
+        float diag_diff = left_diag_dist - right_diag_dist;
+
         // end condition
-        if (dist < goal_dist + wall_error && dist > goal_dist - wall_error) {
+        if (withinError(front_dist, goal_dist, wall_error) &&
+            withinError(diag_diff, diag_correction, 6)) {
             counter++;
         }
         else {
@@ -694,10 +706,14 @@ void Driver::realign(int goal_dist) {
             break;
         }
 
-        _pid_front_tof.input = dist;
+        _pid_front_tof.input = front_dist;
+        _pid_diag_tof.input = front_dist < front_threshold ? diag_diff : 0;
         _pid_front_tof.compute();
+        _pid_diag_tof.compute();
+
         float pwm = -1 * _pid_front_tof.output;
-        drive(pwm, pwm);
+        float angle_correction = _pid_diag_tof.output;
+        drive(pwm - angle_correction, pwm + angle_correction);
     }
     brake();
 
@@ -713,4 +729,7 @@ void Driver::realign(int goal_dist) {
         int current_row = round(curr_ypos / cellSize);
         curr_ypos = current_row * cellSize;
     }
+
+    float new_angle = direction * PI / 2;
+    curr_angle = new_angle;
 }

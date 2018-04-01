@@ -143,6 +143,7 @@ class Driver {
         PidController _pid_y;
         PidController _pid_a;
         PidController _pid_front_tof;
+        PidController _pid_diag_tof;
 
     private:
         void readWalls();
