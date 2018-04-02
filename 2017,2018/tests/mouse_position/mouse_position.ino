@@ -1,8 +1,9 @@
-/**
-  A time of flight (ToF) sensor test.
-  Outputs to Serial console the distance measured
-  by the left and right sensors.
+/*
+    Initializes and uses time of flight sensors to detect presence of walls.
+    Outputs to the serial monitor whether walls are present to the left, right,
+    or front of the mouse.
 */
+
 
 #include <vector>
 #include <VL6180X.h>
@@ -13,7 +14,7 @@ std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
-void wait(int ms);
+const int threshold = 300;
 void initSensor(int pin, VL6180X *sensor, int address);
 
 void setup() {
@@ -34,36 +35,29 @@ void setup() {
     Serial.println(i);
   }
 }
-
 void loop() {
-  unsigned long start = millis();
-  // Prints debug distances for sensors
-  for (unsigned int i = 0; i < sensors.size(); i++) {
-    Serial.print(sensor_names[i]);
-    Serial.print(": ");
-    Serial.print(sensors[i]->readRangeContinuousMillimeters());
-    Serial.print(" ");
+  // put your main code here, to run repeatedly:  
+  Serial.print("Wall on the ");
+  for (unsigned int i = 0; i < sensors.size(); i += 2) {
+    
+    if (sensors[i]->readRangeContinuousMillimeters() < threshold) {
+      Serial.print(sensor_names[i]);
+      Serial.print(" ");
+    }
+   
+//    Serial.print(sensors[i]->readRangeContinuousMillimeters());
+//    Serial.print(" ");
     if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
   }
-  Serial.print("Time taken: ");
-  Serial.println(millis() - start);
-  wait(10);
-}
+  Serial.println();
 
-
-/* Helper Functions */
-void wait(int ms)
-{
-  unsigned long previousMillis = millis();
-  unsigned long currentMillis = millis();
-  while ((currentMillis - previousMillis) < (unsigned long)ms)
-  {
-    currentMillis = millis();
-  }
+  // index 0 = left
+  // index 2 = front
+  // index 4 = right
 }
 
 void initSensor(int pin, VL6180X *sensor, int address) {
-    digitalWrite(pin, HIGH);
+    digitalWrite(pin, HIGH); 
     sensor->init();
     sensor->configureDefault();
     sensor->setScaling(2);

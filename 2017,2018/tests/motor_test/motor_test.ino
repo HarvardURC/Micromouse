@@ -4,7 +4,6 @@
 */
 
 #include <vector>
-#include <emile_motors.h>
 #include <config.h>
 
 #define FORWARD 0
@@ -20,7 +19,7 @@ struct motor {
 void move(std::vector<motor> motors, int direction);
 
 // Constants for test
-int speed = 512;
+int speed = 50;
 int time = 1000;
 int flag = 0;
 
@@ -39,7 +38,7 @@ void setup() {
     pinMode(pins::motorDirectionL, OUTPUT);
     pinMode(pins::motorPowerR, OUTPUT);
     pinMode(pins::motorDirectionR, OUTPUT);
-    analogWriteResolution(12); // Set ADC resolution to 12, analogWrite range 0-4095
+
     Serial.println("Motors initialized.");
 }
 
@@ -56,7 +55,7 @@ void loop() {
         move({leftMotor, rightMotor}, BACKWARD);
         move({leftMotor, rightMotor}, FORWARD);
         move({leftMotor, rightMotor}, STOP);
-        //flag = 1;     
+        flag = 1;     
     }
 }
 

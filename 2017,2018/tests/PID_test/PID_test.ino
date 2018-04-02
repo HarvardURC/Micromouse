@@ -14,8 +14,8 @@ Encoder encoderLeft(pins::encoderPinL1, pins::encoderPinL2);
 Encoder encoderRight(pins::encoderPinR1, pins::encoderPinR2);
 
 //Specify the links and initial tuning parameters
-int goal = 1000;
-float proportion = 1;
+int goal = 1193;
+float proportion = 0.5;
 float integral = 0.0018;
 float derivative = 0.01;
 
