@@ -480,6 +480,18 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 sample_t * cos(curr_angle);
             float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
 
+            // integrates rangefinder offset
+            if (!angle_flag) {
+                float left_diag_dist = _sensors.readShortTof(0);
+                float right_diag_dist = _sensors.readShortTof(2);
+                if (left_diag_dist >= 20 && left_diag_dist <= 70) {
+                    if (right_diag_dist >= 20 && right_diag_dist <= 70) {
+                        curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
+                    }
+                }
+                Serial.println(curr_xpos);
+            }
+
 
             /* used for if the current angle `a` > 2PI or `a` < 0 to correct
             the IMU angle. */
