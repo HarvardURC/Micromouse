@@ -4,6 +4,7 @@
 */
 
 #include <vector>
+#include <emile_motors.h>
 #include <config.h>
 
 #define FORWARD 0

@@ -1,5 +1,5 @@
 /**
- * Motors_2016.h
+ * emile_motors.h
  * Contains various methods for using the DC motors.
  */
 

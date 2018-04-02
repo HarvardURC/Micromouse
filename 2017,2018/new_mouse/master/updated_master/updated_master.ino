@@ -2,6 +2,7 @@
 
 #include <VL6180X.h>
 #include <config.h>
+#include <emile_motors.h>
 #include <i2c_t3.h>
 #include <vector>
 
