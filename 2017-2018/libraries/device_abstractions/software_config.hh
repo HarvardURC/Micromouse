@@ -42,7 +42,9 @@ namespace swconst {
     const int motorCloseEnough = 20; // motor value considered close to target (IN TUNING) 15
 
     /* Sensor constants */
-    const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
+    const float imu_weight = 0;                     // ratio of IMU
+    const float encoder_weight = 1;                 // vs. encoder measurements
+    const float rangefinder_weight = 0;             // vs. rangefinder measurement for angle
 
 }
 

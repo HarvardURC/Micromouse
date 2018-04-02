@@ -494,7 +494,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             }
             curr_angle = imu_weight * (imu_rads + overflow_count * 2 * PI) +
                 encoder_weight * (curr_angle + true_ang_v * sample_t) +
-                rangefinder_weight * ();
+                rangefinder_weight;
             // reset sample time
             timeElapsed = 0;
         }
