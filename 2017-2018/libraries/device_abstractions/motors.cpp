@@ -1,38 +1,13 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
-#include <PID_v1.h>
 #include <cmath>
 #include "motors.hh"
 #include "bluetooth.hh"
+#include "software_config.hh"
 
-#define SIGN(x) 2 * (x > 0) - 1
+using namespace swconst;
 
-/* Globals */
 const bool debug = true; // set to true for serial debugging statements
-const int encoderTolerance = 5000; // error threshold for the encoder values
-const int frontTolerance = 50;
-const unsigned long timeout = 10000;
-const int pidSampleTime = 5; // parameter to PID library
-const float pidLimit = 50.0; // upperlimit on PID output
-const float ticksToCm = 1. / 8300; // conversion ratio 8360
-const float L = 9.25; // wheel distance in `cm`
-const int motorLimit = 50; // highest motor PWM value
-const int motorFloor = 20; // lowest motor PWM value (IN TUNING)
-const int motorCloseEnough = 20; // motor value considered close to target (IN TUNING) 15
-const float perpendicular_threshold = 0.5; // range to 90 degrees to terminate move
-const float degToRad = PI / 180; // converstion ratio
-const int sensorRefreshTime = 120; // milliseconds
-const int convergenceTime = 20; // milliseconds
-const float errorX = 0.9; // centimeters .9
-const float errorY = errorX;
-const float errorA = 0.2; // radians .2
-const float angWeight = 0; // ratio of IMU vs. encoder measurements for angle
-const float cellSize = 18; // size in cm of cell
-const float frontSensorToWheelAxis = 4.75; // cm
-// the distance from the center of the cell to the wall where sensor reads
-const float distCenterToInnerWall = 8.5;
-// how far from wall to align to be in the center of the cell in cm
-const float alignDist = distCenterToInnerWall - frontSensorToWheelAxis;
 
 /* PID values */
 float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
@@ -42,98 +17,6 @@ float p_diag = 2, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
 
 // motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
 float p_m = 0.002, i_m = 0, d_m = 0;
-
-
-/* Helper functions */
-
-// Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
-// From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
-template<typename T, typename U>
-constexpr T dmod (T x, U mod)
-{
-    return !mod ? x :
-        static_cast<long long>(x) % mod + x - static_cast<long long>(x);
-}
-
-
-/* Enforces a minimum PWM input to the motors */
-int floorPWM(int speed, int floor) {
-    return fabs(speed) >= floor ? fabs(speed) * SIGN(speed) : 0;
-}
-
-
-/* Enforces a maximum PWN input to the motors
-   (scales 2 speeds down so the max is under the limit) */
-float ceilingPWM(float speed, float otherspeed, int limit) {
-    if (fabs(speed) > fabs(otherspeed)) {
-        if (speed > limit) {
-          return limit;
-        } else if (speed < -1 * limit) {
-          return -1 * limit;
-        } else {
-          return speed;
-        }
-    } else {
-        if (otherspeed > limit) {
-          return speed * limit / otherspeed;
-        } else if (otherspeed < -1 * limit) {
-          return speed * -1 * limit / otherspeed;
-        } else {
-          return speed;
-        }
-    }
-}
-
-
-// Checks if the two numbers are within a margin of error from each other
-bool withinError(float a, float b, float error) {
-    return fabs(b - a) < error;
-}
-
-
-/* PidController functions */
-PidController::PidController(
-    float proportion,
-    float integral,
-    float derivative) :
-    _pid(&input, &output, &setpoint, proportion, integral, derivative, DIRECT)
-{
-    _pid.SetOutputLimits(pidLimit * -1, pidLimit);
-    _pid.SetTunings(proportion, integral, derivative);
-    _pid.SetSampleTime(pidSampleTime);
-    this->proportion = proportion;
-    this->integral = integral;
-    this->derivative = derivative;
-    this->input = 0;
-    this->output = 0;
-    this->setpoint = 0;
-    //turn the PID on
-    _pid.SetMode(AUTOMATIC);
-}
-
-
-void PidController::compute() {
-    _pid.Compute();
-}
-
-void PidController::setTunings(float p, float i, float d) {
-    this->_pid.SetTunings(p, i, d);
-    this->proportion = p;
-    this->integral = i;
-    this->derivative = d;
-}
-
-void PidController::printTunings() {
-    if (ble.isConnected()) {
-        ble.print("Proportion: ");
-        ble.print(this->proportion);
-        ble.print(" Integral: ");
-        ble.print(this->integral);
-        ble.print(" Derivative: ");
-        ble.println(this->derivative);
-    }
-}
-
 
 /* Motor functions */
 Motor::Motor(
@@ -214,7 +97,7 @@ void Motor::moveTicksPID(long ticks) {
     _pidInput = 0;
     _encoder.write(0);
     long time = millis();
-    while (abs(_pidSetpoint - _pidInput) > encoderTolerance &&
+    while (abs(_pidSetpoint - _pidInput) > encoderError &&
         millis() - time < timeout)
     {
         _pidInput = _encoder.read();
@@ -564,7 +447,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                     // perpendicular to goal direction means it's either
                     // right next to destination, or it's hopeless anyway
                     (!angle_flag &&
-                        fabs(angle_diff - PI / 2) <= perpendicular_threshold))
+                        fabs(angle_diff - PI / 2) <= perpendicularError))
                 {
                     end_iter++;
                 }
@@ -730,6 +613,6 @@ void Driver::realign(int goal_dist) {
         curr_ypos = current_row * cellSize;
     }
 
-    float new_angle = direction * PI / 2;
-    curr_angle = new_angle;
+    // float new_angle = direction * PI / 2;
+    // curr_angle += (new_angle - curr_angle)
 }

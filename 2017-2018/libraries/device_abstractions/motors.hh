@@ -1,40 +1,9 @@
 #include <Encoder.h>
-#include <PID_v1.h>
 #include "sensors.hh"
+#include "helpers.hh"
 
 #ifndef motors_hh
 #define motors_hh
-
-
-class PidController {
-    public:
-        PidController(
-            float proportion,
-            float integral,
-            float derivative
-        );
-
-        void operator=(const PidController& pid) {
-            proportion = pid.proportion;
-            integral = pid.integral;
-            derivative = pid.derivative;
-        }
-
-        void compute();
-        void setTunings(float p, float i, float d);
-        void printTunings();
-
-        float proportion;
-        float integral;
-        float derivative;
-
-        float input;
-        float output;
-        float setpoint;
-    private:
-        PIDT<float> _pid;
-};
-
 
 class Motor {
     public:
