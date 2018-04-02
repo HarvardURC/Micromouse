@@ -9,12 +9,11 @@
 #define WALL_DISTANCE_RIGHT 235
 #define WALL_DISTANCE_LEFT 218
 #define WALL_DISTANCE_FRONT 205
-#define WALL_THRESHOLD 275
+#define WALL_THRESHOLD 250
 #define WALL_THRESHOLD_DIAG 288
 #define MOTOR_SPEED 70
-#define TICKS_CELL  8.0425/600
-#define TICKS_TURN 552
-
+#define TICKS_CELL 1060 // (600/(2*pi*(1.6)))*18
+#define TICKS_TURN 450  // TODO: Tune
 // helpful library objects
 Encoder *encoderLeft;
 Encoder *encoderRight;
@@ -35,8 +34,8 @@ emile_motors::emile_motors(VL6180X* leftIR, VL6180X* leftDiagIR, VL6180X* frontI
   // helpful library objects
   encoderLeft = new Encoder (pins::encoderPinL1, pins::encoderPinL2);
   encoderRight = new Encoder (pins::encoderPinR1, pins::encoderPinR2);
-  PIDLeft = new PID (&InputL, &OutputL, &SetpointL,1.5,0.0018,.01, DIRECT);
-  PIDRight = new PID (&InputR, &OutputR, &SetpointR,1.5,0.0018,.01, DIRECT);
+  PIDLeft = new PID (&InputL, &OutputL, &SetpointL,0.5, 0.0018, 0.01, DIRECT);
+  PIDRight = new PID (&InputR, &OutputR, &SetpointR,0.5, 0.0018, 0.01, DIRECT);
   // set up motors
   pinMode (pins::motorPowerL, OUTPUT);
   pinMode (pins::motorDirectionL, OUTPUT);
@@ -47,11 +46,17 @@ emile_motors::emile_motors(VL6180X* leftIR, VL6180X* leftDiagIR, VL6180X* frontI
   PIDRight->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
   PIDLeft->SetMode(AUTOMATIC);
   PIDRight->SetMode(AUTOMATIC);
+  PIDLeft->SetTunings(0.6,0.01,0.01);
+  PIDRight->SetTunings(0.6,0.01,0.01);
 }
 
 // function to advance 1 cell, using wall follow if possible
 void emile_motors::forward()
 {
+  // TODO: we shouldn't need to reset contants like this
+    PIDLeft->SetTunings(0.6,0.01,0.01);
+  PIDRight->SetTunings(0.6,0.01,0.01);
+    moveTicks(TICKS_CELL, TICKS_CELL);
   // turn calibration
   /*
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
@@ -65,6 +70,7 @@ void emile_motors::forward()
   */
   // stage 1: move ~3 cm to stick head out of cell
   // use whatever wall is available to follow forward
+  /*
   advance(TICKS_CELL * .2);
   moveTicks(TICKS_CELL * .25, TICKS_CELL * .25);
   // stage 2: move to have wheels centered in next cell
@@ -80,6 +86,7 @@ void emile_motors::forward()
   else{
     moveTicks(TICKS_CELL * .52, TICKS_CELL * .52);
   }
+  */
 }
 
 // 180 degree left turn
@@ -108,9 +115,12 @@ void emile_motors::turnLeft()
 // 90 degree right turn
 void emile_motors::turnRight()
 {
-  if (_frontIR -> readRangeSingleMillimeters() < WALL_THRESHOLD){
+  /*if (_frontIR -> readRangeSingleMillimeters() < WALL_THRESHOLD){
     front_align();
-  }
+  }*/
+  // TODO: we shouldn't need to set these tunings with diff constants
+  PIDLeft->SetTunings(1.1,0.01,0.005);
+  PIDRight->SetTunings(1.1,0.01,0.005);
   moveTicks(TICKS_TURN,-1 * TICKS_TURN);
 }
 
@@ -192,6 +202,7 @@ void emile_motors::followTicksLeft(int ticks)
 
 void emile_motors::advance(int ticks)
 {
+  /*
   // use right wall if available
   if (_rightIR->readRangeSingleMillimeters() < WALL_THRESHOLD){
     followTicksRight(ticks);
@@ -202,11 +213,12 @@ void emile_motors::advance(int ticks)
   }
   // if not able to wall follow, use odometry
   else{
+  */
     moveTicks(ticks,ticks);
-  }
+  //}
 }
 
-// moves left and right motors given # of ticks, maxes at 10 seconds
+// moves left and right motors given # of ticks, maxes at 2 seconds
 void emile_motors::moveTicks(int Lticks, int Rticks)
 {
   if (releaseFlag){
@@ -216,8 +228,6 @@ void emile_motors::moveTicks(int Lticks, int Rticks)
   encoderRight->write(0);
   SetpointL = Lticks;
   SetpointR = Rticks;
-  PIDLeft->SetTunings(2.9,0.01,0.01);
-  PIDRight->SetTunings(2.9,0.01,0.01);
   InputL = 0;
   InputR = 0;
   time = millis();
