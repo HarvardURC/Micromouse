@@ -138,6 +138,11 @@ Driver::Driver(
     digitalWrite(motorModePin, HIGH);
 
     clearWallData();
+
+    if (imu_weight + encoder_weight + rangefinder_weight != 1) {
+        Serial.println("Angular Weights Do Not Add to 1");
+        abort();
+    }
 }
 
 
@@ -475,6 +480,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 sample_t * cos(curr_angle);
             float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
 
+
             /* used for if the current angle `a` > 2PI or `a` < 0 to correct
             the IMU angle. */
             float overflow = overflow_count * 2 * PI;
@@ -486,8 +492,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                     overflow_count--;
                 }
             }
-            curr_angle = angWeight * (imu_rads + overflow_count * 2 * PI) +
-                (1-angWeight) * (curr_angle + true_ang_v * sample_t);
+            curr_angle = imu_weight * (imu_rads + overflow_count * 2 * PI) +
+                encoder_weight * (curr_angle + true_ang_v * sample_t) +
+                rangefinder_weight * ();
             // reset sample time
             timeElapsed = 0;
         }
