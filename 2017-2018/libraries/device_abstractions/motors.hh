@@ -105,6 +105,10 @@ class Driver {
         float curr_ypos;
         float curr_angle;
 
+        // the maximum input PWM to drive motors, changes for speedruns
+        float motorLimit;
+        int convergenceTime;
+
         // left, middle, right
         long shortTofWallReadings[3];
 

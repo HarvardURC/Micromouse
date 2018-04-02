@@ -9,15 +9,6 @@ using namespace swconst;
 
 const bool debug = true; // set to true for serial debugging statements
 
-/* PID values */
-float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
-float p_a = 20, i_a = 0, d_a = 0; // angle PID
-float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
-float p_diag = 2, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
-
-// motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
-float p_m = 0.002, i_m = 0, d_m = 0;
-
 /* Motor functions */
 Motor::Motor(
     int powerPin,
@@ -133,6 +124,8 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
+    motorLimit = motorLimitM0;
+    convergenceTime = convergenceTimeM0;
     bluetoothOn_ = bluetoothOn;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
@@ -486,7 +479,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 float right_diag_dist = _sensors.readShortTof(2);
                 if (left_diag_dist >= 20 && left_diag_dist <= 70) {
                     if (right_diag_dist >= 20 && right_diag_dist <= 70) {
-                        curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
+                        // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
                     }
                 }
                 Serial.println(curr_xpos);
