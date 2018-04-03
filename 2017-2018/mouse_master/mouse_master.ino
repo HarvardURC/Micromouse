@@ -93,6 +93,9 @@ void loop() {
                 driver->resetState();
             flag = 0;
         }
+        else if (maze->currPos == maze->goalPos) {
+            celebrate();
+        }
     }
 
     if (flag >= 0) {
@@ -220,13 +223,7 @@ void waitCommand() {
                 driver->turnRight(90);
             }
             else if (commandIs("celebrate")) {
-                for (size_t j = 0; j < 10; j++) {
-                    for (size_t i = 0; i < 2; i++) {
-                        frontRgb->flashLED(i);
-                        backRgb->flashLED(i);
-                        delay(50);
-                    }
-                }
+                celebrate();
             }
             else if (commandIs("tune")) {
                 tuning = 0;
@@ -312,4 +309,14 @@ bool commandIs(const char* cmd) {
 
 bool commandIs(const char* token, const char* cmd) {
     return !strcmp(token, cmd) || token[0] == cmd[0];
+}
+
+void celebrate() {
+    for (size_t j = 0; j < 4; j++) {
+        for (size_t i = 0; i < 2; i++) {
+            frontRgb->flashLED(i);
+            backRgb->flashLED(i);
+            delay(50);
+        }
+    }
 }
