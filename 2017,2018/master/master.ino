@@ -12,7 +12,7 @@
 #define WEST 1
 
 #define CENTER_ROW 0
-#define CENTER_COL 1
+#define CENTER_COL 2
 
 #define START_ROW 0
 #define START_COL 0
@@ -60,11 +60,17 @@ void initializeFloodMaze();
 void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
+void store(int nextMovement);
 
 // initialize sensors
 std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
+
+// initialize storage array and variables
+int quickestPath [150];
+int moveIndex = 0;
+bool backAtStart = false;
 
 // initialize motors object
 emile_motors* motors = new emile_motors(sensors[0], sensors[4], sensors[2], sensors[1], sensors[3]);
@@ -119,7 +125,7 @@ void loop() {
   printVirtualMaze();
   Serial.println("Made it past print virtual maze");
 
-  delay(2000);
+  delay(1000);
 }
 
 void generateWall() {
@@ -150,6 +156,13 @@ void generateWall() {
 void Janus() {
   if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
     Serial.println("we're here");
+    for (int i = 0; i < moveIndex; i++) {
+      quickestPath[i] = (quickestPath[i] + 2) % 4;
+    }
+    for (int i = 0; i < moveIndex; i++) {
+      turn(quickestPath[i]);
+      motors->forward();
+    }
     return;
   }
 
@@ -198,6 +211,7 @@ void Janus() {
   Serial.println(thePath);
   turn(thePath);
   motors->forward();
+  store(thePath);
 
   // TODO update mouseRow and mouseCol in moveForward()
 
@@ -529,3 +543,9 @@ void initSensor(int pin, VL6180X *sensor, int address) {
     Serial.print(pin);
     Serial.println(" connected.");
 }
+
+void store(int nextMovement) {
+    quickestPath[moveIndex] = nextMovement;
+    moveIndex++;
+}
+
