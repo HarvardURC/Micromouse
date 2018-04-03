@@ -11,8 +11,8 @@
 #define SOUTH 2
 #define WEST 1
 
-#define CENTER_ROW 7
-#define CENTER_COL 7
+#define CENTER_ROW 0
+#define CENTER_COL 1
 
 #define START_ROW 0
 #define START_COL 0
@@ -26,7 +26,7 @@ int mouseCol = 0;
 // 1 EAST
 // 2 SOUTH
 // 3 WEST
-int mouseDir = 0;
+int mouseDir = 2;
 
 const int wallThreshold = 280;
 
@@ -61,9 +61,13 @@ void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
 
+// initialize sensors
 std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
+
+// initialize motors object
+emile_motors* motors = new emile_motors(sensors[0], sensors[4], sensors[2], sensors[1], sensors[3]);
 
 // SETUP
 void setup() {
@@ -83,7 +87,7 @@ void setup() {
     initSensor(sensor_pins[i], sensors[i], i + 1);
     Serial.println(i);
   }
-  
+
   Serial.println("We're setting up the map!");
   Serial.println("I'm a map");
 
@@ -106,10 +110,10 @@ void loop() {
 
   floodMaze();
   Serial.println("Made it past floodmaze");
-  
+
   Janus();
   Serial.println("Made it past janus");
-  
+
   //mouseRow += 1;
 
   printVirtualMaze();
@@ -174,7 +178,6 @@ void Janus() {
   if (!checkWall(mouseRow, mouseCol, WEST)) {
     choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
   }
-
   // thePath stores the cell with lowest
   int minDistance = 1000;
   int thePath = 0;
@@ -191,37 +194,39 @@ void Janus() {
   // 3 WEST
   // We want thePath == mouseDir
 
+  Serial.print("thePath: ");
+  Serial.println(thePath);
   turn(thePath);
-  // moveForward();
+  motors->forward();
 
   // TODO update mouseRow and mouseCol in moveForward()
 
-  // Virtual movement
-  // if (thePath == 0) {
-  //   mouseRow--;
-  // }
-  // else if (thePath == 1) {
-  //   mouseCol++;
-  // }
-  // else if (thePath == 2) {
-  //   mouseRow++;
-  // }
-  // else if (thePath == 3) {
-  //   mouseCol--;
-  // }
+//   Virtual movement
+   if (thePath == 0) {
+     mouseRow--;
+   }
+   else if (thePath == 1) {
+     mouseCol++;
+   }
+   else if (thePath == 2) {
+     mouseRow++;
+   }
+   else if (thePath == 3) {
+     mouseCol--;
+   }
 }
 
 void turn(int desired) {
   int difference = (desired - mouseDir + 4) % 4;
 
   if (difference == 1) {
-    // motors->turnRight();
+     motors->turnRight();
   }
   else if (difference == 3) {
-    // motors->turnLeft();
+     motors->turnLeft();
   }
   else if (difference == 2) {
-    // motors->turnAround();
+     motors->turnAroundRight();
   }
 
   mouseDir = desired;
@@ -446,6 +451,8 @@ void senseWalls() {
     sensorReadings[i] = sensors[i]->readRangeContinuousMillimeters();
     Serial.println(sensorReadings[i]);
   }
+  Serial.print("Mouse Direction: ");
+  Serial.println(mouseDir);
 
   // compare LEFT with threshold
   if (sensorReadings[0] < wallThreshold) {
