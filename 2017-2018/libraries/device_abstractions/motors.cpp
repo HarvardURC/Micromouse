@@ -303,7 +303,7 @@ void Driver::calculateInputPWM(bool angle_flag,
         sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
     float ang_velocity = _pid_a.output;
 
-    debug_printvar(ang_velocity);
+    // debug_printvar(ang_velocity);
 
     // L is width of robot
     // todo: makes sure ceiling doesnt drown out angle correction
@@ -404,18 +404,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
                 drive(_v_left, _v_right);
 
-                /* Begin debug code */
-                if (debug) {
-                    debug_print("Timer: ");
-                    debug_println(fuckupTimer);
-                    debugPidMovement();
-                }
                 if (debug && bluetoothTimer >= 1000) {
                     debug_printvar(_v_left);
                     debug_printvar(_v_right);
                     bluetoothTimer = 0;
                 }
-                /* End debug code */
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
@@ -463,7 +456,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                         // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
                     }
                 }
-                debug_println(curr_xpos);
+                // debug_println(curr_xpos);
             }
 
 

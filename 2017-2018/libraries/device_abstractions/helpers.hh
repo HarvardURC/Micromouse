@@ -6,6 +6,8 @@
 #ifndef helpers_hh
 #define helpers_hh
 
+ /* Prints the variable's name followed by the value.
+  * Ex. debug_printvar(v_left) => (to log) "v_left: -17.9" */
 #define debug_printvar(var) debug_print(#var); debug_print(": "); debug_println(var)
 
 /* Math functions */
@@ -26,10 +28,12 @@ int floorPWM(int speed, int floor);
 float ceilingPWM(float speed, float otherspeed, int limit);
 
 
-/* Debugging functions */
+/* Debugging functions
+ *
+ * Prints to bluetooth if connected, otherwise prints to Serial monitor. */
 template<typename T>
 void debug_print(T arg) {
-    if (ble.isConnected()) {
+    if (bleReady()) {
         ble.print(arg);
     } else {
         Serial.print(arg);
@@ -38,7 +42,7 @@ void debug_print(T arg) {
 
 template<typename T>
 void debug_println(T arg) {
-    if (ble.isConnected()) {
+    if (bleReady()) {
         ble.println(arg);
     } else {
         Serial.println(arg);

@@ -16,8 +16,11 @@ void error(const __FlashStringHelper*err) {
 // TODO not sure if this is the best way to declare this
 Adafruit_BluefruitLE_SPI ble(pins::CS, pins::bluetoothIRQ, pins::bluetoothRST);
 // Adafruit_BluefruitLE_SPI ble(10, 9, 8); // Teensy 3.2 test mappings
+bool bluetoothInitalized = false;
 
 void bluetoothInitialize() {
+    bluetoothInitalized = true;
+
 	// Define pins
 	SPI.setSCK(pins::SCK);	// using alternate SCK pin
     SPI.begin();
@@ -77,4 +80,8 @@ void bluetoothInitialize() {
     ble.setMode(BLUEFRUIT_MODE_DATA);
 
     Serial.println(F("******************************"));
+}
+
+bool bleReady() {
+    return bluetoothInitalized && ble.isConnected();
 }
