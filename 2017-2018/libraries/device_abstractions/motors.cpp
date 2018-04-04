@@ -60,10 +60,10 @@ void Motor::moveTicks(long ticks) {
     int speed = 30;
     _encoder.write(0);
     while (_encoder.read() < abs(ticks)) {
-        Serial.print("Encoder Value for motorpin ");
-        Serial.print(_powerPin);
-        Serial.print(" ");
-        Serial.println(_encoder.read());
+        debug_print("Encoder Value for motorpin ");
+        debug_print(_powerPin);
+        debug_print(" ");
+        debug_println(_encoder.read());
         drive(ticks > 0 ? speed : -1 * speed);
     }
     drive(0);
@@ -75,8 +75,8 @@ void Motor::moveTicks(long ticks) {
 float Motor::getPIDSpeed(float setpoint) {
     _pidSetpoint = setpoint;
     _pidInput = _encoder.read();
-    Serial.print("Encdoer: ");
-    Serial.println(_pidInput);
+    debug_print("Encoder: ");
+    debug_println(_pidInput);
     _pid.Compute();
     return _pidOutput;
 }
@@ -110,8 +110,7 @@ Driver::Driver(
     int encoderPinL2,
     int encoderPinR1,
     int encoderPinR2,
-    SensorArray sensors,
-    bool bluetoothOn) :
+    SensorArray sensors) :
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
     _sensors(sensors),
@@ -126,14 +125,13 @@ Driver::Driver(
     curr_angle = 0.0;
     motorLimit = motorLimitM0;
     convergenceTime = convergenceTimeM0;
-    bluetoothOn_ = bluetoothOn;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
     clearWallData();
 
     if (imu_weight + encoder_weight + rangefinder_weight != 1) {
-        Serial.println("Angular Weights Do Not Add to 1");
+        debug_println("Angular Weights Do Not Add to 1");
         abort();
     }
 }
@@ -182,12 +180,12 @@ void Driver::movePID(float setpoint) {
         float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
         // Debugging code
         if (debug) {
-            Serial.print("Left motor speed: ");
-            Serial.print(leftSpeed);
-            Serial.print(" Right motor speed: ");
-            Serial.print(rightSpeed);
-            Serial.print(" Setpoint: ");
-            Serial.println(setpoint);
+            debug_print("Left motor speed: ");
+            debug_print(leftSpeed);
+            debug_print(" Right motor speed: ");
+            debug_print(rightSpeed);
+            debug_print(" Setpoint: ");
+            debug_println(setpoint);
         }
         // delay(500);
         if (fabs(leftSpeed) > 1 && fabs(rightSpeed) > 1) {
@@ -212,41 +210,27 @@ void Driver::computePids(float init_xpos, float init_ypos) {
 
 
 void Driver::debugPidMovement() {
-    Serial.print("x input: ");
-    Serial.print(_pid_x.input);
-    Serial.print(" x output: ");
-    Serial.print(_pid_x.output);
-    Serial.print(" x setpoint: ");
-    Serial.print(_pid_x.setpoint);
-    Serial.print(" xpos: ");
-    Serial.println(curr_xpos);
+    debug_printvar(_pid_x.input);
+    debug_printvar(_pid_x.output);
+    debug_printvar(_pid_x.setpoint);
+    debug_printvar(curr_xpos);
+    debug_println(" ");
 
-    Serial.print("y input: ");
-    Serial.print(_pid_y.input);
-    Serial.print(" y output: ");
-    Serial.print(_pid_y.output);
-    Serial.print(" y setpoint: ");
-    Serial.print(_pid_y.setpoint);
-    Serial.print(" ypos: ");
-    Serial.println(curr_ypos);
+    debug_printvar(_pid_y.input);
+    debug_printvar(_pid_y.output);
+    debug_printvar(_pid_y.setpoint);
+    debug_printvar(curr_ypos);
+    debug_println(" ");
 
-    Serial.print("a input: ");
-    Serial.print(_pid_a.input);
-    Serial.print(" a output: ");
-    Serial.print(_pid_a.output);
-    Serial.print(" a setpoint: ");
-    Serial.print(_pid_a.setpoint);
-    Serial.print(" apos: ");
-    Serial.println(curr_angle);
-    /*Serial.print(" a setpoint: ");
-    Serial.print(_pid_a.setpoint / degToRad);
-    Serial.print(" curr_angle: ");
-    Serial.println(curr_angle / degToRad);*/
+    debug_printvar(_pid_a.input);
+    debug_printvar(_pid_a.output);
+    debug_printvar(_pid_a.setpoint);
+    debug_printvar(curr_angle);
+    debug_println(" ");
 
-    Serial.print("_v_left: ");
-    Serial.print(_v_left);
-    Serial.print(" _v_right: ");
-    Serial.println(_v_right);
+    debug_printvar(_v_left);
+    debug_printvar(_v_right);
+    debug_println(" ");
 }
 
 
@@ -262,12 +246,12 @@ void Driver::debugPidMovement() {
  */
 void Driver::readWalls() {
     /* debug code */
-    if (bluetoothOn_) {
-        ble.print("Walls read at ");
-        ble.print("x=");
-        ble.println(curr_xpos);
-        ble.print("y=");
-        ble.println(curr_ypos);
+    if (debug) {
+        debug_print("Walls read at ");
+        debug_print("x=");
+        debug_print(curr_xpos);
+        debug_print(" y=");
+        debug_println(curr_ypos);
     }
     /* end debug code */
 
@@ -323,8 +307,7 @@ void Driver::calculateInputPWM(bool angle_flag,
         sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
     float ang_velocity = _pid_a.output;
 
-    Serial.print("ang_velocity: ");
-    Serial.println(ang_velocity);
+    // debug_printvar(ang_velocity);
 
     // L is width of robot
     // todo: makes sure ceiling doesnt drown out angle correction
@@ -368,13 +351,13 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int sensorCounter = 0;
 
     if (debug) {
-        Serial.print("Old goal_a: ");
-        Serial.print(goal_a);
+        debug_print("Old ");
+        debug_printvar(goal_a);
     }
     goal_a = minTurn(goal_a, curr_angle);
     if (debug) {
-        Serial.print(" New goal_a: ");
-        Serial.println(goal_a);
+        debug_print(" New ");
+        debug_printvar(goal_a);
     }
 
     EncoderTicker leftEnc(&_leftMotor._encoder);
@@ -424,20 +407,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
                 drive(_v_left, _v_right);
 
-                /* Begin debug code */
-                if (debug) {
-                    Serial.print("Timer: ");
-                    Serial.println(fuckupTimer);
-                    debugPidMovement();
-                }
-                if (bluetoothOn_ && bluetoothTimer >= 1000) {
-                    ble.print("_v_left: ");
-                    ble.print(_v_left);
-                    ble.print(" _v_right: ");
-                    ble.println(_v_right);
+                if (debug && bluetoothTimer >= 1000) {
+                    debug_printvar(_v_left);
+                    debug_printvar(_v_right);
                     bluetoothTimer = 0;
                 }
-                /* End debug code */
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
@@ -482,7 +456,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
                     }
                 }
-                Serial.println(curr_xpos);
+                // debug_println(curr_xpos);
             }
 
 
@@ -504,7 +478,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     } while (1);
 
     brake();
-    if (bluetoothOn_) ble.println("Done with movement.");
+    if (debug) debug_println("Done with movement.");
 }
 
 
@@ -532,22 +506,14 @@ void Driver::turnRight(float degrees) {
 void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
-    if (bluetoothOn_) {
-        ble.print("goal_a: ");
-        ble.print(goal_a);
-        ble.print(" temp_a: ");
-        ble.println(temp_a);
-    }
-    else if (debug) {
-        Serial.print("goal_a: ");
-        Serial.print(goal_a);
-        Serial.print(" temp_a: ");
-        Serial.println(temp_a);
+    if (debug) {
+        debug_printvar(goal_a);
+        debug_printvar(temp_a);
     }
 
     if (fabs(temp_a - curr_angle) > PI / 12) {
         // Turn
-        Serial.println(temp_a);
+        debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
         // Go forward
         go(goal_x, goal_y, temp_a);

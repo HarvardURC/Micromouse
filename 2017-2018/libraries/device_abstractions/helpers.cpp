@@ -88,7 +88,7 @@ void PidController::setTunings(float p, float i, float d) {
 }
 
 void PidController::printTunings() {
-    if (ble.isConnected()) {
+    if (bleReady()) {
         ble.print("Proportion: ");
         ble.print(this->proportion);
         ble.print(" Integral: ");

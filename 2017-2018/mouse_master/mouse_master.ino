@@ -5,6 +5,7 @@
 #include "maze.hh"
 #include "motors.hh"
 #include "sensors.hh"
+#include "software_config.hh"
 
 #define BUFSIZE 20
 
@@ -57,8 +58,7 @@ void setup() {
     encoderL2,
     encoderR1,
     encoderR2,
-    *sensorArr,
-    false);
+    *sensorArr);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);

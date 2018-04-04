@@ -1,8 +1,9 @@
 #include "config.h"
+#include "bluetooth.hh"
+#include "helpers.hh"
 #include "io.hh"
 #include "motors.hh"
 #include "sensors.hh"
-//#include "bluetooth.hh"
 
 using namespace pins;
 
@@ -27,7 +28,7 @@ char command = init_command; // holds commands from bluetooth
 void setup() {
     Serial.begin(9600);
     delay(500);
-    // if (bluetooth) bluetoothInitialize();
+    if (bluetooth) bluetoothInitialize();
 
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
@@ -50,8 +51,7 @@ void setup() {
         encoderL2,
         encoderR1,
         encoderR2,
-        *sensorArr,
-        false);
+        *sensorArr);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -77,40 +77,40 @@ void loop() {
                 case 0:
                     driver->forward(5.5);
                     driver->resetState();
-                    
+
                     driver->tankGo(0, 18, 0);
                     driver->tankGo(18, 18, 0);
                     driver->tankGo(18, 36, 0);
                     driver->tankGo(0, 36, 0);
-                    
+
                     driver->tankGo(0, 18, 0);
                     driver->tankGo(-18, 18, 0);
                     driver->tankGo(-18, 36, 0);
                     driver->tankGo(0, 36, 0);
                     driver->tankGo(0, 0, 0);
-                   
-                
-                    if (debug) Serial.println("10cm forward");
+
+
+                    if (debug) debug_println("10cm forward");
                     //driver->forward(18);
                     break;
                 case 1:
-                    if (debug) Serial.println("30cm forward");
+                    if (debug) debug_println("30cm forward");
                     driver->forward(30);
                     break;
                 case 2:
-                    if (debug) Serial.println("90 degrees left");
+                    if (debug) debug_println("90 degrees left");
                     driver->turnLeft(90);
                     break;
                 case 3:
-                    if (debug) Serial.println("90 degree right");
+                    if (debug) debug_println("90 degree right");
                     driver->turnRight(90);
                     break;
                 case 4:
-                    if (debug) Serial.println("180 degree turn");
+                    if (debug) debug_println("180 degree turn");
                     driver->turnLeft(180);
                     break;
                 case 5:
-                    if (debug) Serial.println("360 degree turn");
+                    if (debug) debug_println("360 degree turn");
                     driver->turnRight(360);
                     break;
                 default:
@@ -123,12 +123,12 @@ void loop() {
             switch(test_num) {
                 // LEVEL 2 TESTS
                 case 0:
-                    if (debug) Serial.println("Turn left then go forward.");
+                    if (debug) debug_println("Turn left then go forward.");
                     driver->turnLeft(90);
                     driver->forward(10);
                     break;
                 case 1:
-                    if (debug) Serial.println("Turn right 45 deg then forward.");
+                    if (debug) debug_println("Turn right 45 deg then forward.");
                     driver->turnRight(45);
                     driver->forward(10);
                     break;
@@ -143,7 +143,7 @@ void loop() {
                 // LEVEL 3 TESTS
                 case 0:
                     // Back and forth
-                    if (debug) Serial.println("Back and forth");
+                    if (debug) debug_println("Back and forth");
                     driver->forward(20);
                     driver->turnLeft(180);
                     driver->forward(20);
@@ -159,19 +159,19 @@ void loop() {
             switch(test_num) {
                 // TANK MOVEMENT TEST
                 case 0:
-                    if (debug) Serial.println("Going...");
+                    if (debug) debug_println("Going...");
                     driver->tankGo(10, 0, 0);
                     break;
                 case 1:
-                    if (debug) Serial.println("Going...");
+                    if (debug) debug_println("Going...");
                     driver->tankGo(0, 10, 0);
                     break;
                 case 2:
-                    if (debug) Serial.println("Going...");
+                    if (debug) debug_println("Going...");
                     driver->tankGo(-10, 0, 0);
                     break;
                 case 3:
-                    if (debug) Serial.println("Going...");
+                    if (debug) debug_println("Going...");
                     driver->tankGo(0, -10, 0);
                     break;
                 default:
@@ -184,7 +184,7 @@ void loop() {
             switch(test_num) {
                 // REALIGN TEST
                 case 0: {
-                    if (debug) Serial.println("Realign test");
+                    if (debug) debug_println("Realign test");
                     driver->realign(20);
                     break;
                 }

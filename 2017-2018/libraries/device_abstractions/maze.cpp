@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "maze.hh"
 #include "bluetooth.hh"
+#include "helpers.hh"
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -55,20 +56,11 @@ float Position::direction() {
 
 
 void Position::print(int bluetooth) {
-    if (bluetooth) {
-        ble.print("Position x=");
-        ble.print(col);
-        ble.print(" y=");
-        ble.print(row);
-        ble.println(".");
-    }
-    else {
-        Serial.print("Position x=");
-        Serial.print(col);
-        Serial.print(" y=");
-        Serial.print(row);
-        Serial.println(".");
-    }
+    debug_print("Position x=");
+    debug_print(col);
+    debug_print(" y=");
+    debug_print(row);
+    debug_println(".");
 }
 
 
@@ -204,17 +196,17 @@ void Maze::printWallsCell(Position p) {
     unsigned char cell = wallMap[p.offset()];
     char tmp;
 
-    ble.print(" ");
+    debug_print(" ");
     tmp = cell & NORTH ? '_' : ' ';
-    ble.println(tmp);
+    debug_println(tmp);
     tmp = cell & WEST ? '|' : ' ';
-    ble.print(tmp);
-    ble.print(" ");
+    debug_print(tmp);
+    debug_print(" ");
     tmp = cell & EAST ? '|': ' ';
-    ble.println(tmp);
-    ble.print(" ");
+    debug_println(tmp);
+    debug_print(" ");
     tmp = cell & SOUTH ? '-' : ' ';
-    ble.println(tmp);
+    debug_println(tmp);
 }
 
 
@@ -303,7 +295,6 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
                 }
             }
         }
-        ble.println(" ");
     }
 }
 
@@ -347,7 +338,7 @@ Position Maze::chooseNextCell(Position pos) {
                 lowest = cellMap[test_offset];
                 lowestPos = getPosition(test_offset);
                 n_cells++;
-                ble.print("Keeping ");
+                debug_print("Keeping ");
                 lowestPos.print(1);
             }
             else {

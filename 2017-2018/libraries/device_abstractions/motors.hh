@@ -58,8 +58,7 @@ class Driver {
             int encoderPinL2,
             int encoderPinR1,
             int encoderPinR2,
-            SensorArray sensors,
-            bool bluetoothOn=false
+            SensorArray sensors
         );
 
         // Moves the motors forward at the input PWM value. PWMs to motors

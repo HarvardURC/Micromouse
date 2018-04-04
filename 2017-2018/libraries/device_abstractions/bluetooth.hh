@@ -9,6 +9,7 @@
 extern Adafruit_BluefruitLE_SPI ble;
 
 void bluetoothInitialize();
+bool bleReady();
 
 #endif
 // methods include void print(char* blah), char* read(), and int available()
