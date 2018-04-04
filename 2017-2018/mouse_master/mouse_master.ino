@@ -27,6 +27,9 @@ int swap_flag = 0; // if true return to the start
 char command[BUFSIZE];
 bool bluetooth = true;
 
+bool commandIs(const char* cmd, bool firstchar=false);
+bool commandIs(const char* token, const char* cmd, bool firstchar=false);
+
 
 void setup() {
     /* * * * * * * * * * * * * * * * *
@@ -205,7 +208,7 @@ void waitCommand() {
                 break;
             }
             // continue without interruption
-            else if (commandIs("start")) {
+            else if (commandIs("start", true)) {
                 ble.println("Running maze.");
                 flag = -100;
                 break;
@@ -265,27 +268,29 @@ void waitCommand() {
                     }
                 }
 
-                switch(tuning) {
-                    case 1: {
-                        pid = &driver->_pid_x;
-                        ble.print("linear: ");
-                        break;
+                if (tuning > 0) {
+                    switch(tuning) {
+                        case 1: {
+                            pid = &driver->_pid_x;
+                            ble.print("linear: ");
+                            break;
+                        }
+                        case 2: {
+                            pid = &driver->_pid_a;
+                            ble.print("angular: ");
+                            break;
+                        }
+                        case 3: {
+                            pid = &driver->_pid_front_tof;
+                            ble.print("front tof: ");
+                            break;
+                        }
                     }
-                    case 2: {
-                        pid = &driver->_pid_a;
-                        ble.print("angular: ");
-                        break;
-                    }
-                    case 3: {
-                        pid = &driver->_pid_front_tof;
-                        ble.print("front tof: ");
-                        break;
-                    }
+                    pid->printTunings();
+                    ble.println(
+                        "Pick var to tune. [proportion, integral, derivative]");
+                        ble.println("Ex: 'proportion  10.5'");
                 }
-                pid->printTunings();
-                ble.println(
-                    "Pick var to tune. [proportion, integral, derivative]");
-                ble.println("Ex: 'proportion  10.5'");
             }
             else if (commandIs("help")) {
                 ble.println("Possible commands: "
@@ -303,12 +308,12 @@ void waitCommand() {
     command[0] = '\0';
 }
 
-bool commandIs(const char* cmd) {
-    return !strcmp(command, cmd) || command[0] == cmd[0];
+bool commandIs(const char* cmd, bool firstchar) {
+    return !strcmp(command, cmd) || (firstchar && command[0] == cmd[0]);
 }
 
-bool commandIs(const char* token, const char* cmd) {
-    return !strcmp(token, cmd) || token[0] == cmd[0];
+bool commandIs(const char* token, const char* cmd, bool firstchar) {
+    return !strcmp(token, cmd) || (firstchar && token[0] == cmd[0]);
 }
 
 void celebrate() {

@@ -347,7 +347,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis fuckupTimer = 0;
     int sensorCounter = 0;
 
     if (debug) {
