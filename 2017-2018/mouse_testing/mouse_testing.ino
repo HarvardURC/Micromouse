@@ -50,8 +50,7 @@ void setup() {
         encoderL2,
         encoderR1,
         encoderR2,
-        *sensorArr,
-        false);
+        *sensorArr);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -77,19 +76,19 @@ void loop() {
                 case 0:
                     driver->forward(5.5);
                     driver->resetState();
-                    
+
                     driver->tankGo(0, 18, 0);
                     driver->tankGo(18, 18, 0);
                     driver->tankGo(18, 36, 0);
                     driver->tankGo(0, 36, 0);
-                    
+
                     driver->tankGo(0, 18, 0);
                     driver->tankGo(-18, 18, 0);
                     driver->tankGo(-18, 36, 0);
                     driver->tankGo(0, 36, 0);
                     driver->tankGo(0, 0, 0);
-                   
-                
+
+
                     if (debug) Serial.println("10cm forward");
                     //driver->forward(18);
                     break;
