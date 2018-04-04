@@ -1,5 +1,6 @@
 /* Helper functions */
 #include <PID_v1.h>
+#include <Encoder.h>
 
 #ifndef helpers_hh
 #define helpers_hh
@@ -50,6 +51,17 @@ class PidController {
         float setpoint;
     private:
         PIDT<float> _pid;
+};
+
+/* A wrapper class for encoders to keep track of last accessed tick value */
+class EncoderTicker {
+    public:
+        EncoderTicker(Encoder* e_);
+
+        long diffLastRead();
+    private:
+        Encoder* e;
+        long lastVal;
 };
 
 #endif

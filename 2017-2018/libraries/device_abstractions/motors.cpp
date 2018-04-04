@@ -200,7 +200,11 @@ void Driver::movePID(float setpoint) {
 }
 
 
-void Driver::computePids() {
+void Driver::computePids(float init_xpos, float init_ypos) {
+    _pid_x.input = fabs(curr_xpos - init_xpos);
+    _pid_y.input = fabs(curr_ypos - init_ypos);
+    _pid_a.input = curr_angle;
+
     _pid_x.compute();
     _pid_y.compute();
     _pid_a.compute();
@@ -354,8 +358,8 @@ void Driver::calculateInputPWM(bool angle_flag,
 
 
 /* Moves based on absolute position on a coordinate grid */
-void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
-    unsigned int interval = refreshMs;
+void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
+    float sample_t = 1. / interval;
     elapsedMillis timeElapsed = 1000;
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
@@ -373,10 +377,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
         Serial.println(goal_a);
     }
 
-    _leftMotor._encoder.write(0);
-    _rightMotor._encoder.write(0);
-    long enc_left = 0;
-    long enc_right = 0;
+    EncoderTicker leftEnc(&_leftMotor._encoder);
+    EncoderTicker rightEnc(&_rightMotor._encoder);
+
     const float init_xpos = curr_xpos;
     const float init_ypos = curr_ypos;
     _pid_x.setpoint = fabs(goal_x - init_xpos);
@@ -396,20 +399,20 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             sensorTimer > sensorRefreshTime &&
             sensorCounter < 3)
         {
-            readWalls();
             sensorTimer = 0;
             sensorCounter++;
+            readWalls();
         }
 
         if (timeElapsed > interval) {
+            // reset sample time
+            timeElapsed = 0;
+
             // do all pid output related on a separate loop
             if (pidTimer > pidSampleTime) {
                 pidTimer = 0;
 
-                _pid_x.input = fabs(curr_xpos - init_xpos);
-                _pid_y.input = fabs(curr_ypos - init_ypos);
-                _pid_a.input = curr_angle;
-                computePids();
+                computePids(init_xpos, init_ypos);
 
                 // (same calcuation as temp_a in tankGo)
                 float travel_angle = atan2(
@@ -458,13 +461,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             }
 
             // robot state updates
-            float sample_t = 1. / interval;
-            float true_v_left = (_leftMotor.readTicks() - enc_left) *
+            float true_v_left = leftEnc.diffLastRead() *
                 ticksToCm / sample_t;
-            enc_left = _leftMotor.readTicks();
-            float true_v_right = (_rightMotor.readTicks() - enc_right) *
+            float true_v_right = rightEnc.diffLastRead() *
                 ticksToCm / sample_t;
-            enc_right = _rightMotor.readTicks();
 
             float true_ang_v = (true_v_right - true_v_left) / L;
             curr_xpos += (true_v_left + true_v_right) / 2  *
@@ -500,8 +500,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             curr_angle = imu_weight * (imu_rads + overflow_count * 2 * PI) +
                 encoder_weight * (curr_angle + true_ang_v * sample_t) +
                 rangefinder_weight;
-            // reset sample time
-            timeElapsed = 0;
         }
     } while (1);
 
