@@ -124,12 +124,16 @@ void loop() {
         driver->shortTofWallReadings[0],
         driver->shortTofWallReadings[1],
         driver->shortTofWallReadings[2]);
-    ble.print("Walls:");
-    for (int i = 0; i < 3; i++) {
-        ble.print(driver->shortTofWallReadings[i]);
-        ble.print(" ");
+
+    // only print the walls on the speedrun
+    if (maze->counter == 0) {
+        ble.print("Walls:");
+        for (int i = 0; i < 3; i++) {
+            ble.print(driver->shortTofWallReadings[i]);
+            ble.print(" ");
+        }
+        ble.println(" ");
     }
-    ble.println(" ");
     driver->clearWallData();
 
     maze->printWallsCell(next_move);

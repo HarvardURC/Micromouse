@@ -180,6 +180,40 @@ void loop() {
                     break;
             }
             break;
+        case 5:
+            switch(test_num) {
+                // Turning Testing
+                case 0: {
+                    if (debug) debug_println("5 Left tests");
+                    for (int i = 0; i < 5; i++) {
+                        driver->turnLeft(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    break;
+                }
+                case 1: {
+                    if (debug) debug_println("5 Right tests");
+                    for (int i = 0; i < 5; i++) {
+                        driver->turnRight(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    break;
+                }
+                case 2: {
+                    for (int i = 0; i < 3; i ++) {
+                        driver->turnRight(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    driver->forward(20);
+                    break;
+                }
+                default:
+                    buzz->siren();
+                    break;
+            }
         default:
             break;
 
