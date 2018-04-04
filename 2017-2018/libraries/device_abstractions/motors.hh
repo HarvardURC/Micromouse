@@ -74,7 +74,8 @@ class Driver {
 
         void movePID(float setpoint);
 
-        void computePids(float init_xpos, float init_ypos);
+        void computePids(float init_xpos, float init_ypos,
+                         float unbounded_angle);
 
         // Directs to the absolute position at goal_x, goal_y with an
         // angle of goal_a wrt the x-axis
@@ -86,7 +87,8 @@ class Driver {
         // Clears the robot state variables
         void resetState();
         // Prints out the output, setpoint, and state variables for each pid
-        void debugPidMovement();
+        void debugPidMovement(float unbounded_angle);
+        void debugAngle(float unbounded_angle);
 
         void clearWallData();
 
