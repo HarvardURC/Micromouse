@@ -27,7 +27,6 @@ int swap_flag = 0; // if true return to the start
 char command[BUFSIZE];
 bool bluetooth = true;
 
-bool commandIs(const char* cmd, bool firstchar=false);
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
 
@@ -193,51 +192,59 @@ void waitCommand() {
         }
 
         if (command[0] != '\0') {
+            char* token = strtok(command, " ");
+
             // reset maze
-            if (commandIs("reset")) {
+            if (commandIs(token, "reset")) {
                 flag = 0;
                 driver->resetState();
                 ble.println("Robot state reset. Ready for next run.");
             }
-            else if (commandIs("fullreset")) {
+            else if (commandIs(token, "fullreset")) {
                 flag = 0;
                 driver->resetState();
                 maze->reset();
                 ble.print("Maze reset.\n");
             }
             // go to next cell
-            else if (commandIs("go")) {
+            else if (commandIs(token, "go")) {
                 frontRgb->flashLED(2);
                 delay(1000);
                 frontRgb->flashLED(1);
                 break;
             }
             // continue without interruption
-            else if (commandIs("start", true)) {
+            else if (commandIs(token, "start")) {
                 ble.println("Running maze.");
                 flag = -100;
                 break;
             }
             // move forward
-            else if (commandIs("w")) {
+            else if (commandIs(token, "w")) {
                 driver->forward(cellSize);
             }
             // turn left
-            else if (commandIs("a")) {
+            else if (commandIs(token, "a")) {
                 driver->turnLeft(90);
             }
             // turn right
-            else if (commandIs("d")) {
+            else if (commandIs(token, "d")) {
                 driver->turnRight(90);
             }
-            else if (commandIs("celebrate")) {
+            else if (commandIs(token, "celebrate")) {
                 celebrate();
             }
-            else if (commandIs("tune")) {
+            else if (commandIs(token, "setgoal")) {
+                int row = atoi(strtok(NULL, " "));
+                int col = atoi(strtok(NULL, " "));
+                Position p(row, col);
+                maze->setGoal(p);
+            }
+            else if (commandIs(token, "tune")) {
                 tuning = 0;
                 ble.println("Pick PID to tune. [linear, angular, front tof]");
             }
-            else if (commandIs("quit")) {
+            else if (commandIs(token, "quit")) {
                 tuning = -1;
             }
             else if (tuning >= 0) {
@@ -246,7 +253,6 @@ void waitCommand() {
                     i = pid->integral;
                     d = pid->derivative;
 
-                    const char* token = strtok(command, " ");
                     if (commandIs(token, "proportion")) {
                         token = strtok(NULL, " ");
                         p = atof(token);
@@ -262,13 +268,13 @@ void waitCommand() {
                     pid->setTunings(p, i, d);
                 }
                 else if (tuning == 0) {
-                    if (commandIs("linear")) {
+                    if (commandIs(token, "linear")) {
                         tuning = 1;
                     }
-                    else if (commandIs("angular")) {
+                    else if (commandIs(token, "angular")) {
                         tuning = 2;
                     }
-                    else if (commandIs("front tof")) {
+                    else if (commandIs(token, "front tof")) {
                         tuning = 3;
                     }
                 }
@@ -297,9 +303,9 @@ void waitCommand() {
                         ble.println("Ex: 'proportion  10.5'");
                 }
             }
-            else if (commandIs("help")) {
+            else if (commandIs(token, "help")) {
                 ble.println("Possible commands: "
-                    "[go, start, reset, w, a, d, tune, celebrate, quit]");
+                    "[go, start, reset, w, a, d, tune, celebrate, quit, setgoal]");
             }
             else {
                 ble.println(
@@ -311,10 +317,6 @@ void waitCommand() {
         command[0] = '\0';
     }
     command[0] = '\0';
-}
-
-bool commandIs(const char* cmd, bool firstchar) {
-    return !strcmp(command, cmd) || (firstchar && command[0] == cmd[0]);
 }
 
 bool commandIs(const char* token, const char* cmd, bool firstchar) {

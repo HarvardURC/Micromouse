@@ -133,7 +133,7 @@ void Maze::floodMaze() {
     // if we're on an even run, set the destination to be the center of the maze
     if (counter % 2 == 0) {
         stackPointer = 1;
-        cellStack[0] = (16 * ENDROW) + ENDCOL;
+        cellStack[0] = (16 * goalPos.row) + goalPos.col;
         // stackPointer = 4;
         // cellStack[0] = (16 * ENDROW) + ENDCOL;
         // cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
@@ -143,7 +143,7 @@ void Maze::floodMaze() {
     // otherwise, the destination is the start of the maze
     else {
         stackPointer = 1;
-        cellStack[0] = (16 * STARTROW) + STARTCOL;
+        cellStack[0] = (16 * startPos.row) + startPos.col;
     }
 
     // as long as the stack is non-empty
@@ -248,6 +248,12 @@ void Maze::reset() {
 
 void Maze::updatePosition(Position p) {
     currPos = p;
+}
+
+void Maze::setGoal(Position p) {
+    goalPos = p;
+    debug_print("Goal set to ");
+    p.print();
 }
 
 
