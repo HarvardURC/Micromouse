@@ -83,7 +83,7 @@ void loop() {
                     break;
                 case 1:
                     if (debug) debug_println("30cm forward");
-                    driver->forward(36);
+                    driver->forward(90);
                     break;
                 case 2:
                     if (debug) debug_println("90 degrees left");

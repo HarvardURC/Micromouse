@@ -355,8 +355,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
     int end_iter = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
+    float last_imu_angle = _sensors.readIMUAngle();
+    float imu_angle = 0;
+    float imu_change = 0;
+    float last_rangefinder_angle = 0;
     float rangefinder_angle = 0;
-    float init_imu_angle = _sensors.readIMUAngle();
+    float rangefinder_change = 0;
 
 
     float angle_travelled = 0;
@@ -434,7 +438,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             curr_ypos += (true_v_left + true_v_right) / 2 *
                 sample_t * cos(curr_angle);
             //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
-            float imu_rads = fmod(init_imu_angle - _sensors.readIMUAngle(),360) * degToRad;
+            imu_angle = _sensors.readIMUAngle();
+            imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
+            last_imu_angle = imu_angle;
 
 
             // integrates rangefinder offset
@@ -443,33 +449,36 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 float left_diag_dist = _sensors.readShortTof(0);
                 float right_diag_dist = _sensors.readShortTof(2);
                 if (left_diag_dist >= 20 && left_diag_dist <= 60) {
-                    if (right_diag_dist >= 30 && right_diag_dist <= 50) {
-                        // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
+                    if (right_diag_dist >= 20 && right_diag_dist <= 60) {
+                        float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
+                        if (!isnanf(ratio) && !isinff(ratio)) {
+                            //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
+                            rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
+                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                            last_rangefinder_angle = rangefinder_angle; 
+                        }
                     }
                     else {
                         //rangefinder_angle =  alpha * cos(30./left_diag_dist)
                     }
                 }
-                float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
-                if (!isnanf(ratio) && !isinff(ratio)) {
-                    //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-                    rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
-                }
-                Serial.print("L: ");
+                
+                /*Serial.print("L: ");
                 Serial.println(left_diag_dist);
                 Serial.print("R: ");
                 Serial.println(right_diag_dist);
+                Serial.println(rangefinder_angle);*/
                 // debug_println(curr_xpos);
             }
 
             /* Update angular state, curr_angle */
             float true_ang_v = (true_v_right - true_v_left) / L;
-            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
 
-
-            float angle_change = imu_weight * imu_rads +
+            Serial.println(imu_change);
+            Serial.println(true_ang_v * sample_t);
+            float angle_change = imu_weight * imu_change +
                 encoder_weight * (true_ang_v * sample_t) +
-                rangefinder_weight * rangefinder_angle;
+                rangefinder_weight * rangefinder_change;
 
             curr_angle = wrapAngle(curr_angle + angle_change);
 
