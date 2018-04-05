@@ -81,6 +81,12 @@ void setup() {
     }
 
     backRgb->flashLED(1);
+
+    attachInterrupt(frontButton, abort_isr, RISING);
+}
+
+void abort_isr() {
+    abort();
 }
 
 void loop() {
