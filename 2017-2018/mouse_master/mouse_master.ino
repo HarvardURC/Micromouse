@@ -95,7 +95,7 @@ void loop() {
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
-        ble.println("Swapping goal....");
+        debug_println("Swapping goal....");
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
                 driver->resetState();
@@ -107,16 +107,19 @@ void loop() {
     }
 
     if (flag >= 0) {
-        ble.println("Waiting on command");
-        // waitButton(backButt);
-        waitCommand();
+        debug_println("Waiting on command");
+        if (bluetooth) {
+            waitCommand();
+        } else {
+            waitButton(backButt);
+        }
     }
     // run the flood-fill algorithm
     maze->floodMaze();
 
     // determine next cell to move to
     Position next_move = maze->chooseNextCell(maze->currPos);
-    ble.print("Next move -- ");
+    debug_print("Next move -- ");
     next_move.print(bluetooth);
 
     // move to that cell
@@ -132,12 +135,12 @@ void loop() {
 
     // only print the walls on the speedrun
     if (maze->counter == 0) {
-        ble.print("Walls:");
+        debug_print("Walls:");
         for (int i = 0; i < 3; i++) {
-            ble.print(driver->shortTofWallReadings[i]);
-            ble.print(" ");
+            debug_print(driver->shortTofWallReadings[i]);
+            debug_print(" ");
         }
-        ble.println(" ");
+        debug_println(" ");
     }
     driver->clearWallData();
 
@@ -152,8 +155,8 @@ void loop() {
  */
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
-    ble.print("Diff direction: ");
-    ble.println(diff.direction());
+    debug_print("Diff direction: ");
+    debug_println(diff.direction());
 
     driver->tankGo(next.col * cellSize, next.row * cellSize);
     frontRgb->flashLED(1);
@@ -164,6 +167,7 @@ void makeNextMove(Position next) {
 void waitButton(Button* but) {
     while (1) {
         if (but->read() == LOW) {
+            driver->resetState();
             frontRgb->flashLED(2);
             delay(1000);
             flag = -100;
@@ -189,7 +193,7 @@ void waitCommand() {
 
     while (1) {
         if (timer > notifyTime) {
-            ble.println("Waiting on command...");
+            debug_println("Waiting on command...");
             timer = 0;
         }
 
@@ -204,13 +208,13 @@ void waitCommand() {
             if (commandIs(token, "reset")) {
                 flag = 0;
                 driver->resetState();
-                ble.println("Robot state reset. Ready for next run.");
+                debug_println("Robot state reset. Ready for next run.");
             }
             else if (commandIs(token, "fullreset")) {
                 flag = 0;
                 driver->resetState();
                 maze->reset();
-                ble.print("Maze reset.\n");
+                debug_print("Maze reset.\n");
             }
             // go to next cell
             else if (commandIs(token, "go")) {
@@ -221,7 +225,7 @@ void waitCommand() {
             }
             // continue without interruption
             else if (commandIs(token, "start")) {
-                ble.println("Running maze.");
+                debug_println("Running maze.");
                 flag = -100;
                 break;
             }
@@ -248,7 +252,7 @@ void waitCommand() {
             }
             else if (commandIs(token, "tune")) {
                 tuning = 0;
-                ble.println("Pick PID to tune. [linear, angular, front tof]");
+                debug_println("Pick PID to tune. [linear, angular, front tof]");
             }
             else if (commandIs(token, "quit")) {
                 tuning = -1;
@@ -289,32 +293,32 @@ void waitCommand() {
                     switch(tuning) {
                         case 1: {
                             pid = &driver->_pid_x;
-                            ble.print("linear: ");
+                            debug_print("linear: ");
                             break;
                         }
                         case 2: {
                             pid = &driver->_pid_a;
-                            ble.print("angular: ");
+                            debug_print("angular: ");
                             break;
                         }
                         case 3: {
                             pid = &driver->_pid_front_tof;
-                            ble.print("front tof: ");
+                            debug_print("front tof: ");
                             break;
                         }
                     }
                     pid->printTunings();
-                    ble.println(
+                    debug_println(
                         "Pick var to tune. [proportion, integral, derivative]");
-                        ble.println("Ex: 'proportion  10.5'");
+                        debug_println("Ex: 'proportion  10.5'");
                 }
             }
             else if (commandIs(token, "help")) {
-                ble.println("Possible commands: "
+                debug_println("Possible commands: "
                     "[go, start, reset, w, a, d, tune, celebrate, quit, setgoal]");
             }
             else {
-                ble.println(
+                debug_println(
                     "Invalid command. See the README for valid commands.");
             }
 
