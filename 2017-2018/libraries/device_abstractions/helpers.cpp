@@ -113,3 +113,9 @@ long EncoderTicker::diffLastRead() {
     this->lastVal = curr;
     return r;
 }
+
+void DriverConfig::print() {
+    debug_println("Current driver config:");
+    debug_printvar(motorLimit);
+    debug_printvar(convergenceTime);
+}

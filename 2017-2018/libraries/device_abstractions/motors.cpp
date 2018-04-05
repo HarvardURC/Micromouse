@@ -9,6 +9,10 @@ using namespace swconst;
 
 const bool debug = false; // set to true for serial debugging statements
 
+DriverConfig M0(motorLimitM0, convergenceTimeM0);
+DriverConfig S1(motorLimitS1, convergenceTimeS1);
+DriverConfig driverCfgs[2] = { M0, S1 };
+
 /* Motor functions */
 Motor::Motor(
     int powerPin,
@@ -123,8 +127,7 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    motorLimit = motorLimitM0;
-    convergenceTime = convergenceTimeM0;
+    updateConfig(M0);
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
@@ -519,6 +522,7 @@ void Driver::tankGo(float goal_x, float goal_y) {
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
+
         // Go forward
         go(goal_x, goal_y, temp_a);
     }
@@ -581,7 +585,7 @@ void Driver::realign(int goal_dist) {
     brake();
 
     // correct state based on which wall it realigned on
-    int direction = round(curr_angle) / (PI / 2);
+    int direction = round(curr_angle + PI / 4) / (PI / 2);
 
     // Pointing east or west -> x-axis
     if (direction % 2 == 1) {
@@ -593,6 +597,11 @@ void Driver::realign(int goal_dist) {
         curr_ypos = current_row * cellSize;
     }
 
-    // float new_angle = direction * PI / 2;
-    // curr_angle += (new_angle - curr_angle)
+    float new_angle = direction * PI / 2;
+    curr_angle += (new_angle - curr_angle);
+}
+
+void Driver::updateConfig(DriverConfig cfg) {
+    motorLimit = cfg.motorLimit;
+    convergenceTime = cfg.convergenceTime;
 }

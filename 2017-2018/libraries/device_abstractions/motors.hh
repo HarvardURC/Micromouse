@@ -89,6 +89,7 @@ class Driver {
         void debugAngle(float unbounded_angle);
         void resetState();
         void clearWallData();
+        void updateConfig(DriverConfig cfg);
 
         // Robot state variables
         float curr_xpos;
@@ -118,5 +119,7 @@ class Driver {
         float _v_left = 0;
         float _v_right = 0;
 };
+
+extern DriverConfig driverCfgs[2];
 
 #endif

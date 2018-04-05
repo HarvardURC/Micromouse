@@ -11,7 +11,7 @@
 
 using namespace pins;
 
-const float cellSize = 18; // cm
+const float cellSize = swconst::cellSize; // cm
 
 Maze* maze;
 Driver* driver;
@@ -95,7 +95,9 @@ void loop() {
         debug_println("Swapping goal....");
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
-                driver->resetState();
+            driver->resetState();
+            driver->updateConfig(driverCfgs[maze->counter / 2]);
+            driverCfgs[maze->counter / 2].print();
             command_flag = true;
         }
         else if (maze->currPos == maze->goalPos) {
