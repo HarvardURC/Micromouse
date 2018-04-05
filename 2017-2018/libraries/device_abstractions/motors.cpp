@@ -374,6 +374,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float rangefinder_angle = 0;
     float rangefinder_change = 0;
 
+    float imu_weight;
+    float encoder_weight;
+    float rangefinder_weight;
+
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
     const float distance_limit = 18; // if ignoring wall, ignore for 18cm
@@ -462,12 +466,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             // integrates rangefinder offset
             if (!angle_flag) {
                 switch (heading(goal_x, goal_y)) {
-                    case 0: 
+                    case 0:
                     case 2: {
                         ignore_init_pos = curr_ypos;
                         break;
                     }
-                    case 1: 
+                    case 1:
                     case 3: {
                         ignore_init_pos = curr_xpos;
                         break;
@@ -486,7 +490,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                             //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
+                            last_rangefinder_angle = rangefinder_angle;
                         }
                     }
                     // use left
@@ -496,7 +500,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         if (!isnanf(ratio) && !isinff(ratio)) {
                             rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
+                            last_rangefinder_angle = rangefinder_angle;
                         }
                     }
                 }
@@ -508,7 +512,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         if (!isnanf(ratio) && !isinff(ratio)) {
                             rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
+                            last_rangefinder_angle = rangefinder_angle;
                         }
                     }
                 }
@@ -518,7 +522,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 }
 
                 switch (heading(goal_x, goal_y)) {
-                    case 0: 
+                    case 0:
                     case 2: {
                         if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
                             ignore_init_pos = 0;
@@ -526,7 +530,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         }
                         break;
                     }
-                    case 1: 
+                    case 1:
                     case 3: {
                         if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
                             ignore_init_pos = 0;
@@ -535,7 +539,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         break;
                     }
                 }
-                
+
                 /*Serial.print("L: ");
                 Serial.println(left_diag_dist);
                 Serial.print("R: ");
@@ -546,6 +550,16 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
             /* Update angular state, curr_angle */
             float true_ang_v = (true_v_right - true_v_left) / L;
+
+            if (ignore_rangefinder == 3) {
+                imu_weight = nowall_imu_w;
+                encoder_weight = nowall_encoder_w;
+                rangefinder_weight = nowall_rangefinder_w;
+            } else {
+                imu_weight = imu_w;
+                encoder_weight = encoder_w;
+                rangefinder_weight = rangefinder_w;
+            }
 
             Serial.println(imu_change);
             Serial.println(true_ang_v * sample_t);
