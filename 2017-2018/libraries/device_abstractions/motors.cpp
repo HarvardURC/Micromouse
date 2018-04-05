@@ -283,10 +283,9 @@ void Driver::clearWallData() {
 
 
 /* minTurn()
- * Calculates the right goal_angle to feed into `go` to get a minimal turn.
- * Because our current angle variable isn't restricted to the [0, 2PI) range,
- * we need to use values within PI of the current angle variable to get
- * minimal turns. Therefore we do this conversion to the proper bracket. */
+ * Calculates the minimum angle needed to turn from curr_angle to goal_angle
+ * considering both left turn and right turn options.
+ */
 float minTurn(float goal_angle, float curr_angle) {
     goal_angle = wrapAngle(goal_angle);
     return wrapAngle(goal_angle - curr_angle + PI) - PI;
@@ -300,8 +299,6 @@ void Driver::calculateInputPWM(bool angle_flag,
     float lin_velocity = angle_flag ? 0 :
         sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
     float ang_velocity = _pid_a.output;
-
-    // debug_printvar(ang_velocity);
 
     // L is width of robot
     // todo: makes sure ceiling doesnt drown out angle correction
@@ -344,17 +341,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis timer = 0;
     int sensorCounter = 0;
 
-    if (debug) {
-        debug_print("Old ");
-        debug_printvar(goal_a);
-    }
     // between -PI to PI
     goal_a = minTurn(goal_a, curr_angle);
-    if (debug) {
-        debug_print("New ");
-        debug_printvar(goal_a);
-        debug_printvar(curr_angle);
-    }
 
     EncoderTicker leftEnc(&_leftMotor._encoder);
     EncoderTicker rightEnc(&_rightMotor._encoder);
@@ -369,7 +357,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int end_iter = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
     float angle_travelled = 0;
-    bool negative_turn = goal_a < 0;
 
     do {
         /* stores sensor readings to detect walls
@@ -496,8 +483,7 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
-// todo remove goal_a
-void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
+void Driver::tankGo(float goal_x, float goal_y) {
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     if (debug) {

@@ -151,16 +151,16 @@ void loop() {
                     driver->forward(5.5);
                     driver->resetState();
 
-                    driver->tankGo(0, 18, 0);
-                    driver->tankGo(18, 18, 0);
-                    driver->tankGo(18, 36, 0);
-                    driver->tankGo(0, 36, 0);
+                    driver->tankGo(0, 18);
+                    driver->tankGo(18, 18);
+                    driver->tankGo(18, 36);
+                    driver->tankGo(0, 36);
 
-                    driver->tankGo(0, 18, 0);
-                    driver->tankGo(-18, 18, 0);
-                    driver->tankGo(-18, 36, 0);
-                    driver->tankGo(0, 36, 0);
-                    driver->tankGo(0, 0, 0);
+                    driver->tankGo(0, 18);
+                    driver->tankGo(-18, 18);
+                    driver->tankGo(-18, 36);
+                    driver->tankGo(0, 36);
+                    driver->tankGo(0, 0);
                 default:
                     buzz->siren();
                     goNextTests();

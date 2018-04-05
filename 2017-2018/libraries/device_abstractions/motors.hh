@@ -80,7 +80,7 @@ class Driver {
         // Directs to the absolute position at goal_x, goal_y with an
         // angle of goal_a wrt the x-axis
         void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
-        void tankGo(float goal_x, float goal_y, float goal_a);
+        void tankGo(float goal_x, float goal_y);
         // sets _v_left and _v_right variables based on x, y, a PIDs
         void calculateInputPWM(bool angle_flag,
             float goal_x, float goal_y, float angle_diff);

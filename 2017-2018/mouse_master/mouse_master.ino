@@ -150,7 +150,7 @@ void makeNextMove(Position next) {
     ble.print("Diff direction: ");
     ble.println(diff.direction());
 
-    driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
+    driver->tankGo(next.col * cellSize, next.row * cellSize);
     frontRgb->flashLED(1);
 }
 
@@ -176,7 +176,8 @@ void waitCommand() {
     float p = 0;
     float i = 0;
     float d = 0;
-    PidController* pid;
+    PidController nullPid(0, 0, 0);
+    PidController* pid = &nullPid;
 
     const int notifyTime = 8000;
     elapsedMillis timer = 0;
