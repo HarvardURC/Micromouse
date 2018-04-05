@@ -125,7 +125,6 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
-        bool bluetoothOn_;
 
         float _v_left = 0;
         float _v_right = 0;

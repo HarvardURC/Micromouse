@@ -111,14 +111,14 @@ Driver::Driver(
     int encoderPinR1,
     int encoderPinR2,
     SensorArray sensors) :
-    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
-    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
-    _sensors(sensors),
     _pid_x(p_l, i_l, d_l),
     _pid_y(p_l, i_l, d_l),
     _pid_a(p_a, i_a, d_a),
     _pid_front_tof(p_tof, i_tof, d_tof),
-    _pid_diag_tof(p_diag, i_diag, d_diag)
+    _pid_diag_tof(p_diag, i_diag, d_diag),
+    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
+    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
+    _sensors(sensors)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
@@ -338,7 +338,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis timer = 0;
     int sensorCounter = 0;
 
     // between -PI to PI
