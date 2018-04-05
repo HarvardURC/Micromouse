@@ -90,6 +90,8 @@ class Driver {
         void debugPidMovement(float unbounded_angle);
         void debugAngle(float unbounded_angle);
 
+        int heading(float goal_x, float goal_y);
+
         void clearWallData();
 
         void realign(int goal_dist);

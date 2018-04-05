@@ -292,6 +292,18 @@ float minTurn(float goal_angle, float curr_angle) {
 }
 
 
+/* heading()
+ * Returns 0 for +y axis, 1 for -x axis, 2 for -y axis, 3 for +x axis */
+int Driver::heading(float goal_x, float goal_y) {
+    if (fabs(goal_y - curr_ypos) > fabs(goal_x - curr_xpos)) {
+        return goal_y > curr_ypos ? 0 : 2;
+    }
+    else {
+        return goal_x > curr_xpos ? 3 : 1;
+    }
+}
+
+
 void Driver::calculateInputPWM(bool angle_flag,
     float goal_x, float goal_y, float angle_diff)
 {
