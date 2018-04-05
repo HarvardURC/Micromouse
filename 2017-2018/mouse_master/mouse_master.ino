@@ -27,6 +27,9 @@ int swap_flag = 0; // if true return to the start
 char command[BUFSIZE];
 bool bluetooth = true;
 
+bool commandIs(const char* cmd, bool firstchar=false);
+bool commandIs(const char* token, const char* cmd, bool firstchar=false);
+
 
 void setup() {
     /* * * * * * * * * * * * * * * * *
@@ -127,12 +130,16 @@ void loop() {
         driver->shortTofWallReadings[0],
         driver->shortTofWallReadings[1],
         driver->shortTofWallReadings[2]);
-    ble.print("Walls:");
-    for (int i = 0; i < 3; i++) {
-        ble.print(driver->shortTofWallReadings[i]);
-        ble.print(" ");
+
+    // only print the walls on the speedrun
+    if (maze->counter == 0) {
+        ble.print("Walls:");
+        for (int i = 0; i < 3; i++) {
+            ble.print(driver->shortTofWallReadings[i]);
+            ble.print(" ");
+        }
+        ble.println(" ");
     }
-    ble.println(" ");
     driver->clearWallData();
 
     maze->printWallsCell(next_move);
@@ -149,7 +156,7 @@ void makeNextMove(Position next) {
     ble.print("Diff direction: ");
     ble.println(diff.direction());
 
-    driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
+    driver->tankGo(next.col * cellSize, next.row * cellSize);
     frontRgb->flashLED(1);
 }
 
@@ -175,7 +182,8 @@ void waitCommand() {
     float p = 0;
     float i = 0;
     float d = 0;
-    PidController* pid;
+    PidController nullPid(0, 0, 0);
+    PidController* pid = &nullPid;
 
     const int notifyTime = 8000;
     elapsedMillis timer = 0;
@@ -211,7 +219,7 @@ void waitCommand() {
                 break;
             }
             // continue without interruption
-            else if (commandIs("start")) {
+            else if (commandIs("start", true)) {
                 ble.println("Running maze.");
                 flag = -100;
                 break;
@@ -271,27 +279,29 @@ void waitCommand() {
                     }
                 }
 
-                switch(tuning) {
-                    case 1: {
-                        pid = &driver->_pid_x;
-                        ble.print("linear: ");
-                        break;
+                if (tuning > 0) {
+                    switch(tuning) {
+                        case 1: {
+                            pid = &driver->_pid_x;
+                            ble.print("linear: ");
+                            break;
+                        }
+                        case 2: {
+                            pid = &driver->_pid_a;
+                            ble.print("angular: ");
+                            break;
+                        }
+                        case 3: {
+                            pid = &driver->_pid_front_tof;
+                            ble.print("front tof: ");
+                            break;
+                        }
                     }
-                    case 2: {
-                        pid = &driver->_pid_a;
-                        ble.print("angular: ");
-                        break;
-                    }
-                    case 3: {
-                        pid = &driver->_pid_front_tof;
-                        ble.print("front tof: ");
-                        break;
-                    }
+                    pid->printTunings();
+                    ble.println(
+                        "Pick var to tune. [proportion, integral, derivative]");
+                        ble.println("Ex: 'proportion  10.5'");
                 }
-                pid->printTunings();
-                ble.println(
-                    "Pick var to tune. [proportion, integral, derivative]");
-                ble.println("Ex: 'proportion  10.5'");
             }
             else if (commandIs("help")) {
                 ble.println("Possible commands: "
@@ -309,12 +319,12 @@ void waitCommand() {
     command[0] = '\0';
 }
 
-bool commandIs(const char* cmd) {
-    return !strcmp(command, cmd) || command[0] == cmd[0];
+bool commandIs(const char* cmd, bool firstchar) {
+    return !strcmp(command, cmd) || (firstchar && command[0] == cmd[0]);
 }
 
-bool commandIs(const char* token, const char* cmd) {
-    return !strcmp(token, cmd) || token[0] == cmd[0];
+bool commandIs(const char* token, const char* cmd, bool firstchar) {
+    return !strcmp(token, cmd) || (firstchar && token[0] == cmd[0]);
 }
 
 void celebrate() {

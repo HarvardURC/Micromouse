@@ -1,6 +1,7 @@
 /* Helper functions */
 #include <Arduino.h>
 #include <PID_v1.h>
+#include <Encoder.h>
 #include "bluetooth.hh"
 
 #ifndef helpers_hh
@@ -11,16 +12,10 @@
 #define debug_printvar(var) debug_print(#var); debug_print(": "); debug_println(var)
 
 /* Math functions */
-// Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
-// From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
-template<typename T, typename U>
-constexpr T dmod (T x, U mod)
-{
-    return !mod ? x :
-        static_cast<long long>(x) % mod + x - static_cast<long long>(x);
-}
-
 bool withinError(float a, float b, float error);
+inline float wrapAngle(float angle) {
+    return angle - 2 * PI * floor(angle / (2 * PI));
+}
 
 
 /* PWM value functions */
@@ -78,6 +73,17 @@ class PidController {
         float setpoint;
     private:
         PIDT<float> _pid;
+};
+
+/* A wrapper class for encoders to keep track of last accessed tick value */
+class EncoderTicker {
+    public:
+        EncoderTicker(Encoder* e_);
+
+        long diffLastRead();
+    private:
+        Encoder* e;
+        long lastVal;
 };
 
 #endif

@@ -48,8 +48,8 @@ class Maze {
 
         /* Current cell in the maze of the robot */
         Position currPos;
-        Position goalPos;
         Position startPos;
+        Position goalPos;
 
         /* Global counter, keeps track of run number to set speed and
          * destination cell */

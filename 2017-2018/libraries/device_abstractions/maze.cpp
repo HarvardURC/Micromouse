@@ -64,8 +64,10 @@ void Position::print(int bluetooth) {
 }
 
 
-Maze::Maze() : startPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL),
-    currPos(STARTROW, STARTCOL) {
+Maze::Maze()
+    : currPos(STARTROW, STARTCOL),
+      startPos(STARTROW, STARTCOL),
+      goalPos(ENDROW, ENDCOL) {
     initializeMaze();
 }
 

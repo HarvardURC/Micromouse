@@ -28,7 +28,10 @@ char command = init_command; // holds commands from bluetooth
 void setup() {
     Serial.begin(9600);
     delay(500);
-    if (bluetooth) bluetoothInitialize();
+    if (bluetooth) {
+        bluetoothInitialize();
+    }
+
 
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
@@ -75,23 +78,8 @@ void loop() {
             switch(test_num) {
                 // LEVEL 1 TESTS
                 case 0:
-                    driver->forward(5.5);
-                    driver->resetState();
-
-                    driver->tankGo(0, 18, 0);
-                    driver->tankGo(18, 18, 0);
-                    driver->tankGo(18, 36, 0);
-                    driver->tankGo(0, 36, 0);
-
-                    driver->tankGo(0, 18, 0);
-                    driver->tankGo(-18, 18, 0);
-                    driver->tankGo(-18, 36, 0);
-                    driver->tankGo(0, 36, 0);
-                    driver->tankGo(0, 0, 0);
-
-
                     if (debug) debug_println("10cm forward");
-                    //driver->forward(18);
+                    driver->forward(18);
                     break;
                 case 1:
                     if (debug) debug_println("30cm forward");
@@ -160,20 +148,19 @@ void loop() {
                 // TANK MOVEMENT TEST
                 case 0:
                     if (debug) debug_println("Going...");
-                    driver->tankGo(10, 0, 0);
-                    break;
-                case 1:
-                    if (debug) debug_println("Going...");
-                    driver->tankGo(0, 10, 0);
-                    break;
-                case 2:
-                    if (debug) debug_println("Going...");
-                    driver->tankGo(-10, 0, 0);
-                    break;
-                case 3:
-                    if (debug) debug_println("Going...");
-                    driver->tankGo(0, -10, 0);
-                    break;
+                    driver->forward(5.5);
+                    driver->resetState();
+
+                    driver->tankGo(0, 18);
+                    driver->tankGo(18, 18);
+                    driver->tankGo(18, 36);
+                    driver->tankGo(0, 36);
+
+                    driver->tankGo(0, 18);
+                    driver->tankGo(-18, 18);
+                    driver->tankGo(-18, 36);
+                    driver->tankGo(0, 36);
+                    driver->tankGo(0, 0);
                 default:
                     buzz->siren();
                     goNextTests();
@@ -193,6 +180,40 @@ void loop() {
                     break;
             }
             break;
+        case 5:
+            switch(test_num) {
+                // Turning Testing
+                case 0: {
+                    if (debug) debug_println("5 Left tests");
+                    for (int i = 0; i < 5; i++) {
+                        driver->turnLeft(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    break;
+                }
+                case 1: {
+                    if (debug) debug_println("5 Right tests");
+                    for (int i = 0; i < 5; i++) {
+                        driver->turnRight(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    break;
+                }
+                case 2: {
+                    for (int i = 0; i < 3; i ++) {
+                        driver->turnRight(90);
+                        backRgb->flashLED(2);
+                        delay(500);
+                    }
+                    driver->forward(20);
+                    break;
+                }
+                default:
+                    buzz->siren();
+                    break;
+            }
         default:
             break;
 
