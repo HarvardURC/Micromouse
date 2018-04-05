@@ -11,16 +11,19 @@
 #define SOUTH 2
 #define WEST 1
 
-#define CENTER_ROW 0
-#define CENTER_COL 2
+#define CENTER_ROW 7
+#define CENTER_COL 7
 
 #define START_ROW 0
 #define START_COL 0
 
-bool findMinotaur = true;
+#define MAZE_WIDTH 16
+#define MAZE_HEIGHT 16
 
 int mouseRow = 0;
 int mouseCol = 0;
+
+bool mappingRun = true;
 
 // 0 NORTH
 // 1 EAST
@@ -44,7 +47,7 @@ std::vector<int> sensorReadings = {1000, 1000, 1000, 1000, 1000};
 // CONVERT TO CELL MAP LATER
 unsigned char virtualWalls[256];
 
-Cell cellMap[16][16];
+Cell cellMap[MAZE_HEIGHT][MAZE_WIDTH];
 
 QueueArray<Cell> floodQueue;
 
@@ -57,7 +60,6 @@ bool checkWall(int row, int col, int dir);
 void senseWalls();
 void Janus();
 void initializeFloodMaze();
-void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
 void store(int nextMovement);
@@ -69,8 +71,13 @@ std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "r
 
 // initialize storage array and variables
 int quickestPath [150];
+int numMoves = 0;
 int moveIndex = 0;
-bool backAtStart = false;
+
+// Keep track of which run we are on
+// EVEN = run to the center
+// ODD = run to the start
+int runCounter = 0;
 
 // initialize motors object
 emile_motors* motors = new emile_motors(sensors[0], sensors[4], sensors[2], sensors[1], sensors[3]);
@@ -105,8 +112,11 @@ void setup() {
   setBoundaryWalls();
   Serial.println("Made it past set boundary walls!");
 
-  // randomSeed(17);
-  // generateWall();
+  // Start runCounter at 0: mapping run
+  runCounter = 0;
+
+  // No moves to start
+  numMoves = 0;
 }
 
 // LOOP
@@ -120,114 +130,100 @@ void loop() {
   Janus();
   Serial.println("Made it past janus");
 
-  //mouseRow += 1;
-
   printVirtualMaze();
   Serial.println("Made it past print virtual maze");
 
   delay(1000);
 }
 
-void generateWall() {
-  // 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
-  for (int i = 0; i < 16; i = i + 2) {
-    for (int j = 0; j < 16; ++j) {
-      int nWalls = random(0, 3);
-      for (int k = 0; k < nWalls; ++k) {
-        int d = random (0, 3);
-        if (d == 0) {
-          cellMap[i][j].walls |= NORTH;
-        }
-        else if (d == 1) {
-          cellMap[i][j].walls |= EAST;
-        }
-        else if (d == 2) {
-          cellMap[i][j].walls |= SOUTH;
-        }
-        else {
-          cellMap[i][j].walls |= WEST;
-        }
-      }
-    }
-  }
-}
-
 // Mouse chooses cell to move to
 void Janus() {
-  if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
-    Serial.println("we're here");
-    for (int i = 0; i < moveIndex; i++) {
+  if (cellMap[mouseRow][mouseCol].floodDistance == 0) {
+    if (runCounter % 2 == 0) {
+      Serial.println("Arrived at CENTER");
+    } else {
+      Serial.println("Arrived at START");
+    }
+    runCounter++;
+    
+    // Reverse direction of quickest path
+    for (int i = 0; i < numMoves; i++) {
       quickestPath[i] = (quickestPath[i] + 2) % 4;
     }
-    for (int i = 0; i < moveIndex; i++) {
-      turn(quickestPath[i]);
-      motors->forward();
-    }
-    return;
+
+    // reset to beginning of quickest path
+    moveIndex = 0;
   }
 
-  // Initialize with arbitrarily large values
-  // floodDistance of surrounding cells
   // 0 NORTH
   // 1 EAST
   // 2 SOUTH
   // 3 WEST
-  int choices[4] = {1000, 1000, 1000, 1000};
-
-  // TODO check for walls
-  // NORTH
-  if (!checkWall(mouseRow, mouseCol, NORTH)) {
-    choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
-  }
-  // EAST
-  if (!checkWall(mouseRow, mouseCol, EAST)) {
-    choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
-  }
-  // SOUTH
-  if (!checkWall(mouseRow, mouseCol, SOUTH)) {
-    choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
-  }
-  // WEST
-  if (!checkWall(mouseRow, mouseCol, WEST)) {
-    choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
-  }
-  // thePath stores the cell with lowest
-  int minDistance = 1000;
   int thePath = 0;
-  for (int i = 0; i < 4; i++) {
-    if (choices[i] < minDistance) {
-      minDistance = choices[i];
-      thePath = i;
-    }
-  }
 
-  // 0 NORTH
-  // 1 EAST
-  // 2 SOUTH
-  // 3 WEST
-  // We want thePath == mouseDir
+  if (runCounter == 0) {
+    int choices[4] = {1000, 1000, 1000, 1000};
+
+    // NORTH
+    if (!checkWall(mouseRow, mouseCol, NORTH)) {
+      choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
+    }
+    // EAST
+    if (!checkWall(mouseRow, mouseCol, EAST)) {
+      choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
+    }
+    // SOUTH
+    if (!checkWall(mouseRow, mouseCol, SOUTH)) {
+      choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
+    }
+    // WEST
+    if (!checkWall(mouseRow, mouseCol, WEST)) {
+      choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
+    }
+    // thePath stores the cell with lowest
+    int minDistance = 1000;
+    for (int i = 0; i < 4; i++) {
+      if (choices[i] < minDistance) {
+        minDistance = choices[i];
+        thePath = i;
+      }
+    }
+
+    store(thePath);
+
+    turn(thePath);
+    motors->forward();
+  }
+  else {
+    thePath = quickestPath[moveIndex];
+    moveIndex++;
+
+    // ADD QUICKER MOVEMENTS TODO, like moving two cells in 1 move.
+    turn(thePath);
+    motors->forward();
+  }
 
   Serial.print("thePath: ");
   Serial.println(thePath);
-  turn(thePath);
-  motors->forward();
-  store(thePath);
+  
+  //   Virtual movement
+  if (thePath == 0) {
+    mouseRow--;
+  }
+  else if (thePath == 1) {
+    mouseCol++;
+  }
+  else if (thePath == 2) {
+    mouseRow++;
+  }
+  else if (thePath == 3) {
+    mouseCol--;
+  }
+}
 
-  // TODO update mouseRow and mouseCol in moveForward()
-
-//   Virtual movement
-   if (thePath == 0) {
-     mouseRow--;
-   }
-   else if (thePath == 1) {
-     mouseCol++;
-   }
-   else if (thePath == 2) {
-     mouseRow++;
-   }
-   else if (thePath == 3) {
-     mouseCol--;
-   }
+void store(int nextMovement) {
+    quickestPath[numMoves] = nextMovement;
+    numMoves++;
 }
 
 void turn(int desired) {
@@ -269,7 +265,7 @@ void floodMaze() {
     }
 
     // Check Eastern Cell
-    if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
+    if (fCol < MAZE_WIDTH - 1 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
       if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
         cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
@@ -278,7 +274,7 @@ void floodMaze() {
     }
 
     // Check Southern Cell
-    if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
+    if (fRow < MAZE_HEIGHT - 1 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
       if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
         cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
       }
@@ -307,14 +303,14 @@ bool checkWall(int row, int col, int dir) {
     }
     return true;
   } else if (dir == EAST) {
-    if (col < 15) {
+    if (col < MAZE_WIDTH - 1) {
       if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col].walls & EAST) != EAST) {
         return false;
       }
     }
     return true;
   } else if (dir == SOUTH) {
-    if (row < 15) {
+    if (row < MAZE_HEIGHT - 1) {
       if ((cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
         return false;
       }
@@ -334,43 +330,34 @@ bool checkWall(int row, int col, int dir) {
 
 void initializeFloodMaze() {
   // When we run the flood maze, none of the cells should be visited already
-  for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
+  for (int i = 0; i < MAZE_HEIGHT; i++) {
+    for (int j = 0; j < MAZE_WIDTH; j++) {
       cellMap[i][j].visited = false;
       cellMap[i][j].floodDistance = 1000;
     }
   }
 
-  // Adham, in case you think this is a bad variable name.
-  // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze
-  if (findMinotaur) {
-    // Set center to 4 cells in the middle
-    cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
-    cellMap[CENTER_ROW][CENTER_COL].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
+  // // Adham, in case you think this is a bad variable name.
+  // // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze
+  // if (runCounter % 2 == 0) {
+  //   // Set center to cells in the middle
+  //   cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
+  //   cellMap[CENTER_ROW][CENTER_COL].visited = true;
+  //   floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
+  // } else {
+  //   // Set objective cell to start (for runs where we want to reset the robot's position)
+  //   cellMap[START_ROW][START_COL].floodDistance = 0;
+  //   cellMap[START_ROW][START_COL].visited = true;
+  //   floodQueue.enqueue(cellMap[START_ROW][START_COL]);
+  // }
 
-    cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
-    cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
-
-    cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
-    cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
-
-    cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
-    cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
-  } else {
-    // Set objective cell to start (for runs where we want to reset the robot's position)
-    cellMap[START_ROW][START_COL].floodDistance = 0;
-    cellMap[START_ROW][START_COL].visited = true;
-    floodQueue.enqueue(cellMap[START_ROW][START_COL]);
-  }
+  // We only use flood fill on the first run
+  cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
 }
 
 void initializeCellMap() {
-  for (short i = 0; i < 16; i++) {
-    for (short j = 0; j < 16; j++) {
+  for (short i = 0; i < MAZE_HEIGHT; i++) {
+    for (short j = 0; j < MAZE_WIDTH; j++) {
       Cell temp;
       temp.row = i;
       temp.column = j;
@@ -387,8 +374,8 @@ void initializeCellMap() {
 // REWRITE FOR 2 DIMENSIONAL
 void setBoundaryWalls() {
   // NOTE: Top of the maze is set to the the 0th row
-    for (int i = 0; i < 16; i++) {
-      for (int j = 0; j < 16; j++) {
+    for (int i = 0; i < MAZE_HEIGHT; i++) {
+      for (int j = 0; j < MAZE_WIDTH; j++) {
         if (i == 0) {
           cellMap[i][j].walls |= NORTH;
         }
@@ -406,7 +393,7 @@ void setBoundaryWalls() {
 }
 
 void printVirtualMaze() {
-  for (int row = 0; row < 16; row++) {
+  for (int row = 0; row < MAZE_HEIGHT; row++) {
     printVirtualRow(row, true);
     printVirtualRow(row, false);
   }
@@ -417,7 +404,7 @@ void printVirtualMaze() {
 
 // isPost boolean variables flags whether we are printing a row with vertical walls or horizontal walls
 void printVirtualRow(int row, bool isPostRow) {
-  for (int col = 0; col < 16; col++) {
+  for (int col = 0; col < MAZE_WIDTH; col++) {
 
     if (isPostRow) {
       Serial.print("+");
@@ -542,10 +529,5 @@ void initSensor(int pin, VL6180X *sensor, int address) {
     sensor->startRangeContinuous(30);
     Serial.print(pin);
     Serial.println(" connected.");
-}
-
-void store(int nextMovement) {
-    quickestPath[moveIndex] = nextMovement;
-    moveIndex++;
 }
 
