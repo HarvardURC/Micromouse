@@ -124,8 +124,11 @@ void loop() {
   senseWalls();
   Serial.println("Made it past sense walls");
 
-  floodMaze();
-  Serial.println("Made it past floodmaze");
+  // ONLY FLOOD ON THE FIRST RUN
+  if (runCounter == 0) {
+    floodMaze();
+    Serial.println("Made it past floodmaze");
+  }
 
   Janus();
   Serial.println("Made it past janus");
@@ -138,7 +141,7 @@ void loop() {
 
 // Mouse chooses cell to move to
 void Janus() {
-  if (cellMap[mouseRow][mouseCol].floodDistance == 0) {
+  if ((runCounter == 0 && cellMap[mouseRow][mouseCol].floodDistance == 0) || (runCounter > 0 && moveIndex == numMoves - 1)) {
     if (runCounter % 2 == 0) {
       Serial.println("Arrived at CENTER");
     } else {
@@ -189,6 +192,7 @@ void Janus() {
       }
     }
 
+    // store direction in quickest path
     store(thePath);
 
     turn(thePath);
@@ -201,6 +205,8 @@ void Janus() {
     // ADD QUICKER MOVEMENTS TODO, like moving two cells in 1 move.
     turn(thePath);
     motors->forward();
+
+
   }
 
   Serial.print("thePath: ");
