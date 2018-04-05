@@ -5,6 +5,7 @@
 #include "maze.hh"
 #include "motors.hh"
 #include "sensors.hh"
+#include "software_config.hh"
 
 #define BUFSIZE 20
 
@@ -25,6 +26,8 @@ int flag = 0;
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE];
 bool bluetooth = true;
+
+bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
 
 void setup() {
@@ -57,8 +60,7 @@ void setup() {
     encoderL2,
     encoderR1,
     encoderR2,
-    *sensorArr,
-    false);
+    *sensorArr);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
@@ -81,31 +83,43 @@ void setup() {
     }
 
     backRgb->flashLED(1);
+
+    attachInterrupt(frontButton, abort_isr, RISING);
+}
+
+void abort_isr() {
+    abort();
 }
 
 void loop() {
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
-        ble.println("Swapping goal....");
+        debug_println("Swapping goal....");
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
                 driver->resetState();
             flag = 0;
         }
+        else if (maze->currPos == maze->goalPos) {
+            celebrate();
+        }
     }
 
     if (flag >= 0) {
-        ble.println("Waiting on command");
-        // waitButton(backButt);
-        waitCommand();
+        debug_println("Waiting on command");
+        if (bluetooth) {
+            waitCommand();
+        } else {
+            waitButton(backButt);
+        }
     }
     // run the flood-fill algorithm
     maze->floodMaze();
 
     // determine next cell to move to
     Position next_move = maze->chooseNextCell(maze->currPos);
-    ble.print("Next move -- ");
+    debug_print("Next move -- ");
     next_move.print(bluetooth);
 
     // move to that cell
@@ -118,12 +132,16 @@ void loop() {
         driver->shortTofWallReadings[0],
         driver->shortTofWallReadings[1],
         driver->shortTofWallReadings[2]);
-    ble.print("Walls:");
-    for (int i = 0; i < 3; i++) {
-        ble.print(driver->shortTofWallReadings[i]);
-        ble.print(" ");
+
+    // only print the walls on the speedrun
+    if (maze->counter == 0) {
+        debug_print("Walls:");
+        for (int i = 0; i < 3; i++) {
+            debug_print(driver->shortTofWallReadings[i]);
+            debug_print(" ");
+        }
+        debug_println(" ");
     }
-    ble.println(" ");
     driver->clearWallData();
 
     maze->printWallsCell(next_move);
@@ -137,10 +155,10 @@ void loop() {
  */
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
-    ble.print("Diff direction: ");
-    ble.println(diff.direction());
+    debug_print("Diff direction: ");
+    debug_println(diff.direction());
 
-    driver->tankGo(next.col * cellSize, next.row * cellSize, diff.direction());
+    driver->tankGo(next.col * cellSize, next.row * cellSize);
     frontRgb->flashLED(1);
 }
 
@@ -149,6 +167,7 @@ void makeNextMove(Position next) {
 void waitButton(Button* but) {
     while (1) {
         if (but->read() == LOW) {
+            driver->resetState();
             frontRgb->flashLED(2);
             delay(1000);
             flag = -100;
@@ -166,14 +185,15 @@ void waitCommand() {
     float p = 0;
     float i = 0;
     float d = 0;
-    PidController* pid;
+    PidController nullPid(0, 0, 0);
+    PidController* pid = &nullPid;
 
     const int notifyTime = 8000;
     elapsedMillis timer = 0;
 
     while (1) {
         if (timer > notifyTime) {
-            ble.println("Waiting on command...");
+            debug_println("Waiting on command...");
             timer = 0;
         }
 
@@ -182,57 +202,59 @@ void waitCommand() {
         }
 
         if (command[0] != '\0') {
+            char* token = strtok(command, " ");
+
             // reset maze
-            if (commandIs("reset")) {
+            if (commandIs(token, "reset")) {
                 flag = 0;
                 driver->resetState();
-                ble.println("Robot state reset. Ready for next run.");
+                debug_println("Robot state reset. Ready for next run.");
             }
-            else if (commandIs("fullreset")) {
+            else if (commandIs(token, "fullreset")) {
                 flag = 0;
                 driver->resetState();
                 maze->reset();
-                ble.print("Maze reset.\n");
+                debug_print("Maze reset.\n");
             }
             // go to next cell
-            else if (commandIs("go")) {
+            else if (commandIs(token, "go")) {
                 frontRgb->flashLED(2);
                 delay(1000);
                 frontRgb->flashLED(1);
                 break;
             }
             // continue without interruption
-            else if (commandIs("start")) {
-                ble.println("Running maze.");
+            else if (commandIs(token, "start")) {
+                debug_println("Running maze.");
                 flag = -100;
                 break;
             }
             // move forward
-            else if (commandIs("w")) {
+            else if (commandIs(token, "w")) {
                 driver->forward(cellSize);
             }
             // turn left
-            else if (commandIs("a")) {
+            else if (commandIs(token, "a")) {
                 driver->turnLeft(90);
             }
             // turn right
-            else if (commandIs("d")) {
+            else if (commandIs(token, "d")) {
                 driver->turnRight(90);
             }
-            else if (commandIs("celebrate")) {
-                for (size_t j = 0; j < 10; j++) {
-                    for (size_t i = 0; i < 2; i++) {
-                        frontRgb->flashLED(i);
-                        backRgb->flashLED(i);
-                        delay(50);
-                    }
-                }
+            else if (commandIs(token, "celebrate")) {
+                celebrate();
             }
-            else if (commandIs("tune")) {
+            else if (commandIs(token, "setgoal")) {
+                int row = atoi(strtok(NULL, " "));
+                int col = atoi(strtok(NULL, " "));
+                Position p(row, col);
+                maze->setGoal(p);
+            }
+            else if (commandIs(token, "tune")) {
                 tuning = 0;
-                ble.println("Pick PID to tune. [linear, angular, front tof]");
+                debug_println("Pick PID to tune. [linear, angular, front tof]");
             }
-            else if (commandIs("quit")) {
+            else if (commandIs(token, "quit")) {
                 tuning = -1;
             }
             else if (tuning >= 0) {
@@ -241,7 +263,6 @@ void waitCommand() {
                     i = pid->integral;
                     d = pid->derivative;
 
-                    const char* token = strtok(command, " ");
                     if (commandIs(token, "proportion")) {
                         token = strtok(NULL, " ");
                         p = atof(token);
@@ -257,45 +278,47 @@ void waitCommand() {
                     pid->setTunings(p, i, d);
                 }
                 else if (tuning == 0) {
-                    if (commandIs("linear")) {
+                    if (commandIs(token, "linear")) {
                         tuning = 1;
                     }
-                    else if (commandIs("angular")) {
+                    else if (commandIs(token, "angular")) {
                         tuning = 2;
                     }
-                    else if (commandIs("front tof")) {
+                    else if (commandIs(token, "front tof")) {
                         tuning = 3;
                     }
                 }
 
-                switch(tuning) {
-                    case 1: {
-                        pid = &driver->_pid_x;
-                        ble.print("linear: ");
-                        break;
+                if (tuning > 0) {
+                    switch(tuning) {
+                        case 1: {
+                            pid = &driver->_pid_x;
+                            debug_print("linear: ");
+                            break;
+                        }
+                        case 2: {
+                            pid = &driver->_pid_a;
+                            debug_print("angular: ");
+                            break;
+                        }
+                        case 3: {
+                            pid = &driver->_pid_front_tof;
+                            debug_print("front tof: ");
+                            break;
+                        }
                     }
-                    case 2: {
-                        pid = &driver->_pid_a;
-                        ble.print("angular: ");
-                        break;
-                    }
-                    case 3: {
-                        pid = &driver->_pid_front_tof;
-                        ble.print("front tof: ");
-                        break;
-                    }
+                    pid->printTunings();
+                    debug_println(
+                        "Pick var to tune. [proportion, integral, derivative]");
+                        debug_println("Ex: 'proportion  10.5'");
                 }
-                pid->printTunings();
-                ble.println(
-                    "Pick var to tune. [proportion, integral, derivative]");
-                ble.println("Ex: 'proportion  10.5'");
             }
-            else if (commandIs("help")) {
-                ble.println("Possible commands: "
-                    "[go, start, reset, w, a, d, tune, celebrate, quit]");
+            else if (commandIs(token, "help")) {
+                debug_println("Possible commands: "
+                    "[go, start, reset, w, a, d, tune, celebrate, quit, setgoal]");
             }
             else {
-                ble.println(
+                debug_println(
                     "Invalid command. See the README for valid commands.");
             }
 
@@ -306,10 +329,16 @@ void waitCommand() {
     command[0] = '\0';
 }
 
-bool commandIs(const char* cmd) {
-    return !strcmp(command, cmd) || command[0] == cmd[0];
+bool commandIs(const char* token, const char* cmd, bool firstchar) {
+    return !strcmp(token, cmd) || (firstchar && token[0] == cmd[0]);
 }
 
-bool commandIs(const char* token, const char* cmd) {
-    return !strcmp(token, cmd) || token[0] == cmd[0];
+void celebrate() {
+    for (size_t j = 0; j < 4; j++) {
+        for (size_t i = 0; i < 2; i++) {
+            frontRgb->flashLED(i);
+            backRgb->flashLED(i);
+            delay(50);
+        }
+    }
 }

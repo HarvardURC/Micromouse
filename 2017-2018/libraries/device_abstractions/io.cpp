@@ -54,7 +54,6 @@ Button::Button(int buttonPin) : _buttonPin(buttonPin) {
     pinMode(_buttonPin, INPUT_PULLUP);
 }
 
-
 int Button::read() {
     return digitalRead(_buttonPin);
 }

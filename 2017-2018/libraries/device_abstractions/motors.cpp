@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
-#include <cmath>
+#include <math.h>
 #include "motors.hh"
 #include "bluetooth.hh"
 #include "software_config.hh"
 
 using namespace swconst;
 
-const bool debug = true; // set to true for serial debugging statements
+const bool debug = false; // set to true for serial debugging statements
 
 /* Motor functions */
 Motor::Motor(
@@ -60,10 +60,10 @@ void Motor::moveTicks(long ticks) {
     int speed = 30;
     _encoder.write(0);
     while (_encoder.read() < abs(ticks)) {
-        Serial.print("Encoder Value for motorpin ");
-        Serial.print(_powerPin);
-        Serial.print(" ");
-        Serial.println(_encoder.read());
+        debug_print("Encoder Value for motorpin ");
+        debug_print(_powerPin);
+        debug_print(" ");
+        debug_println(_encoder.read());
         drive(ticks > 0 ? speed : -1 * speed);
     }
     drive(0);
@@ -75,8 +75,8 @@ void Motor::moveTicks(long ticks) {
 float Motor::getPIDSpeed(float setpoint) {
     _pidSetpoint = setpoint;
     _pidInput = _encoder.read();
-    Serial.print("Encdoer: ");
-    Serial.println(_pidInput);
+    debug_print("Encoder: ");
+    debug_println(_pidInput);
     _pid.Compute();
     return _pidOutput;
 }
@@ -110,30 +110,28 @@ Driver::Driver(
     int encoderPinL2,
     int encoderPinR1,
     int encoderPinR2,
-    SensorArray sensors,
-    bool bluetoothOn) :
-    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
-    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
-    _sensors(sensors),
+    SensorArray sensors) :
     _pid_x(p_l, i_l, d_l),
     _pid_y(p_l, i_l, d_l),
     _pid_a(p_a, i_a, d_a),
     _pid_front_tof(p_tof, i_tof, d_tof),
-    _pid_diag_tof(p_diag, i_diag, d_diag)
+    _pid_diag_tof(p_diag, i_diag, d_diag),
+    _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
+    _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
+    _sensors(sensors)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
     motorLimit = motorLimitM0;
     convergenceTime = convergenceTimeM0;
-    bluetoothOn_ = bluetoothOn;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
     clearWallData();
 
     if (imu_weight + encoder_weight + rangefinder_weight != 1) {
-        Serial.println("Angular Weights Do Not Add to 1");
+        debug_println("Angular Weights Do Not Add to 1");
         abort();
     }
 }
@@ -168,7 +166,7 @@ void Driver::moveTicks(long ticks) {
 // Untested
 void Driver::turnDegrees(float degrees) {
     double initialAngle = _sensors.readIMUAngle();
-    movePID(dmod((initialAngle + degrees), 360) - 180);
+    movePID(fmod((initialAngle + degrees), 360) - 180);
 }
 
 
@@ -182,12 +180,12 @@ void Driver::movePID(float setpoint) {
         float rightSpeed = _rightMotor.getPIDSpeed(setpoint);
         // Debugging code
         if (debug) {
-            Serial.print("Left motor speed: ");
-            Serial.print(leftSpeed);
-            Serial.print(" Right motor speed: ");
-            Serial.print(rightSpeed);
-            Serial.print(" Setpoint: ");
-            Serial.println(setpoint);
+            debug_print("Left motor speed: ");
+            debug_print(leftSpeed);
+            debug_print(" Right motor speed: ");
+            debug_print(rightSpeed);
+            debug_print(" Setpoint: ");
+            debug_println(setpoint);
         }
         // delay(500);
         if (fabs(leftSpeed) > 1 && fabs(rightSpeed) > 1) {
@@ -200,49 +198,45 @@ void Driver::movePID(float setpoint) {
 }
 
 
-void Driver::computePids() {
+void Driver::computePids(float init_xpos, float init_ypos,
+    float angle_travelled) {
+    _pid_x.input = fabs(curr_xpos - init_xpos);
+    _pid_y.input = fabs(curr_ypos - init_ypos);
+    _pid_a.input = angle_travelled;
+
     _pid_x.compute();
     _pid_y.compute();
     _pid_a.compute();
 }
 
 
-void Driver::debugPidMovement() {
-    Serial.print("x input: ");
-    Serial.print(_pid_x.input);
-    Serial.print(" x output: ");
-    Serial.print(_pid_x.output);
-    Serial.print(" x setpoint: ");
-    Serial.print(_pid_x.setpoint);
-    Serial.print(" xpos: ");
-    Serial.println(curr_xpos);
+void Driver::debugPidMovement(float angle_travelled) {
+    debug_printvar(_pid_x.input);
+    debug_printvar(_pid_x.output);
+    debug_printvar(_pid_x.setpoint);
+    debug_printvar(curr_xpos);
+    debug_println(" ");
 
-    Serial.print("y input: ");
-    Serial.print(_pid_y.input);
-    Serial.print(" y output: ");
-    Serial.print(_pid_y.output);
-    Serial.print(" y setpoint: ");
-    Serial.print(_pid_y.setpoint);
-    Serial.print(" ypos: ");
-    Serial.println(curr_ypos);
+    debug_printvar(_pid_y.input);
+    debug_printvar(_pid_y.output);
+    debug_printvar(_pid_y.setpoint);
+    debug_printvar(curr_ypos);
+    debug_println(" ");
 
-    Serial.print("a input: ");
-    Serial.print(_pid_a.input);
-    Serial.print(" a output: ");
-    Serial.print(_pid_a.output);
-    Serial.print(" a setpoint: ");
-    Serial.print(_pid_a.setpoint);
-    Serial.print(" apos: ");
-    Serial.println(curr_angle);
-    /*Serial.print(" a setpoint: ");
-    Serial.print(_pid_a.setpoint / degToRad);
-    Serial.print(" curr_angle: ");
-    Serial.println(curr_angle / degToRad);*/
+    this->debugAngle(angle_travelled);
 
-    Serial.print("_v_left: ");
-    Serial.print(_v_left);
-    Serial.print(" _v_right: ");
-    Serial.println(_v_right);
+    debug_printvar(_v_left);
+    debug_printvar(_v_right);
+    debug_println(" ");
+}
+
+void Driver::debugAngle(float angle_travelled) {
+    debug_printvar(_pid_a.input);
+    debug_printvar(_pid_a.output);
+    debug_printvar(_pid_a.setpoint);
+    debug_printvar(angle_travelled);
+    debug_printvar(curr_angle);
+    debug_println(" ");
 }
 
 
@@ -258,12 +252,12 @@ void Driver::debugPidMovement() {
  */
 void Driver::readWalls() {
     /* debug code */
-    if (bluetoothOn_) {
-        ble.print("Walls read at ");
-        ble.print("x=");
-        ble.println(curr_xpos);
-        ble.print("y=");
-        ble.println(curr_ypos);
+    if (debug) {
+        debug_print("Walls read at ");
+        debug_print("x=");
+        debug_print(curr_xpos);
+        debug_print(" y=");
+        debug_println(curr_ypos);
     }
     /* end debug code */
 
@@ -289,24 +283,23 @@ void Driver::clearWallData() {
 
 
 /* minTurn()
- * Calculates the right goal_angle to feed into `go` to get a minimal turn.
- * Because our current angle variable isn't restricted to the [0, 2PI) range,
- * we need to use values within PI of the current angle variable to get
- * minimal turns. Therefore we do this conversion to the proper bracket. */
+ * Calculates the minimum angle needed to turn from curr_angle to goal_angle
+ * considering both left turn and right turn options.
+ */
 float minTurn(float goal_angle, float curr_angle) {
-    // Get it into the same 2Pi bracket as curr_angle
-    // e.g. [0, 2 Pi), [-2Pi, 0)
-    while (goal_angle > curr_angle) {
-        goal_angle -= 2 * PI;
-    }
-    while (goal_angle < curr_angle) {
-        goal_angle += 2 * PI;
-    }
-    if (goal_angle - curr_angle > PI) {
-        return goal_angle - (2 * PI);
+    goal_angle = wrapAngle(goal_angle);
+    return wrapAngle(goal_angle - curr_angle + PI) - PI;
+}
+
+
+/* heading()
+ * Returns 0 for +y axis, 1 for -x axis, 2 for -y axis, 3 for +x axis */
+int Driver::heading(float goal_x, float goal_y) {
+    if (fabs(goal_y - curr_ypos) > fabs(goal_x - curr_xpos)) {
+        return goal_y > curr_ypos ? 0 : 2;
     }
     else {
-        return goal_angle;
+        return goal_x > curr_xpos ? 3 : 1;
     }
 }
 
@@ -318,9 +311,6 @@ void Driver::calculateInputPWM(bool angle_flag,
     float lin_velocity = angle_flag ? 0 :
         sqrt(pow(_pid_x.output, 2) + pow(_pid_y.output, 2));
     float ang_velocity = _pid_a.output;
-
-    Serial.print("ang_velocity: ");
-    Serial.println(ang_velocity);
 
     // L is width of robot
     // todo: makes sure ceiling doesnt drown out angle correction
@@ -354,40 +344,34 @@ void Driver::calculateInputPWM(bool angle_flag,
 
 
 /* Moves based on absolute position on a coordinate grid */
-void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
-    unsigned int interval = refreshMs;
+void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
+    float sample_t = 1. / interval;
     elapsedMillis timeElapsed = 1000;
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis fuckupTimer = 0;
     int sensorCounter = 0;
 
-    if (debug) {
-        Serial.print("Old goal_a: ");
-        Serial.print(goal_a);
-    }
+    // between -PI to PI
     goal_a = minTurn(goal_a, curr_angle);
-    if (debug) {
-        Serial.print(" New goal_a: ");
-        Serial.println(goal_a);
-    }
 
-    _leftMotor._encoder.write(0);
-    _rightMotor._encoder.write(0);
-    long enc_left = 0;
-    long enc_right = 0;
+    EncoderTicker leftEnc(&_leftMotor._encoder);
+    EncoderTicker rightEnc(&_rightMotor._encoder);
+
     const float init_xpos = curr_xpos;
     const float init_ypos = curr_ypos;
+    const float init_angle = curr_angle;
     _pid_x.setpoint = fabs(goal_x - init_xpos);
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
     int end_iter = 0;
-    int overflow_count = floor(curr_angle / (2 * PI));
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
+    float rangefinder_angle = 0;
+    float init_imu_angle = _sensors.readIMUAngle();
 
-    debugPidMovement();
+
+    float angle_travelled = 0;
 
     do {
         /* stores sensor readings to detect walls
@@ -396,51 +380,45 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
             sensorTimer > sensorRefreshTime &&
             sensorCounter < 3)
         {
-            readWalls();
             sensorTimer = 0;
             sensorCounter++;
+            readWalls();
         }
 
         if (timeElapsed > interval) {
+            // reset sample time
+            timeElapsed = 0;
+
             // do all pid output related on a separate loop
             if (pidTimer > pidSampleTime) {
                 pidTimer = 0;
 
-                _pid_x.input = fabs(curr_xpos - init_xpos);
-                _pid_y.input = fabs(curr_ypos - init_ypos);
-                _pid_a.input = curr_angle;
-                computePids();
+                computePids(init_xpos, init_ypos, angle_travelled);
 
                 // (same calcuation as temp_a in tankGo)
                 float travel_angle = atan2(
                     -1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
-                float angle_diff = fabs(fmod(curr_angle, 2 * PI) -
-                    fmod(travel_angle, 2 * PI));
+                float angle_diff = fabs(wrapAngle(curr_angle) -
+                    wrapAngle(travel_angle));
 
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
                 drive(_v_left, _v_right);
 
-                /* Begin debug code */
-                if (debug) {
-                    Serial.print("Timer: ");
-                    Serial.println(fuckupTimer);
-                    debugPidMovement();
-                }
-                if (bluetoothOn_ && bluetoothTimer >= 1000) {
-                    ble.print("_v_left: ");
-                    ble.print(_v_left);
-                    ble.print(" _v_right: ");
-                    ble.println(_v_right);
+                if (debug && bluetoothTimer >= 1000) {
+                    // debug_printvar(_v_left);
+                    // debug_printvar(_v_right);
+                    debug_println(" ");
+                    debugAngle(angle_travelled);
+                    debug_printvar(init_angle);
                     bluetoothTimer = 0;
                 }
-                /* End debug code */
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
                 if ((withinError(goal_x, curr_xpos, errorX) &&
                      withinError(goal_y, curr_ypos, errorY) &&
-                     withinError(goal_a, curr_angle, errorA)) ||
+                     withinError(goal_a, angle_travelled, errorA)) ||
                     (_v_left < motorCloseEnough && _v_right < motorCloseEnough) ||
                     // perpendicular to goal direction means it's either
                     // right next to destination, or it's hopeless anyway
@@ -457,56 +435,63 @@ void Driver::go(float goal_x, float goal_y, float goal_a, int refreshMs) {
                 }
             }
 
-            // robot state updates
-            float sample_t = 1. / interval;
-            float true_v_left = (_leftMotor.readTicks() - enc_left) *
+            /* Update positional state, curr_xpos and curr_ypos */
+            float true_v_left = leftEnc.diffLastRead() *
                 ticksToCm / sample_t;
-            enc_left = _leftMotor.readTicks();
-            float true_v_right = (_rightMotor.readTicks() - enc_right) *
+            float true_v_right = rightEnc.diffLastRead() *
                 ticksToCm / sample_t;
-            enc_right = _rightMotor.readTicks();
 
-            float true_ang_v = (true_v_right - true_v_left) / L;
             curr_xpos += (true_v_left + true_v_right) / 2  *
                 sample_t * -1 * sin(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 *
                 sample_t * cos(curr_angle);
-            float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
+            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
+            float imu_rads = fmod(init_imu_angle - _sensors.readIMUAngle(),360) * degToRad;
+
 
             // integrates rangefinder offset
             if (!angle_flag) {
+                float alpha = 0.7;
                 float left_diag_dist = _sensors.readShortTof(0);
                 float right_diag_dist = _sensors.readShortTof(2);
-                if (left_diag_dist >= 20 && left_diag_dist <= 70) {
-                    if (right_diag_dist >= 20 && right_diag_dist <= 70) {
+                if (left_diag_dist >= 20 && left_diag_dist <= 60) {
+                    if (right_diag_dist >= 30 && right_diag_dist <= 50) {
                         // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
                     }
+                    else {
+                        //rangefinder_angle =  alpha * cos(30./left_diag_dist)
+                    }
                 }
-                Serial.println(curr_xpos);
+                float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
+                if (!isnanf(ratio) && !isinff(ratio)) {
+                    //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
+                    rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
+                }
+                Serial.print("L: ");
+                Serial.println(left_diag_dist);
+                Serial.print("R: ");
+                Serial.println(right_diag_dist);
+                // debug_println(curr_xpos);
             }
 
+            /* Update angular state, curr_angle */
+            float true_ang_v = (true_v_right - true_v_left) / L;
+            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
 
-            /* used for if the current angle `a` > 2PI or `a` < 0 to correct
-            the IMU angle. */
-            float overflow = overflow_count * 2 * PI;
-            if (fabs(curr_angle - (imu_rads + overflow)) > PI) {
-                if (curr_angle > imu_rads + overflow) {
-                    overflow_count++;
-                }
-                else {
-                    overflow_count--;
-                }
-            }
-            curr_angle = imu_weight * (imu_rads + overflow_count * 2 * PI) +
-                encoder_weight * (curr_angle + true_ang_v * sample_t) +
-                rangefinder_weight;
-            // reset sample time
-            timeElapsed = 0;
+
+            float angle_change = imu_weight * imu_rads +
+                encoder_weight * (true_ang_v * sample_t) +
+                rangefinder_weight * rangefinder_angle;
+
+            curr_angle = wrapAngle(curr_angle + angle_change);
+
+            // the current angle wrapped from 0 to 2PI
+            angle_travelled += angle_change;
         }
     } while (1);
 
     brake();
-    if (bluetoothOn_) ble.println("Done with movement.");
+    if (debug) debug_println("Done with movement.");
 }
 
 
@@ -530,26 +515,16 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
- // goal_a parameter obselete!!
-void Driver::tankGo(float goal_x, float goal_y, float goal_a) {
+void Driver::tankGo(float goal_x, float goal_y) {
     float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
-    if (bluetoothOn_) {
-        ble.print("goal_a: ");
-        ble.print(goal_a);
-        ble.print(" temp_a: ");
-        ble.println(temp_a);
-    }
-    else if (debug) {
-        Serial.print("goal_a: ");
-        Serial.print(goal_a);
-        Serial.print(" temp_a: ");
-        Serial.println(temp_a);
+    if (debug) {
+        debug_printvar(temp_a);
     }
 
     if (fabs(temp_a - curr_angle) > PI / 12) {
         // Turn
-        Serial.println(temp_a);
+        debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
         // Go forward
         go(goal_x, goal_y, temp_a);
@@ -613,7 +588,7 @@ void Driver::realign(int goal_dist) {
     brake();
 
     // correct state based on which wall it realigned on
-    int direction = round(fmod(curr_angle, 2 * PI) / (PI / 2));
+    int direction = round(curr_angle) / (PI / 2);
 
     // Pointing east or west -> x-axis
     if (direction % 2 == 1) {

@@ -40,6 +40,7 @@ class Maze {
         Position chooseNextCell(Position pos);
         void reset();
         void updatePosition(Position p);
+        void setGoal(Position p);
         void setBoundaryWalls();
 
         void printWallsCell(Position p);
@@ -48,8 +49,8 @@ class Maze {
 
         /* Current cell in the maze of the robot */
         Position currPos;
-        Position goalPos;
         Position startPos;
+        Position goalPos;
 
         /* Global counter, keeps track of run number to set speed and
          * destination cell */

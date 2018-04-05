@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "maze.hh"
 #include "bluetooth.hh"
+#include "helpers.hh"
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -55,25 +56,18 @@ float Position::direction() {
 
 
 void Position::print(int bluetooth) {
-    if (bluetooth) {
-        ble.print("Position x=");
-        ble.print(col);
-        ble.print(" y=");
-        ble.print(row);
-        ble.println(".");
-    }
-    else {
-        Serial.print("Position x=");
-        Serial.print(col);
-        Serial.print(" y=");
-        Serial.print(row);
-        Serial.println(".");
-    }
+    debug_print("Position x=");
+    debug_print(col);
+    debug_print(" y=");
+    debug_print(row);
+    debug_println(".");
 }
 
 
-Maze::Maze() : startPos(STARTROW, STARTCOL), goalPos(ENDROW, ENDCOL),
-    currPos(STARTROW, STARTCOL) {
+Maze::Maze()
+    : currPos(STARTROW, STARTCOL),
+      startPos(STARTROW, STARTCOL),
+      goalPos(ENDROW, ENDCOL) {
     initializeMaze();
 }
 
@@ -139,7 +133,7 @@ void Maze::floodMaze() {
     // if we're on an even run, set the destination to be the center of the maze
     if (counter % 2 == 0) {
         stackPointer = 1;
-        cellStack[0] = (16 * ENDROW) + ENDCOL;
+        cellStack[0] = (16 * goalPos.row) + goalPos.col;
         // stackPointer = 4;
         // cellStack[0] = (16 * ENDROW) + ENDCOL;
         // cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
@@ -149,7 +143,7 @@ void Maze::floodMaze() {
     // otherwise, the destination is the start of the maze
     else {
         stackPointer = 1;
-        cellStack[0] = (16 * STARTROW) + STARTCOL;
+        cellStack[0] = (16 * startPos.row) + startPos.col;
     }
 
     // as long as the stack is non-empty
@@ -204,17 +198,17 @@ void Maze::printWallsCell(Position p) {
     unsigned char cell = wallMap[p.offset()];
     char tmp;
 
-    ble.print(" ");
+    debug_print(" ");
     tmp = cell & NORTH ? '_' : ' ';
-    ble.println(tmp);
+    debug_println(tmp);
     tmp = cell & WEST ? '|' : ' ';
-    ble.print(tmp);
-    ble.print(" ");
+    debug_print(tmp);
+    debug_print(" ");
     tmp = cell & EAST ? '|': ' ';
-    ble.println(tmp);
-    ble.print(" ");
+    debug_println(tmp);
+    debug_print(" ");
     tmp = cell & SOUTH ? '-' : ' ';
-    ble.println(tmp);
+    debug_println(tmp);
 }
 
 
@@ -254,6 +248,12 @@ void Maze::reset() {
 
 void Maze::updatePosition(Position p) {
     currPos = p;
+}
+
+void Maze::setGoal(Position p) {
+    goalPos = p;
+    debug_print("Goal set to ");
+    p.print();
 }
 
 
@@ -303,7 +303,6 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
                 }
             }
         }
-        ble.println(" ");
     }
 }
 
@@ -347,7 +346,7 @@ Position Maze::chooseNextCell(Position pos) {
                 lowest = cellMap[test_offset];
                 lowestPos = getPosition(test_offset);
                 n_cells++;
-                ble.print("Keeping ");
+                debug_print("Keeping ");
                 lowestPos.print(1);
             }
             else {

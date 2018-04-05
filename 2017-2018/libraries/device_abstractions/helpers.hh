@@ -1,25 +1,48 @@
 /* Helper functions */
+#include <Arduino.h>
 #include <PID_v1.h>
+#include <Encoder.h>
+#include "bluetooth.hh"
 
 #ifndef helpers_hh
 #define helpers_hh
 
-/* Math functions */
-// Function for taking the modulus of a double e.g. `200.56 % 10` = 0.56
-// From https://stackoverflow.com/questions/9138790/cant-use-modulus-on-doubles
-template<typename T, typename U>
-constexpr T dmod (T x, U mod)
-{
-    return !mod ? x :
-        static_cast<long long>(x) % mod + x - static_cast<long long>(x);
-}
+ /* Prints the variable's name followed by the value.
+  * Ex. debug_printvar(v_left) => (to log) "v_left: -17.9" */
+#define debug_printvar(var) debug_print(#var); debug_print(": "); debug_println(var)
 
+/* Math functions */
 bool withinError(float a, float b, float error);
+inline float wrapAngle(float angle) {
+    return angle - 2 * PI * floor(angle / (2 * PI));
+}
 
 
 /* PWM value functions */
 int floorPWM(int speed, int floor);
 float ceilingPWM(float speed, float otherspeed, int limit);
+
+
+/* Debugging functions
+ *
+ * Prints to bluetooth if connected, otherwise prints to Serial monitor. */
+template<typename T>
+void debug_print(T arg) {
+    if (bleReady()) {
+        ble.print(arg);
+    } else {
+        Serial.print(arg);
+    }
+}
+
+template<typename T>
+void debug_println(T arg) {
+    if (bleReady()) {
+        ble.println(arg);
+    } else {
+        Serial.println(arg);
+    }
+}
 
 
 /* A wrapper class to improve the usability of the Arduino PID library. */
@@ -50,6 +73,17 @@ class PidController {
         float setpoint;
     private:
         PIDT<float> _pid;
+};
+
+/* A wrapper class for encoders to keep track of last accessed tick value */
+class EncoderTicker {
+    public:
+        EncoderTicker(Encoder* e_);
+
+        long diffLastRead();
+    private:
+        Encoder* e;
+        long lastVal;
 };
 
 #endif

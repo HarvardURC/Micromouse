@@ -58,8 +58,7 @@ class Driver {
             int encoderPinL2,
             int encoderPinR1,
             int encoderPinR2,
-            SensorArray sensors,
-            bool bluetoothOn=false
+            SensorArray sensors
         );
 
         // Moves the motors forward at the input PWM value. PWMs to motors
@@ -75,19 +74,23 @@ class Driver {
 
         void movePID(float setpoint);
 
-        void computePids();
+        void computePids(float init_xpos, float init_ypos,
+                         float unbounded_angle);
 
         // Directs to the absolute position at goal_x, goal_y with an
         // angle of goal_a wrt the x-axis
-        void go(float goal_x, float goal_y, float goal_a, int refreshMs = 1);
-        void tankGo(float goal_x, float goal_y, float goal_a);
+        void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
+        void tankGo(float goal_x, float goal_y);
         // sets _v_left and _v_right variables based on x, y, a PIDs
         void calculateInputPWM(bool angle_flag,
             float goal_x, float goal_y, float angle_diff);
         // Clears the robot state variables
         void resetState();
         // Prints out the output, setpoint, and state variables for each pid
-        void debugPidMovement();
+        void debugPidMovement(float unbounded_angle);
+        void debugAngle(float unbounded_angle);
+
+        int heading(float goal_x, float goal_y);
 
         void clearWallData();
 
@@ -124,7 +127,6 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
-        bool bluetoothOn_;
 
         float _v_left = 0;
         float _v_right = 0;

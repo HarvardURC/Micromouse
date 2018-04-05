@@ -22,9 +22,18 @@ Config files for the robot that are populated with Teensy pin numbers.
 3. After connecting, the back LED should flash green indicating it is ready for commands. 
 
 #### Commands
-- 'g' : make a single cell movement
-- 'c' : continue the mapping the maze until reaching the goal, and then return to the start
-- 'r' : resets the internal maze and robot state to start a fresh mapping run
+- 'reset' : resets the internal state of the robot to start a new run without accumulated error from the previous run
+- 'fullreset' : additionally resets the wall map of the maze to start a fresh mapping run
+- 'go' : advances a single cell in the maze
+- 'start' : runs the maze until completion and returns to the start
+- Remote controls
+    + 'w' : advances forward one cell
+    + 'a' : turns left 90 degrees
+    + 'd' : turns right 90 degrees
+- 'celebrate' : flashes the LEDs in a celebratory pattern
+- 'setgoal x y' : sets the goal of the maze to be row 'x' and column 'y'
+- 'tune' : enters the tuning menu for the PIDs
+- 'help' : shows available commands
 
 ### mouse_testing
 #### Setup
