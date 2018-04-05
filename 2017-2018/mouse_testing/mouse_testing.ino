@@ -75,6 +75,8 @@ void loop() {
             switch(test_num) {
                 // LEVEL 1 TESTS
                 case 0:
+                    driver->go(2, 18, 0);
+                    /* odometry circuit 
                     driver->forward(5.5);
                     driver->resetState();
                     
@@ -87,7 +89,7 @@ void loop() {
                     driver->tankGo(-18, 18, 0);
                     driver->tankGo(-18, 36, 0);
                     driver->tankGo(0, 36, 0);
-                    driver->tankGo(0, 0, 0);
+                    driver->tankGo(0, 0, 0);*/
                    
                 
                     if (debug) Serial.println("10cm forward");
