@@ -292,6 +292,18 @@ float minTurn(float goal_angle, float curr_angle) {
 }
 
 
+/* heading()
+ * Returns 0 for +y axis, 1 for -x axis, 2 for -y axis, 3 for +x axis */
+int Driver::heading(float goal_x, float goal_y) {
+    if (fabs(goal_y - curr_ypos) > fabs(goal_x - curr_xpos)) {
+        return goal_y > curr_ypos ? 0 : 2;
+    }
+    else {
+        return goal_x > curr_xpos ? 3 : 1;
+    }
+}
+
+
 void Driver::calculateInputPWM(bool angle_flag,
     float goal_x, float goal_y, float angle_diff)
 {
@@ -361,6 +373,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float last_rangefinder_angle = 0;
     float rangefinder_angle = 0;
     float rangefinder_change = 0;
+
+    int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
+    float ignore_init_pos = 0;
+    const float distance_limit = 18; // if ignoring wall, ignore for 18cm
 
 
     float angle_travelled = 0;
@@ -445,21 +461,78 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
             // integrates rangefinder offset
             if (!angle_flag) {
+                switch (heading(goal_x, goal_y)) {
+                    case 0: 
+                    case 2: {
+                        ignore_init_pos = curr_ypos;
+                        break;
+                    }
+                    case 1: 
+                    case 3: {
+                        ignore_init_pos = curr_xpos;
+                        break;
+                    }
+                }
                 float alpha = 0.7;
                 float left_diag_dist = _sensors.readShortTof(0);
                 float right_diag_dist = _sensors.readShortTof(2);
+
+                // use both sensors
                 if (left_diag_dist >= 20 && left_diag_dist <= 60) {
-                    if (right_diag_dist >= 20 && right_diag_dist <= 60) {
-                        float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
+                    if (right_diag_dist >= 20 && right_diag_dist <= 60 && ignore_rangefinder == 0) {
+                        ignore_rangefinder = 0;
+                        float ratio =  acosf(20./right_diag_dist) - acosf(20./left_diag_dist);
                         if (!isnanf(ratio) && !isinff(ratio)) {
                             //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-                            rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
+                            rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                             last_rangefinder_angle = rangefinder_angle; 
                         }
                     }
-                    else {
-                        //rangefinder_angle =  alpha * cos(30./left_diag_dist)
+                    // use left
+                    else if (ignore_rangefinder == 0 || ignore_rangefinder == 1) {
+                        ignore_rangefinder = 1;
+                        float ratio = PI/3 - acosf(20./left_diag_dist);
+                        if (!isnanf(ratio) && !isinff(ratio)) {
+                            rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                            last_rangefinder_angle = rangefinder_angle; 
+                        }
+                    }
+                }
+                // use right
+                else if (right_diag_dist >= 20 && right_diag_dist <= 60) {
+                    if (ignore_rangefinder == 0 || ignore_rangefinder == 2) {
+                        ignore_rangefinder = 2;
+                        float ratio = acosf(20./right_diag_dist) - PI/3;
+                        if (!isnanf(ratio) && !isinff(ratio)) {
+                            rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                            last_rangefinder_angle = rangefinder_angle; 
+                        }
+                    }
+                }
+                // use none
+                else {
+                    ignore_rangefinder = 3;
+                }
+
+                switch (heading(goal_x, goal_y)) {
+                    case 0: 
+                    case 2: {
+                        if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
+                            ignore_init_pos = 0;
+                            ignore_rangefinder = 0;
+                        }
+                        break;
+                    }
+                    case 1: 
+                    case 3: {
+                        if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
+                            ignore_init_pos = 0;
+                            ignore_rangefinder = 0;
+                        }
+                        break;
                     }
                 }
                 

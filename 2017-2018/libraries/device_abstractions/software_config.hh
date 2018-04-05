@@ -12,9 +12,9 @@ namespace swconst {
     /* Error thresholds */
     const int encoderError = 5000; // error threshold for the encoder values
 
-    const float errorX = 0.9; // centimeters .9
+    const float errorX = 0.9; // centimeters
     const float errorY = errorX;
-    const float errorA = 0.2; // radians .2
+    const float errorA = 0.1; // radians
 
     const float perpendicularError = 0.5; // range to 90 degrees to terminate move
 
@@ -39,7 +39,7 @@ namespace swconst {
     const float degToRad = PI / 180; // converstion ratio
 
     /* PWM limits */
-    const int motorFloor = 20; // lowest motor PWM value (IN TUNING)
+    const int motorFloor = 25; // lowest motor PWM value (IN TUNING)
     const int motorCloseEnough = 20; // motor value considered close to target (IN TUNING) 15
 
     /* Sensor constants */
@@ -49,11 +49,11 @@ namespace swconst {
 
     /* Mapping phase constants */
     const int convergenceTimeM0 = 20; // milliseconds
-    const int motorLimitM0 = 50; // highest motor PWM value
+    const int motorLimitM0 = 60; // highest motor PWM value
 
     /* Mapping phase PID vals */
     const float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
-    const float p_a = 20, i_a = 0, d_a = 0; // angle PID
+    const float p_a = 12, i_a = 0, d_a = 0; // angle PID
     const float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
     const float p_diag = 2, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
 
