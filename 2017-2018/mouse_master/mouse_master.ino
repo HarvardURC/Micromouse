@@ -22,10 +22,10 @@ Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
-int flag = 0;
+bool command_flag = true; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
-char command[BUFSIZE];
-bool bluetooth = true;
+char command[BUFSIZE]; // buffer to hold bluetooth commands
+bool bluetooth = true; // activate bluetooth (and command system)
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -81,15 +81,12 @@ void setup() {
         bluetoothInitialize();
         command[0] = '\0';
     }
-
     backRgb->flashLED(1);
 
+    // front button will kill any running process
     attachInterrupt(frontButton, abort_isr, RISING);
 }
 
-void abort_isr() {
-    abort();
-}
 
 void loop() {
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
@@ -99,14 +96,14 @@ void loop() {
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
                 driver->resetState();
-            flag = 0;
+            command_flag = true;
         }
         else if (maze->currPos == maze->goalPos) {
             celebrate();
         }
     }
 
-    if (flag >= 0) {
+    if (command_flag) {
         debug_println("Waiting on command");
         if (bluetooth) {
             waitCommand();
@@ -145,7 +142,6 @@ void loop() {
     driver->clearWallData();
 
     maze->printWallsCell(next_move);
-    flag++;
 }
 
 
@@ -163,22 +159,33 @@ void makeNextMove(Position next) {
 }
 
 
-/* Waits on a button press */
+void abort_isr() {
+    abort();
+}
+
+
+/* waitButton()
+ * Waits on a button press. When pressed it starts the run of the maze.
+ */
 void waitButton(Button* but) {
     while (1) {
         if (but->read() == LOW) {
             driver->resetState();
             frontRgb->flashLED(2);
             delay(1000);
-            flag = -100;
             frontRgb->flashLED(1);
+
+            command_flag = false;
             break;
         }
     }
 }
 
 
-/* Waits on a command from bluetooth controller */
+/* waitCommand()
+ * Waits on a command from bluetooth controller.
+ * See README.md for valid commands.
+ */
 void waitCommand() {
     // command interface menu vals
     int tuning = -1;
@@ -206,12 +213,10 @@ void waitCommand() {
 
             // reset maze
             if (commandIs(token, "reset")) {
-                flag = 0;
                 driver->resetState();
                 debug_println("Robot state reset. Ready for next run.");
             }
             else if (commandIs(token, "fullreset")) {
-                flag = 0;
                 driver->resetState();
                 maze->reset();
                 debug_print("Maze reset.\n");
@@ -226,7 +231,7 @@ void waitCommand() {
             // continue without interruption
             else if (commandIs(token, "start")) {
                 debug_println("Running maze.");
-                flag = -100;
+                command_flag = false;
                 break;
             }
             // move forward
@@ -329,10 +334,19 @@ void waitCommand() {
     command[0] = '\0';
 }
 
+
+/* commandIs()
+ * Checks if the token is the same string as a command. If firstchar is
+ * enabled, it passes if the first character is the same.
+ */
 bool commandIs(const char* token, const char* cmd, bool firstchar) {
     return !strcmp(token, cmd) || (firstchar && token[0] == cmd[0]);
 }
 
+
+/* celebrate()
+ * Flashes the LEDs in celebration.
+ */
 void celebrate() {
     for (size_t j = 0; j < 4; j++) {
         for (size_t i = 0; i < 2; i++) {

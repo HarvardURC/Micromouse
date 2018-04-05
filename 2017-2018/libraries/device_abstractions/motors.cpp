@@ -69,19 +69,6 @@ void Motor::moveTicks(long ticks) {
     drive(0);
 }
 
-
-// Returns the speed the motor should go according to the PID to acheive the
-// setpoint.
-float Motor::getPIDSpeed(float setpoint) {
-    _pidSetpoint = setpoint;
-    _pidInput = _encoder.read();
-    debug_print("Encoder: ");
-    debug_println(_pidInput);
-    _pid.Compute();
-    return _pidOutput;
-}
-
-
 // Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
 void Motor::moveTicksPID(long ticks) {
     _pidSetpoint = ticks;
@@ -97,6 +84,19 @@ void Motor::moveTicksPID(long ticks) {
     }
     drive(0);
 }
+
+// Returns the speed the motor should go according to the PID to acheive the
+// setpoint.
+float Motor::getPIDSpeed(float setpoint) {
+    _pidSetpoint = setpoint;
+    _pidInput = _encoder.read();
+    debug_print("Encoder: ");
+    debug_println(_pidInput);
+    _pid.Compute();
+    return _pidOutput;
+}
+
+
 
 
 /* Driver functions */
@@ -160,13 +160,6 @@ void Driver::brake() {
 void Driver::moveTicks(long ticks) {
     _leftMotor.moveTicks(ticks);
     _rightMotor.moveTicks(ticks);
-}
-
-
-// Untested
-void Driver::turnDegrees(float degrees) {
-    double initialAngle = _sensors.readIMUAngle();
-    movePID(fmod((initialAngle + degrees), 360) - 180);
 }
 
 
