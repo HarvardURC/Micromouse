@@ -461,25 +461,27 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
             // integrates rangefinder offset
             if (!angle_flag) {
-                switch (heading(goal_x, goal_y)) {
-                    case 0: 
-                    case 2: {
-                        ignore_init_pos = curr_ypos;
-                        break;
-                    }
-                    case 1: 
-                    case 3: {
-                        ignore_init_pos = curr_xpos;
-                        break;
+                if (ignore_rangefinder == 0) {
+                    switch (heading(goal_x, goal_y)) {
+                        case 0: 
+                        case 2: {
+                            ignore_init_pos = curr_ypos;
+                            break;
+                        }
+                        case 1: 
+                        case 3: {
+                            ignore_init_pos = curr_xpos;
+                            break;
+                        }
                     }
                 }
-                float alpha = 0.7;
+                float alpha = 0.8;
                 float left_diag_dist = _sensors.readShortTof(0);
                 float right_diag_dist = _sensors.readShortTof(2);
 
                 // use both sensors
-                if (left_diag_dist >= 20 && left_diag_dist <= 60) {
-                    if (right_diag_dist >= 20 && right_diag_dist <= 60 && ignore_rangefinder == 0) {
+                if (left_diag_dist >= 20 && left_diag_dist <= 55) {
+                    if (right_diag_dist >= 20 && right_diag_dist <= 55 && ignore_rangefinder == 0) {
                         ignore_rangefinder = 0;
                         float ratio =  acosf(20./right_diag_dist) - acosf(20./left_diag_dist);
                         if (!isnanf(ratio) && !isinff(ratio)) {
@@ -490,10 +492,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         }
                     }
                     // use left
-                    else if (ignore_rangefinder == 0 || ignore_rangefinder == 1) {
+                    else if (ignore_rangefinder != 3) {
                         ignore_rangefinder = 1;
                         float ratio = PI/3 - acosf(20./left_diag_dist);
-                        if (!isnanf(ratio) && !isinff(ratio)) {
+                        if (!isnanf(ratio) && ! isinff(ratio)) {
                             rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                             rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                             last_rangefinder_angle = rangefinder_angle; 
@@ -501,8 +503,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     }
                 }
                 // use right
-                else if (right_diag_dist >= 20 && right_diag_dist <= 60) {
-                    if (ignore_rangefinder == 0 || ignore_rangefinder == 2) {
+                else if (right_diag_dist >= 20 && right_diag_dist <= 55) {
+                    if (ignore_rangefinder != 3) {
                         ignore_rangefinder = 2;
                         float ratio = acosf(20./right_diag_dist) - PI/3;
                         if (!isnanf(ratio) && !isinff(ratio)) {
@@ -515,13 +517,18 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 // use none
                 else {
                     ignore_rangefinder = 3;
+                    encoder_weight = 1;
+                    rangefinder_weight = 0;
+                    rangefinder_angle = goal_a;
+                    rangefinder_change = 0;
+                    last_rangefinder_angle = goal_a;
+
                 }
 
                 switch (heading(goal_x, goal_y)) {
                     case 0: 
                     case 2: {
                         if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
-                            ignore_init_pos = 0;
                             ignore_rangefinder = 0;
                         }
                         break;
@@ -529,7 +536,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     case 1: 
                     case 3: {
                         if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
-                            ignore_init_pos = 0;
                             ignore_rangefinder = 0;
                         }
                         break;
