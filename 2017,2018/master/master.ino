@@ -11,7 +11,7 @@
 #define SOUTH 2
 #define WEST 1
 
-#define CENTER_ROW 0
+#define CENTER_ROW 2
 #define CENTER_COL 2
 
 #define START_ROW 0
@@ -159,10 +159,14 @@ void Janus() {
     for (int i = 0; i < moveIndex; i++) {
       quickestPath[i] = (quickestPath[i] + 2) % 4;
     }
-    for (int i = 0; i < moveIndex; i++) {
-      turn(quickestPath[i]);
-      motors->forward();
-    }
+//    Serial.println("the path back to the start: ");
+//    for (int i = 0; i < moveIndex; i++) {
+//      turn(quickestPath[i]);
+//      Serial.print(quickestPath[i]);
+//      motors->forward();
+//      delay(1000);
+//    }
+    motors->turnAroundLeft();
     return;
   }
 
