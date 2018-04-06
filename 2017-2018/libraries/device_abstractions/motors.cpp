@@ -129,11 +129,6 @@ Driver::Driver(
     digitalWrite(motorModePin, HIGH);
 
     clearWallData();
-
-    if (imu_weight + encoder_weight + rangefinder_weight != 1) {
-        debug_println("Angular Weights Do Not Add to 1");
-        abort();
-    }
 }
 
 
@@ -350,6 +345,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
+    elapsedMillis printTimer = 0;
     int sensorCounter = 0;
 
     // between -PI to PI
@@ -370,9 +366,13 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float last_imu_angle = _sensors.readIMUAngle();
     float imu_angle = 0;
     float imu_change = 0;
-    float last_rangefinder_angle = 0;
-    float rangefinder_angle = 0;
+    float last_rangefinder_angle = goal_a;
+    float rangefinder_angle = goal_a;
     float rangefinder_change = 0;
+
+    float imu_weight = nowall_imu_w;
+    float encoder_weight = nowall_encoder_w;
+    float rangefinder_weight = nowall_rangefinder_w;
 
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
@@ -458,7 +458,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
             last_imu_angle = imu_angle;
 
-
             // integrates rangefinder offset
             if (!angle_flag) {
                 if (ignore_rangefinder == 0) {
@@ -477,63 +476,84 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 }
                 float alpha = 0.8;
                 float left_diag_dist = _sensors.readShortTof(0);
+                float front_dist = _sensors.readShortTof(1);
                 float right_diag_dist = _sensors.readShortTof(2);
 
-                // use both sensors
-                if (left_diag_dist >= 20 && left_diag_dist <= 55) {
-                    if (right_diag_dist >= 20 && right_diag_dist <= 55 && ignore_rangefinder == 0) {
-                        ignore_rangefinder = 0;
-                        float ratio =  acosf(20./right_diag_dist) - acosf(20./left_diag_dist);
-                        if (!isnanf(ratio) && !isinff(ratio)) {
-                            //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-                            rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
-                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
+                imu_weight = imu_w;
+                encoder_weight = encoder_w;
+                rangefinder_weight = rangefinder_w;
+
+                if (front_dist > 80) {
+                    // use both sensors
+                    if (left_diag_dist >= 20 && left_diag_dist <= 60) {
+                        if (right_diag_dist >= 20 && right_diag_dist <= 60 && ignore_rangefinder == 0) {
+                            ignore_rangefinder = 0;
+                            float ratio =  acosf(20./right_diag_dist) - acosf(20./left_diag_dist);
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                        }
+                        // use left
+                        else if (ignore_rangefinder != 3) {
+                            ignore_rangefinder = 1;
+                            float ratio = PI/3 - acosf(20./left_diag_dist);
+                            if (!isnanf(ratio) && ! isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
                         }
                     }
-                    // use left
-                    else if (ignore_rangefinder != 3) {
-                        ignore_rangefinder = 1;
-                        float ratio = PI/3 - acosf(20./left_diag_dist);
-                        if (!isnanf(ratio) && ! isinff(ratio)) {
-                            rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
+                    // use right
+                    else if (right_diag_dist >= 20 && right_diag_dist <= 60) {
+                        if (ignore_rangefinder != 3) {
+                            ignore_rangefinder = 2;
+                            float ratio = acosf(20./right_diag_dist) - PI/3;
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
                         }
+                    }
+                    // use none
+                    else {
+                        ignore_rangefinder = 3;
+                        rangefinder_angle = curr_angle;
+                        rangefinder_change = 0;
+                        last_rangefinder_angle = curr_angle;
+                        imu_weight = nowall_imu_w;
+                        encoder_weight = nowall_encoder_w;
+                        rangefinder_weight = nowall_rangefinder_w;
                     }
                 }
-                // use right
-                else if (right_diag_dist >= 20 && right_diag_dist <= 55) {
-                    if (ignore_rangefinder != 3) {
-                        ignore_rangefinder = 2;
-                        float ratio = acosf(20./right_diag_dist) - PI/3;
-                        if (!isnanf(ratio) && !isinff(ratio)) {
-                            rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-                            rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                            last_rangefinder_angle = rangefinder_angle; 
-                        }
-                    }
-                }
-                // use none
                 else {
                     ignore_rangefinder = 3;
-                    encoder_weight = 1;
-                    rangefinder_weight = 0;
-                    rangefinder_angle = goal_a;
+                    rangefinder_angle = curr_angle;
                     rangefinder_change = 0;
-                    last_rangefinder_angle = goal_a;
-
+                    last_rangefinder_angle = curr_angle;
+                    imu_weight = nowall_imu_w;
+                    encoder_weight = nowall_encoder_w;
+                    rangefinder_weight = nowall_rangefinder_w;
                 }
 
+                if (printTimer > 5) {
+                    printTimer = 0;
+                    debug_printvar(ignore_rangefinder);
+                    debug_printvar(right_diag_dist);
+                }
                 switch (heading(goal_x, goal_y)) {
-                    case 0: 
+                    case 0:
                     case 2: {
                         if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
                             ignore_rangefinder = 0;
                         }
                         break;
                     }
-                    case 1: 
+                    case 1:
                     case 3: {
                         if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
                             ignore_rangefinder = 0;
@@ -541,13 +561,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         break;
                     }
                 }
-                
-                /*Serial.print("L: ");
-                Serial.println(left_diag_dist);
-                Serial.print("R: ");
-                Serial.println(right_diag_dist);
-                Serial.println(rangefinder_angle);*/
-                // debug_println(curr_xpos);
             }
 
             /* Update angular state, curr_angle */
