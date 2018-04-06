@@ -13,8 +13,8 @@
 #define WALL_THRESHOLD 280 //208
 #define WALL_THRESHOLD_DIAG 223
 #define MOTOR_SPEED 70
-#define TICKS_CELL 1060 // (600/(2*pi*(1.6)))*18
-#define TICKS_TURN 450  // TODO: Tune
+#define TICKS_CELL 1610 // (900/(2*pi*(1.6)))*18
+#define TICKS_TURN 610  // TODO: Tune
 // helpful library objects
 Encoder *encoderLeft;
 Encoder *encoderRight;
@@ -112,8 +112,8 @@ void emile_motors::turnLeft()
   }
 
   // same here: shouldn't have to use different pid constants
-  PIDLeft->SetTunings(0.43,0.01,0.005);
-  PIDRight->SetTunings(0.43,0.01,0.005);
+  PIDLeft->SetTunings(1.7,0.01,0.00); 
+  PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
   delay(500);
 }
@@ -125,8 +125,8 @@ void emile_motors::turnRight()
     front_align();
   }
   // TODO: we shouldn't need to set these tunings with diff constants
-  PIDLeft->SetTunings(0.85,0.01,0.005); // Adham's: 1.1,0.01,0.005
-  PIDRight->SetTunings(0.85,0.01,0.005);
+  PIDLeft->SetTunings(1.7,0.01,0.00); // Adham's: 1.1,0.01,0.005
+  PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(TICKS_TURN,-1 * TICKS_TURN);
   delay(500);
 }
@@ -135,23 +135,25 @@ void emile_motors::turnRight()
 // and leaving room so a 90 degree turn will result in center
 void emile_motors::front_align()
 {
+  /*
   int d = _frontIR->readRangeContinuousMillimeters();
   int rd = _rightDiagIR->readRangeContinuousMillimeters();
   int ld = _leftDiagIR->readRangeContinuousMillimeters();
   time = millis();
   do {
+    // stage 1: move close to desired range (unconfirmed)
+    int ticks_offset = (d - WALL_DISTANCE_FRONT) / .1;
+    moveTicks(ticks_offset, ticks_offset);
     // correct angle
     rd = _rightDiagIR->readRangeContinuousMillimeters();
     ld = _leftDiagIR->readRangeContinuousMillimeters();
     int ticks_tilt = (rd - ld) / .5;
     moveTicks(-1 * ticks_tilt, ticks_tilt);
     d = _frontIR->readRangeContinuousMillimeters();
-    // stage 1: move close to desired range (unconfirmed)
-    int ticks_offset = (d - WALL_DISTANCE_FRONT) / .1;
-    moveTicks(ticks_offset, ticks_offset);
   } while (abs(d - WALL_DISTANCE_FRONT) > 10 && (millis() - time < 3000));
   stop();
   delay(500);
+  */
 }
 
 // follows the right wall for a certain number of ticks
