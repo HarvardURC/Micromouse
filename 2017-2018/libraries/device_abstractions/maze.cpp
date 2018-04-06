@@ -4,6 +4,8 @@
 #include "helpers.hh"
 #include "software_config.hh"
 
+using namespace swconst;
+
 /* Global Constants */
 // For Setting Wall bits in the wall array
 #define NORTH 1

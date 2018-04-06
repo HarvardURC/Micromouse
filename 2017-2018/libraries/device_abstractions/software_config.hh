@@ -56,15 +56,13 @@ namespace swconst {
     const int tof_high_bound = 100;
     const int front_wall_threshold = 80;
     const float wall_follow_dist = 20.;
-    int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
-    float ignore_init_pos = 0;
     const float distance_limit = 18; // if ignoring wall, ignore for 18cm
-    
+
     // front alignment desired distance
-    const int front_wall_align = 18
+    const int front_wall_align = 18;
 
     // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
-   int irThresholds[4] = {90, 90, 0, 90};
+    const int irThresholds[4] = {90, 90, 0, 90};
 
     /* Mapping phase constants */
     const int convergenceTimeM0 = 20; // milliseconds
