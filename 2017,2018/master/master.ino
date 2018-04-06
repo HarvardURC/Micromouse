@@ -12,7 +12,7 @@
 #define WEST 1
 
 #define CENTER_ROW 2
-#define CENTER_COL 2
+#define CENTER_COL 0
 
 #define START_ROW 0
 #define START_COL 0
@@ -159,14 +159,24 @@ void Janus() {
     for (int i = 0; i < moveIndex; i++) {
       quickestPath[i] = (quickestPath[i] + 2) % 4;
     }
-//    Serial.println("the path back to the start: ");
-//    for (int i = 0; i < moveIndex; i++) {
-//      turn(quickestPath[i]);
-//      Serial.print(quickestPath[i]);
-//      motors->forward();
-//      delay(1000);
-//    }
-    motors->turnAroundLeft();
+    int beginningArray, endArray;
+    int endingReference = moveIndex - 1;
+    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
+      beginningArray = quickestPath[i];
+      endArray = quickestPath[endingReference];
+      quickestPath[endingReference] = beginningArray;
+      quickestPath[i] = endArray;
+      }
+    Serial.println("the path back to the start: ");
+    if (!backAtStart) {
+      for (int i = 0; i < moveIndex; i++) {
+      turn(quickestPath[i]);
+      Serial.print(quickestPath[i]);
+      motors->forward();
+      }
+      backAtStart = true;
+      Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    }
     return;
   }
 
@@ -239,14 +249,17 @@ void turn(int desired) {
 
   if (difference == 1) {
      motors->turnRight();
+     Serial.println("turning right #######################");
   }
   else if (difference == 3) {
      motors->turnLeft();
+     Serial.println("turning left @@@@@@@@@@@@@@@@@@@@@");
   }
   else if (difference == 2) {
      motors->turnAroundRight();
+     Serial.println("turning around!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   }
-
+  
   mouseDir = desired;
 }
 
