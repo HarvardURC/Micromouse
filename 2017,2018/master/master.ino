@@ -67,6 +67,9 @@ std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
+// initialize speed counter
+int spd = 0;
+int prevSpd = 0;
 // initialize storage array and variables
 int quickestPath [150];
 int moveIndex = 0;
@@ -93,7 +96,9 @@ void setup() {
     initSensor(sensor_pins[i], sensors[i], i + 1);
     Serial.println(i);
   }
-
+  // Initialize buttons
+  pinMode(pins::buttonS8, INPUT);
+  pinMode(pins::buttonS6, INPUT);
   Serial.println("We're setting up the map!");
   Serial.println("I'm a map");
 
@@ -111,21 +116,35 @@ void setup() {
 
 // LOOP
 void loop() {
-  senseWalls();
-  Serial.println("Made it past sense walls");
+//  if (spd <= 0) {
+    senseWalls();
+    Serial.println("Made it past sense walls");
 
-  floodMaze();
-  Serial.println("Made it past floodmaze");
+    floodMaze();
+    Serial.println("Made it past floodmaze");
 
-  Janus();
-  Serial.println("Made it past janus");
+    Janus();
+    Serial.println("Made it past janus");
 
-  //mouseRow += 1;
+    //mouseRow += 1;
 
-  printVirtualMaze();
-  Serial.println("Made it past print virtual maze");
+    printVirtualMaze();
+    Serial.println("Made it past print virtual maze");
 
-  delay(1000);
+    delay(1000);
+
+//  }
+
+
+//   else {
+//     while (spd == prevSpd){
+//        addSpdCount();
+//     }
+//     prevSpd = spd;
+//     motors->forward();
+//     // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
+//     //speedrun()
+//   }
 }
 
 void generateWall() {
@@ -177,6 +196,7 @@ void Janus() {
       backAtStart = true;
       Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
+    spd++;
     return;
   }
 
@@ -259,7 +279,7 @@ void turn(int desired) {
      motors->turnAroundRight();
      Serial.println("turning around!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   }
-  
+
   mouseDir = desired;
 }
 
@@ -564,5 +584,11 @@ void initSensor(int pin, VL6180X *sensor, int address) {
 void store(int nextMovement) {
     quickestPath[moveIndex] = nextMovement;
     moveIndex++;
+}
+
+void addSpdCount() {
+    int addSpd = digitalRead(pins::buttonS8);
+    int deleteSpd = -digitalRead(pins::buttonS6);
+    spd += addSpd + deleteSpd;
 }
 
