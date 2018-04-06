@@ -74,7 +74,16 @@ class Driver {
                          float unbounded_angle);
         void calculateInputPWM(bool angle_flag,
             float goal_x, float goal_y, float angle_diff);
+
+        // Clears the robot state variables
+        void resetState();
+        // Prints out the output, setpoint, and state variables for each pid
+        void debugPidMovement(float angle);
+        void debugAngle(float angle);
+
         int heading(float goal_x, float goal_y);
+
+        void clearWallData();
 
         void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
         void tankGo(float goal_x, float goal_y);
@@ -85,10 +94,6 @@ class Driver {
         void turnRight(float degrees);
         void brake();
 
-        void debugPidMovement(float unbounded_angle);
-        void debugAngle(float unbounded_angle);
-        void resetState();
-        void clearWallData();
         void updateConfig(DriverConfig cfg);
 
         // Robot state variables
@@ -101,7 +106,7 @@ class Driver {
         int convergenceTime;
 
         // left, middle, right
-        long shortTofWallReadings[3];
+        long shortTofWallReadings[4];
 
         PidController _pid_x;
         PidController _pid_y;

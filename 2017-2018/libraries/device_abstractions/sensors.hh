@@ -3,13 +3,18 @@
 #ifndef sensors_hh
 #define sensors_hh
 
+#define LEFTDIAG 0
+#define LEFTFRONT 1
+#define RIGHTFRONT 2
+#define RIGHTDIAG 3
+
 class SensorArray {
     public:
         SensorArray(
-            int tofLeftDiagSPin,
-            int tofRightDiagSPin,
-            int tofFrontSPin,
+            int tofDiagLPin,
             int tofFrontLPin,
+            int tofFrontRPin,
+            int tofDiagRPin,
             int imuRSTPin
         );
         SensorArray(const SensorArray& sensors);

@@ -11,8 +11,6 @@
 
 using namespace pins;
 
-const float cellSize = swconst::cellSize; // cm
-
 Maze* maze;
 Driver* driver;
 SensorArray* sensorArr;
@@ -44,10 +42,10 @@ void setup() {
     maze = new Maze();
 
     sensorArr = new SensorArray(
-      tofLeftDiagS,
-      tofRightDiagS,
-      tofFrontS,
+      tofDiagL,
       tofFrontL,
+      tofFrontR,
+      tofDiagR,
       imuRST);
 
     driver = new Driver(
@@ -128,14 +126,15 @@ void loop() {
     // update walls
     maze->addWalls(
         driver->curr_angle,
-        driver->shortTofWallReadings[0],
-        driver->shortTofWallReadings[1],
-        driver->shortTofWallReadings[2]);
+        driver->shortTofWallReadings[LEFTDIAG],
+        driver->shortTofWallReadings[LEFTFRONT],
+        driver->shortTofWallReadings[RIGHTDIAG]);
 
     // only print the walls on the speedrun
     if (maze->counter == 0) {
         debug_print("Walls:");
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
+            if (i == 3) { continue; } // ignore right front tof
             debug_print(driver->shortTofWallReadings[i]);
             debug_print(" ");
         }
@@ -156,7 +155,7 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
-    driver->tankGo(next.col * cellSize, next.row * cellSize);
+    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize);
     frontRgb->flashLED(1);
 }
 
@@ -238,7 +237,7 @@ void waitCommand() {
             }
             // move forward
             else if (commandIs(token, "w")) {
-                driver->forward(cellSize);
+                driver->forward(swconst::cellSize);
             }
             // turn left
             else if (commandIs(token, "a")) {
@@ -322,7 +321,8 @@ void waitCommand() {
             }
             else if (commandIs(token, "help")) {
                 debug_println("Possible commands: "
-                    "[go, start, reset, w, a, d, tune, celebrate, quit, setgoal]");
+                    "[go, start, reset, fullreset, w, a, d, tune,"
+                    " celebrate, quit, setgoal]");
             }
             else {
                 debug_println(

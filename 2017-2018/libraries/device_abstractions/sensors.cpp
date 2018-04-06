@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <i2c_t3.h>
-#include <VL53L0X.h>
 #include <VL6180X.h>
 #include <vector>
 #include <Adafruit_Sensor.h>
@@ -10,48 +9,38 @@
 #include "config.h"
 #include "sensors.hh"
 
-std::vector<int> sensor_pins = {pins::tofLeftDiagS, pins::tofFrontS, pins::tofRightDiagS};
-std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X};
-std::vector<String> sensor_names = {"leftDiagS", "frontS", "rightDiagS",};
-auto long_sensor = new VL53L0X;
+std::vector<int> sensor_pins = {pins::tofDiagL, pins::tofFrontL, pins::tofFrontR, pins::tofDiagR};
+std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X};
+std::vector<String> sensor_names = {"leftDiag", "leftFront", "rightFront", "rightDiag"};
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);//pins::imuRST);
 
 
-SensorArray::SensorArray(int tofLeftDiagSPin, int tofRightDiagSPin,
-        int tofFrontSPin, int tofFrontLPin, int imuRSTPinn) {
+SensorArray::SensorArray(int tofLeftDiagPin, int tofLeftFrontPin,
+    int tofRightFrontPin, int tofRightDiagPin, int imuRSTPinn) {
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
       pinMode(sensor_pins[i], OUTPUT);
       digitalWrite(sensor_pins[i], LOW);
     }
-    // Special initialization for long distance sensor
-    pinMode(pins::tofFrontL, OUTPUT);
-    digitalWrite(pins::tofFrontL, LOW);
 
-    delay(500);
+    delay(50);
 
     Wire.begin();
 
     // Set sensor addresses
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
       digitalWrite(sensor_pins[i], HIGH);
-      delay(400);
+      delay(50);
       sensors[i]->setAddress(2 * i);
       // Uncomment to debug addresses of sensors
       // Serial.println(sensors[i]->readReg(0x212));
     }
-    digitalWrite(pins::tofFrontL, HIGH);
-    delay(400);
-    long_sensor->setAddress(sensor_pins.size() * 2);
+    delay(50);
 
     // Initializes sensors
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
       _initSensor(i);
     }
-    long_sensor->init();
-    long_sensor->setTimeout(500);
-    long_sensor->startContinuous();
-    Serial.println("frontL online.");
 
     Serial.println("IMU online."); Serial.println("");
 
@@ -83,8 +72,6 @@ void SensorArray::readToSerialTof() {
         Serial.print(" ");
         if (sensors[i]->timeoutOccurred()) { Serial.print(" TIMEOUT"); }
     }
-    Serial.print("frontL: ");
-    Serial.print(long_sensor->readRangeContinuousMillimeters());
     Serial.print(" Time taken: ");
     Serial.println(millis() - start);
 }
@@ -115,11 +102,6 @@ int SensorArray::readShortTof(int sensor_index) {
 }
 
 
-int SensorArray::readLongTof() {
-    return long_sensor->readRangeContinuousMillimeters();
-}
-
-
 // Returns angle from 0 to 360 depending on rotation on flat plane
 double SensorArray::readIMUAngle() {
     sensors_event_t event;
@@ -134,20 +116,11 @@ void SensorArray::_initSensor(int idx) {
     sensor->configureDefault();
     sensor->setScaling(2);
     sensor->setTimeout(500);
-    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
+    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 15);
     sensor->stopContinuous();
-    delay(300);
-    sensor->startRangeContinuous(30);
+    delay(100);
+    sensor->startRangeContinuous(25);
     Serial.print(sensor_names[idx]);
     Serial.println(" online.");
-    delay(1000);
+    delay(100);
 }
-
-
-// Calculates a correction factor for the angular velocity to reduce drift
-// x < 1 when turned left and x > 1 when turned right
-// float SensorArray::correctionFactor() {
-//     float left = readShortTof(0);
-//     float right = readShortTof(1);
-//     return left > short_range || right > short_range ? 0 : right / left;
-// }

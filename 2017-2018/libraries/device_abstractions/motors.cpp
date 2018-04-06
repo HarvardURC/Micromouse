@@ -132,11 +132,6 @@ Driver::Driver(
     digitalWrite(motorModePin, HIGH);
 
     clearWallData();
-
-    if (imu_weight + encoder_weight + rangefinder_weight != 1) {
-        debug_println("Angular Weights Do Not Add to 1");
-        abort();
-    }
 }
 
 
@@ -257,7 +252,8 @@ void Driver::readWalls() {
     }
     /* end debug code */
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
+        if (i == 3) { continue; } // ignore right front sensor
         if ((i == 1 && _sensors.readShortTof(i) < shortTofWallReadings[1]) ||
             (_sensors.readShortTof(i) > shortTofWallReadings[i]))
         {
@@ -271,7 +267,7 @@ void Driver::readWalls() {
  * Zeroes out the array of wall readings to prepare for another movement.
  */
 void Driver::clearWallData() {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         shortTofWallReadings[i] = 0;
     }
     shortTofWallReadings[1] = 1000;
@@ -346,7 +342,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
+    elapsedMillis printTimer = 0;
     int sensorCounter = 0;
+    int end_iter = 0;
+    bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
 
     // between -PI to PI
     goal_a = minTurn(goal_a, curr_angle);
@@ -361,11 +360,19 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
-    int end_iter = 0;
-    bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
-    float rangefinder_angle = 0;
-    float init_imu_angle = _sensors.readIMUAngle();
+    float last_imu_angle = _sensors.readIMUAngle();
+    float imu_angle = 0;
+    float imu_change = init_angle;
+    float last_rangefinder_angle = init_angle;
+    float rangefinder_angle = init_angle;
+    float rangefinder_change = 0;
 
+    float imu_weight = nowall_imu_w;
+    float encoder_weight = nowall_encoder_w;
+    float rangefinder_weight = nowall_rangefinder_w;
+
+    int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
+    float ignore_init_pos = 0;
 
     float angle_travelled = 0;
 
@@ -374,7 +381,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
          * NOTE: will break if sensors not initialized */
         if ((goal_y != init_ypos || goal_x != init_xpos) &&
             sensorTimer > sensorRefreshTime &&
-            sensorCounter < 3)
+            sensorCounter < numWallChecks)
         {
             sensorTimer = 0;
             sensorCounter++;
@@ -392,7 +399,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 computePids(init_xpos, init_ypos, angle_travelled);
 
                 // (same calcuation as temp_a in tankGo)
-                float travel_angle = atan2(
+                float travel_angle = atan2f(
                     -1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
                 float angle_diff = fabs(wrapAngle(curr_angle) -
@@ -402,11 +409,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 drive(_v_left, _v_right);
 
                 if (debug && bluetoothTimer >= 1000) {
-                    // debug_printvar(_v_left);
-                    // debug_printvar(_v_right);
+                    debug_printvar(_v_left);
+                    debug_printvar(_v_right);
                     debug_println(" ");
-                    debugAngle(angle_travelled);
-                    debug_printvar(init_angle);
                     bluetoothTimer = 0;
                 }
 
@@ -438,46 +443,129 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 ticksToCm / sample_t;
 
             curr_xpos += (true_v_left + true_v_right) / 2  *
-                sample_t * -1 * sin(curr_angle);
+                sample_t * -1 * sinf(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 *
-                sample_t * cos(curr_angle);
+                sample_t * cosf(curr_angle);
             //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
-            float imu_rads = fmod(init_imu_angle - _sensors.readIMUAngle(),360) * degToRad;
-
+            imu_angle = _sensors.readIMUAngle();
+            imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
+            last_imu_angle = imu_angle;
 
             // integrates rangefinder offset
             if (!angle_flag) {
-                float alpha = 0.7;
-                float left_diag_dist = _sensors.readShortTof(0);
-                float right_diag_dist = _sensors.readShortTof(2);
-                if (left_diag_dist >= 20 && left_diag_dist <= 60) {
-                    if (right_diag_dist >= 30 && right_diag_dist <= 50) {
-                        // curr_xpos = curr_xpos + 9*(left_diag_dist/right_diag_dist-1);
-                    }
-                    else {
-                        //rangefinder_angle =  alpha * cos(30./left_diag_dist)
+                if (ignore_rangefinder == 0) {
+                    switch (heading(goal_x, goal_y)) {
+                        case 0:
+                        case 2: {
+                            ignore_init_pos = curr_ypos;
+                            break;
+                        }
+                        case 1:
+                        case 3: {
+                            ignore_init_pos = curr_xpos;
+                            break;
+                        }
                     }
                 }
-                float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
-                /*if (!isnanf(ratio) && !isinff(ratio)) {
-                    //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-                    rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
-                }*/
-                Serial.print("L: ");
-                Serial.println(left_diag_dist);
-                Serial.print("R: ");
-                Serial.println(right_diag_dist);
-                // debug_println(curr_xpos);
+                float alpha = 0.8;
+                float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+                float front_dist = _sensors.readShortTof(LEFTFRONT);
+                float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+
+                imu_weight = nowall_imu_w;
+                encoder_weight = nowall_encoder_w;
+                rangefinder_weight = nowall_rangefinder_w;
+
+                // not close to a wall on the front
+                if (front_dist > front_wall_threshold) {
+                    // wall on left side
+                    if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
+                        || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
+                        && ignore_rangefinder != 3)
+                    {
+                        imu_weight = imu_w;
+                        encoder_weight = encoder_w;
+                        rangefinder_weight = rangefinder_w;
+
+                        // walls on both sides to follow
+                        if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
+                            && (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
+                            && ignore_rangefinder == 0)
+                        {
+                            float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                        }
+                        // just use right wall to wallfollow
+                        else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
+                        {
+                            ignore_rangefinder = 2;
+                            float ratio = acosf(20./right_diag_dist) - 1.05;
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                        }
+                        // just use left wall to wallfollow
+                        else {
+                            ignore_rangefinder = 1;
+                            float ratio = 1.05 - acosf(20./left_diag_dist);
+                            if (!isnanf(ratio) && ! isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                        }
+                    }
+                    // don't wall follow
+                    else {
+                        ignore_rangefinder = 3;
+                        rangefinder_angle = curr_angle;
+                        rangefinder_change = 0;
+                        last_rangefinder_angle = curr_angle;
+                    }
+                }
+                else {
+                    rangefinder_angle = curr_angle;
+                    rangefinder_change = 0;
+                    last_rangefinder_angle = curr_angle;
+                }
+
+                if (printTimer > 1000) {
+                    printTimer = 0;
+                    // debug_printvar(ignore_rangefinder);
+                    // debug_printvar(left_diag_dist);
+                    // debug_printvar(right_diag_dist);
+                    // debug_printvar(angle_travelled);
+                }
+                switch (heading(goal_x, goal_y)) {
+                    case 0:
+                    case 2: {
+                        if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
+                            ignore_rangefinder = 0;
+                        }
+                        break;
+                    }
+                    case 1:
+                    case 3: {
+                        if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
+                            ignore_rangefinder = 0;
+                        }
+                        break;
+                    }
+                }
             }
 
             /* Update angular state, curr_angle */
             float true_ang_v = (true_v_right - true_v_left) / L;
-            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
-
-
-            float angle_change = imu_weight * imu_rads +
+            float angle_change = imu_weight * imu_change +
                 encoder_weight * (true_ang_v * sample_t) +
-                rangefinder_weight * rangefinder_angle;
+                rangefinder_weight * rangefinder_change;
 
             curr_angle = wrapAngle(curr_angle + angle_change);
 
@@ -492,8 +580,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
 
 void Driver::forward(float distance) {
-    float goal_x = curr_xpos - sin(curr_angle) * distance;
-    float goal_y = curr_ypos + cos(curr_angle) * distance;
+    float goal_x = curr_xpos - sinf(curr_angle) * distance;
+    float goal_y = curr_ypos + cosf(curr_angle) * distance;
     go(goal_x, goal_y, curr_angle);
 }
 
@@ -512,7 +600,7 @@ void Driver::turnRight(float degrees) {
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
 void Driver::tankGo(float goal_x, float goal_y) {
-    float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
+    float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     if (debug) {
         debug_printvar(temp_a);
@@ -523,6 +611,8 @@ void Driver::tankGo(float goal_x, float goal_y) {
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
 
+        delay(500);
+        debug_println("Finished turn of tank go.");
         // Go forward
         go(goal_x, goal_y, temp_a);
     }
@@ -531,9 +621,9 @@ void Driver::tankGo(float goal_x, float goal_y) {
     }
 
     // Re-align if near the wall
-    if (_sensors.readShortTof(1) < 80 &&
-        !withinError(_sensors.readShortTof(1), 18, 2)) {
-        realign(18);
+    if (_sensors.readShortTof(LEFTFRONT) < 80 &&
+        !withinError(_sensors.readShortTof(LEFTFRONT), front_wall_align, 2)) {
+        realign(front_wall_align);
     }
 }
 
@@ -546,21 +636,19 @@ void Driver::resetState() {
 
 
 void Driver::realign(int goal_dist) {
-    const int wall_error = 3;
-    const int front_threshold = 30;
-    const int diag_correction = 4;
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
     _pid_diag_tof.setpoint = diag_correction;
     int counter = 0;
-    int direction = round(wrapAngle(curr_angle)) / (PI / 2);
+    int direction = round(wrapAngle(curr_angle) + PI / 4) / (PI / 2);
 
     // use imu to incorporate angle into front pid input
     // (when robot is turned, its closer to the wall with same front reading)
     float initialIMU = _sensors.readIMUAngle() * degToRad;
     while (1) {
-        float left_diag_dist = _sensors.readShortTof(0);
-        float right_diag_dist = _sensors.readShortTof(2);
+        float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+        float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+
         float diag_diff = left_diag_dist - right_diag_dist;
 
         float currIMU = _sensors.readIMUAngle() * degToRad;
@@ -568,11 +656,8 @@ void Driver::realign(int goal_dist) {
         float ang_from_perp = fabs(temp_angle - direction * PI / 2);
         // factor in angle and offsets of the front sensor to get distance from wall
         Serial.println(_sensors.readShortTof(1));
-        Serial.println(_sensors.readLongTof() / 2);
         float front_dist = _sensors.readShortTof(1) * fabs(cos(ang_from_perp))
                            - 3 * sin(ang_from_perp);
-                           // (_sensors.readShortTof(1) + _sensors.readLongTof() / 2)
-                           // / 2 * fabs(cos(ang_from_perp));
 
         // end condition
         if (withinError(front_dist, goal_dist, 0) &&//wall_error) &&
