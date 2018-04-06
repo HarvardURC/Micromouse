@@ -12,8 +12,8 @@
 #define SOUTH 2
 #define WEST 1
 
-#define CENTER_ROW 1
-#define CENTER_COL 1
+#define CENTER_ROW 0
+#define CENTER_COL 3
 
 #define START_ROW 0
 #define START_COL 0
@@ -62,6 +62,8 @@ void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
 void store(int nextMovement);
+void addSpdCount();
+void speedRun();
 
 // initialize sensors
 std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront, pins::tofRightDiag, pins::tofRight};
@@ -180,27 +182,38 @@ void generateWall() {
 void Janus() {
   if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
     Serial.println("we're here");
-    for (int i = 0; i < moveIndex; i++) {
+    for (int i = 0; i < speedIndex; i++) {
+      quickestPath[i] = speedPath[i];
+    }
+//    int beginningArray, endArray;
+//    int endingReference = moveIndex - 1;
+//    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
+//      beginningArray = quickestPath[i];
+//      endArray = quickestPath[endingReference];
+//      quickestPath[endingReference] = beginningArray;
+//      quickestPath[i] = endArray;
+//      }
+    for (int i = 0; i < speedIndex; i++) {
       quickestPath[i] = (quickestPath[i] + 2) % 4;
     }
     int beginningArray, endArray;
-    int endingReference = moveIndex - 1;
-    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
+    int endingReference = speedIndex - 1;
+    for (int i = 0; i < speedIndex/2; i++, endingReference--) {
       beginningArray = quickestPath[i];
       endArray = quickestPath[endingReference];
       quickestPath[endingReference] = beginningArray;
       quickestPath[i] = endArray;
-      }
+    }
     Serial.println("the path back to the start: ");
     if (!backAtStart) {
-      for (int i = 0; i < moveIndex; i++) {
-        turn(quickestPath[i]);
-        Serial.print(quickestPath[i]);
-        motors->forward();
+      for (int i = 0; i < speedIndex; i++) {
+      turn(quickestPath[i]);
+      Serial.print(quickestPath[i]);
+      motors->forward();
       }
-      backAtStart = true;
-      Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
+    backAtStart = true;
+    Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     spd++;
     return;
   }
