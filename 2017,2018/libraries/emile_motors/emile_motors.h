@@ -30,6 +30,8 @@ class emile_motors
         void turnAroundRight();
         /* Align robot in middle of cell using front wall) */
         void front_align();
+        // Align robot in middle of cell using back wall
+        void back_align();
         // stop robot
         void stop();
         void advance(int ticks);

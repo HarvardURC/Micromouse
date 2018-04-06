@@ -12,8 +12,8 @@
 #define SOUTH 2
 #define WEST 1
 
-#define CENTER_ROW 2
-#define CENTER_COL 0
+#define CENTER_ROW 1
+#define CENTER_COL 1
 
 #define START_ROW 0
 #define START_COL 0
@@ -121,7 +121,7 @@ void setup() {
 
 // LOOP
 void loop() {
-//  if (spd <= 0) {
+  if (spd <= 0) {
     senseWalls();
     Serial.println("Made it past sense walls");
   
@@ -138,18 +138,18 @@ void loop() {
   
     delay(1000);
     
-//  }
+  }
 
-    
-//   else {
-//     while (spd == prevSpd){
-//        addSpdCount();
-//     }
-//     prevSpd = spd;
-//     motors->forward();
-//     // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
-//     //speedrun()
-//   }
+  
+   else {
+     while (spd == prevSpd){
+        addSpdCount();
+     }
+     prevSpd = spd;
+     //motors->forward();
+     // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
+     speedRun();
+   }
 }
 
 void generateWall() {

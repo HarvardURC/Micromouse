@@ -13,8 +13,9 @@
 #define WALL_THRESHOLD 280 //208
 #define WALL_THRESHOLD_DIAG 223
 #define MOTOR_SPEED 70
-#define TICKS_CELL 1610 // (900/(2*pi*(1.6)))*18
 #define TICKS_TURN 610  // TODO: Tune
+const float TICKS_CELL = 1610; // (900/(2*pi*(1.6)))*18
+
 // helpful library objects
 Encoder *encoderLeft;
 Encoder *encoderRight;
@@ -54,7 +55,6 @@ emile_motors::emile_motors(VL6180X* leftIR, VL6180X* leftDiagIR, VL6180X* frontI
 // function to advance 1 cell, using wall follow if possible
 void emile_motors::forward()
 {
-  // TODO: we shouldn't need to reset contants like this
     PIDLeft->SetTunings(0.6,0.01,0.01);
   PIDRight->SetTunings(0.6,0.01,0.01);
     moveTicks(TICKS_CELL, TICKS_CELL);
@@ -121,16 +121,24 @@ void emile_motors::turnLeft()
 // 90 degree right turn
 void emile_motors::turnRight()
 {
+  int backFlag = 0;
   if (_frontIR -> readRangeContinuousMillimeters() < WALL_THRESHOLD){
     front_align();
   }
-  // TODO: we shouldn't need to set these tunings with diff constants
+  if (_leftIR -> readRangeContinuousMillimeters() < WALL_THRESHOLD) {
+    backFlag = 1;
+  }
   PIDLeft->SetTunings(1.7,0.01,0.00); // Adham's: 1.1,0.01,0.005
   PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(TICKS_TURN,-1 * TICKS_TURN);
   delay(500);
+  if (backFlag) {
+    back_align();
+  }
 }
 
+
+// TODO: FIXUP FRONT_ALIGN
 // aligns robot to the wall in front, straightening position
 // and leaving room so a 90 degree turn will result in center
 void emile_motors::front_align()
@@ -154,6 +162,14 @@ void emile_motors::front_align()
   stop();
   delay(500);
   */
+}
+
+void emile_motors::back_align()
+{
+  moveTicks(-TICKS_CELL/1.8, -TICKS_CELL / 1.8);
+  delay(200);
+  moveTicks(TICKS_CELL/2.3, TICKS_CELL / 2.3);
+  delay(200);
 }
 
 // follows the right wall for a certain number of ticks
