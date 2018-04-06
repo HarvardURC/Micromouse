@@ -62,7 +62,7 @@ namespace swconst {
     const int front_wall_align = 18;
     const int wall_error = 3; // error in sensor for reading wall
     const int front_threshold = 30; // maximum distance to start aligning
-    const int diag_correction = 4; // difference between left and right diags
+    const int diag_correction = 2; // difference between left and right diags
 
     // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
     const int irThresholds[4] = {90, 90, 0, 90};
@@ -75,8 +75,8 @@ namespace swconst {
     /* Mapping phase PID vals */
     const float p_l = 12, i_l = 0.5, d_l = 0.15; // linear PIDs, x and y position
     const float p_a = 20, i_a = 0.5, d_a = 0.1; // angle PID
-    const float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
-    const float p_diag = 3, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
+    const float p_tof = 8, i_tof = 0.5, d_tof = 0.1; // front ToF sensor PID
+    const float p_diag = 3, i_diag = 0, d_diag = 0.05; // diagonal ToF sensors PID
 
     /* Speedrun 1 constants */
     const int convergenceTimeS1 = 10;

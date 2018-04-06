@@ -362,9 +362,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
     float last_imu_angle = _sensors.readIMUAngle();
     float imu_angle = 0;
-    float imu_change = init_angle;
+    float imu_change = 0;
     float last_rangefinder_angle = init_angle;
-    float rangefinder_angle = init_angle;
+    float rangefinder_angle = 0;
     float rangefinder_change = 0;
 
     float imu_weight = nowall_imu_w;
@@ -469,7 +469,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 }
                 float alpha = 0.8;
                 float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
-                float front_dist = _sensors.readShortTof(LEFTFRONT);
+                float left_front_dist = _sensors.readShortTof(LEFTFRONT);
                 float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
 
                 imu_weight = nowall_imu_w;
@@ -477,7 +477,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 rangefinder_weight = nowall_rangefinder_w;
 
                 // not close to a wall on the front
-                if (front_dist > front_wall_threshold) {
+                if (left_front_dist > front_wall_threshold) {
                     // wall on left side
                     if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
                         || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
@@ -636,9 +636,11 @@ void Driver::resetState() {
 
 
 void Driver::realign(int goal_dist) {
+    _pid_front_tof.input = front_dist;
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
     _pid_diag_tof.setpoint = diag_correction;
+    float alpha = 0.8;
     int counter = 0;
     int direction = round(wrapAngle(curr_angle) + PI / 4) / (PI / 2);
 
@@ -649,7 +651,9 @@ void Driver::realign(int goal_dist) {
         float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
         float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
 
-        float diag_diff = left_diag_dist - right_diag_dist;
+        // float diag_diff = left_diag_dist - right_diag_dist;
+        float front_diff = alpha*(left_front_dist - right_front_dist) + (1-alpha)*front_diff;
+        float front_dist = alpha*.5*(left_front_dist + right_front_dist) + (1-alpha)*front_dist;
 
         float currIMU = _sensors.readIMUAngle() * degToRad;
         float temp_angle = wrapAngle(curr_angle + currIMU - initialIMU);
@@ -660,8 +664,8 @@ void Driver::realign(int goal_dist) {
                            - 3 * sin(ang_from_perp);
 
         // end condition
-        if (withinError(front_dist, goal_dist, 0) &&//wall_error) &&
-            withinError(diag_diff, diag_correction, 0)){//6)) {
+        if (withinError(front_dist, goal_dist, wall_error) &&
+            withinError(front_diff, diag_correction, 3)) {
             counter++;
         }
         else {
@@ -673,7 +677,7 @@ void Driver::realign(int goal_dist) {
         }
 
         _pid_front_tof.input = front_dist;
-        _pid_diag_tof.input = front_dist < front_threshold ? diag_diff : 0;
+        _pid_diag_tof.input = front_dist < front_threshold ? front_diff : 0;
         _pid_front_tof.compute();
         _pid_diag_tof.compute();
 
