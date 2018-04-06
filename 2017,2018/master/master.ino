@@ -13,7 +13,7 @@
 #define WEST 1
 
 #define CENTER_ROW 0
-#define CENTER_COL 3
+#define CENTER_COL 3j
 
 #define START_ROW 0
 #define START_COL 0
@@ -75,7 +75,7 @@ int spd = 0;
 int prevSpd = 0;
 String speedPathCheck [150];
 int speedPath [150];
-int speedIndex = 0;
+int speedIndex = -1;
 
 // initialize storage array and variables
 int quickestPath [150];
@@ -126,32 +126,32 @@ void loop() {
   if (spd <= 0) {
     senseWalls();
     Serial.println("Made it past sense walls");
-  
+
     floodMaze();
     Serial.println("Made it past floodmaze");
-  
+
     Janus();
     Serial.println("Made it past janus");
-  
+
     //mouseRow += 1;
-  
+
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
-  
+
     delay(1000);
-    
+
   }
 
-  
-   else {
-     while (spd == prevSpd){
-        addSpdCount();
-     }
-     prevSpd = spd;
-     //motors->forward();
-     // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
-     speedRun();
-   }
+
+  else {
+    while (spd == prevSpd) {
+      addSpdCount();
+    }
+    prevSpd = spd;
+    //motors->forward();
+    // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
+    speedRun();
+  }
 }
 
 void generateWall() {
@@ -185,20 +185,20 @@ void Janus() {
     for (int i = 0; i < speedIndex; i++) {
       quickestPath[i] = speedPath[i];
     }
-//    int beginningArray, endArray;
-//    int endingReference = moveIndex - 1;
-//    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
-//      beginningArray = quickestPath[i];
-//      endArray = quickestPath[endingReference];
-//      quickestPath[endingReference] = beginningArray;
-//      quickestPath[i] = endArray;
-//      }
+    //    int beginningArray, endArray;
+    //    int endingReference = moveIndex - 1;
+    //    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
+    //      beginningArray = quickestPath[i];
+    //      endArray = quickestPath[endingReference];
+    //      quickestPath[endingReference] = beginningArray;
+    //      quickestPath[i] = endArray;
+    //      }
     for (int i = 0; i < speedIndex; i++) {
       quickestPath[i] = (quickestPath[i] + 2) % 4;
     }
     int beginningArray, endArray;
     int endingReference = speedIndex - 1;
-    for (int i = 0; i < speedIndex/2; i++, endingReference--) {
+    for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
       beginningArray = quickestPath[i];
       endArray = quickestPath[endingReference];
       quickestPath[endingReference] = beginningArray;
@@ -207,9 +207,9 @@ void Janus() {
     Serial.println("the path back to the start: ");
     if (!backAtStart) {
       for (int i = 0; i < speedIndex; i++) {
-      turn(quickestPath[i]);
-      Serial.print(quickestPath[i]);
-      motors->forward();
+        turn(quickestPath[i]);
+        Serial.print(quickestPath[i]);
+        motors->forward();
       }
     }
     backAtStart = true;
@@ -267,37 +267,37 @@ void Janus() {
 
   // TODO update mouseRow and mouseCol in moveForward()
 
-//   Virtual movement
-   if (thePath == 0) {
-     mouseRow--;
-   }
-   else if (thePath == 1) {
-     mouseCol++;
-   }
-   else if (thePath == 2) {
-     mouseRow++;
-   }
-   else if (thePath == 3) {
-     mouseCol--;
-   }
+  //   Virtual movement
+  if (thePath == 0) {
+    mouseRow--;
+  }
+  else if (thePath == 1) {
+    mouseCol++;
+  }
+  else if (thePath == 2) {
+    mouseRow++;
+  }
+  else if (thePath == 3) {
+    mouseCol--;
+  }
 }
 
 void turn(int desired) {
   int difference = (desired - mouseDir + 4) % 4;
 
   if (difference == 1) {
-     motors->turnRight();
-     Serial.println("turning right #######################");
+    motors->turnRight();
+    Serial.println("turning right #######################");
   }
   else if (difference == 3) {
-     motors->turnLeft();
-     Serial.println("turning left @@@@@@@@@@@@@@@@@@@@@");
+    motors->turnLeft();
+    Serial.println("turning left @@@@@@@@@@@@@@@@@@@@@");
   }
   else if (difference == 2) {
-     motors->turnAroundRight();
-     Serial.println("turning around!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    motors->turnAroundRight();
+    Serial.println("turning around!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   }
-  
+
   mouseDir = desired;
 }
 
@@ -319,8 +319,8 @@ void floodMaze() {
       if (fDistance + 1 < cellMap[fRow - 1][fCol].floodDistance) {
         cellMap[fRow - 1][fCol].floodDistance = fDistance + 1;
       }
-        cellMap[fRow - 1][fCol].visited = true;
-        floodQueue.enqueue(cellMap[fRow - 1][fCol]);
+      cellMap[fRow - 1][fCol].visited = true;
+      floodQueue.enqueue(cellMap[fRow - 1][fCol]);
     }
 
     // Check Eastern Cell
@@ -328,8 +328,8 @@ void floodMaze() {
       if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
         cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
-        cellMap[fRow][fCol + 1].visited = true;
-        floodQueue.enqueue(cellMap[fRow][fCol + 1]);
+      cellMap[fRow][fCol + 1].visited = true;
+      floodQueue.enqueue(cellMap[fRow][fCol + 1]);
     }
 
     // Check Southern Cell
@@ -337,8 +337,8 @@ void floodMaze() {
       if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
         cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
       }
-        cellMap[fRow + 1][fCol].visited = true;
-        floodQueue.enqueue(cellMap[fRow + 1][fCol]);
+      cellMap[fRow + 1][fCol].visited = true;
+      floodQueue.enqueue(cellMap[fRow + 1][fCol]);
     }
 
     // Check Western Cell
@@ -346,8 +346,8 @@ void floodMaze() {
       if (fDistance + 1 < cellMap[fRow][fCol - 1].floodDistance) {
         cellMap[fRow][fCol - 1].floodDistance = fDistance + 1;
       }
-        cellMap[fRow][fCol - 1].visited = true;
-        floodQueue.enqueue(cellMap[fRow][fCol - 1]);
+      cellMap[fRow][fCol - 1].visited = true;
+      floodQueue.enqueue(cellMap[fRow][fCol - 1]);
     }
   }
 }
@@ -442,22 +442,22 @@ void initializeCellMap() {
 // REWRITE FOR 2 DIMENSIONAL
 void setBoundaryWalls() {
   // NOTE: Top of the maze is set to the the 0th row
-    for (int i = 0; i < 16; i++) {
-      for (int j = 0; j < 16; j++) {
-        if (i == 0) {
-          cellMap[i][j].walls |= NORTH;
-        }
-        if (j == 15) {
-          cellMap[i][j].walls |= EAST;
-        }
-        if (i == 15) {
-          cellMap[i][j].walls |= SOUTH;
-        }
-        if (j == 0) {
-          cellMap[i][j].walls |= WEST;
-        }
+  for (int i = 0; i < 16; i++) {
+    for (int j = 0; j < 16; j++) {
+      if (i == 0) {
+        cellMap[i][j].walls |= NORTH;
+      }
+      if (j == 15) {
+        cellMap[i][j].walls |= EAST;
+      }
+      if (i == 15) {
+        cellMap[i][j].walls |= SOUTH;
+      }
+      if (j == 0) {
+        cellMap[i][j].walls |= WEST;
       }
     }
+  }
 }
 
 void printVirtualMaze() {
@@ -585,61 +585,61 @@ void senseWalls() {
 }
 
 void initSensor(int pin, VL6180X *sensor, int address) {
-    digitalWrite(pin, HIGH);
-    sensor->init();
-    sensor->configureDefault();
-    sensor->setScaling(2);
-    sensor->setAddress(address);
-    sensor->setTimeout(500);
-    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
-    sensor->stopContinuous();
-    delay(300);
-    sensor->startRangeContinuous(30);
-    Serial.print(pin);
-    Serial.println(" connected.");
+  digitalWrite(pin, HIGH);
+  sensor->init();
+  sensor->configureDefault();
+  sensor->setScaling(2);
+  sensor->setAddress(address);
+  sensor->setTimeout(500);
+  sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
+  sensor->stopContinuous();
+  delay(300);
+  sensor->startRangeContinuous(30);
+  Serial.print(pin);
+  Serial.println(" connected.");
 }
 
 void store(int nextMovement) {
-    quickestPath[moveIndex] = nextMovement;
-    speedPath[speedIndex] = nextMovement;
-    char buffer [200];
-    speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
-    Serial.println(speedPathCheck[speedIndex]);
-    speedIndex++;
-    moveIndex++;
-    if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
-      speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
-      speedPath[speedIndex - 2] = speedPath[speedIndex];
-      speedIndex -= 2;
-    }
+  speedIndex++;
+//  moveIndex++;
+//  quickestPath[moveIndex] = nextMovement;
+  speedPath[speedIndex] = nextMovement;
+  char buffer [200];
+  speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
+  Serial.println(speedPathCheck[speedIndex]);
+  if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
+    speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
+    speedPath[speedIndex - 2] = speedPath[speedIndex];
+    speedIndex -= 2;
+  }
 }
 
 void addSpdCount() {
-    int addSpd = digitalRead(pins::buttonS8);
-    int deleteSpd = -digitalRead(pins::buttonS6);
-    spd += addSpd + deleteSpd;
+  int addSpd = digitalRead(pins::buttonS8);
+  int deleteSpd = -digitalRead(pins::buttonS6);
+  spd += addSpd + deleteSpd;
 }
 
 void speedRun() {
-    for (int i = 0; i < speedIndex; i++) {
-      turn(speedPath[i]);
-      motors->forward();
-    }
-    for (int i = 0; i < speedIndex; i++) {
-      speedPath[i] = (speedPath[i] + 2) % 4;
-    }
-    int beginningArray, endArray;
-    int endingReference = speedIndex - 1;
-    for (int i = 0; i < speedIndex/2; i++, endingReference--) {
-      beginningArray = speedPath[i];
-      endArray = speedPath[endingReference];
-      speedPath[endingReference] = beginningArray;
-      speedPath[i] = endArray;
-      }
-    for (int i = 0; i < speedIndex; i++) {
-      turn(speedPath[i]);
-      Serial.print(speedPath[i]);
-      motors->forward();
-    }
+  for (int i = 0; i < speedIndex; i++) {
+    turn(speedPath[i]);
+    motors->forward();
+  }
+  for (int i = 0; i < speedIndex; i++) {
+    speedPath[i] = (speedPath[i] + 2) % 4;
+  }
+  int beginningArray, endArray;
+  int endingReference = speedIndex - 1;
+  for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
+    beginningArray = speedPath[i];
+    endArray = speedPath[endingReference];
+    speedPath[endingReference] = beginningArray;
+    speedPath[i] = endArray;
+  }
+  for (int i = 0; i < speedIndex; i++) {
+    turn(speedPath[i]);
+    Serial.print(speedPath[i]);
+    motors->forward();
+  }
 }
 
