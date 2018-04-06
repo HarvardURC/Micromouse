@@ -68,40 +68,28 @@ class Driver {
 
         // Moves until the motor for input ticks
         void moveTicks(long ticks);
-        void moveTicksPID(long ticks);
-
-        void turnDegrees(float degrees);
-
         void movePID(float setpoint);
 
         void computePids(float init_xpos, float init_ypos,
                          float unbounded_angle);
-
-        // Directs to the absolute position at goal_x, goal_y with an
-        // angle of goal_a wrt the x-axis
-        void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
-        void tankGo(float goal_x, float goal_y);
-        // sets _v_left and _v_right variables based on x, y, a PIDs
         void calculateInputPWM(bool angle_flag,
             float goal_x, float goal_y, float angle_diff);
-        // Clears the robot state variables
-        void resetState();
-        // Prints out the output, setpoint, and state variables for each pid
-        void debugPidMovement(float unbounded_angle);
-        void debugAngle(float unbounded_angle);
-
         int heading(float goal_x, float goal_y);
 
-        void clearWallData();
-
+        void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
+        void tankGo(float goal_x, float goal_y);
         void realign(int goal_dist);
 
-        // Tank turn movement functions
         void forward(float distance);
         void turnLeft(float degrees);
         void turnRight(float degrees);
         void brake();
 
+        void debugPidMovement(float unbounded_angle);
+        void debugAngle(float unbounded_angle);
+        void resetState();
+        void clearWallData();
+        void updateConfig(DriverConfig cfg);
 
         // Robot state variables
         float curr_xpos;
@@ -131,5 +119,7 @@ class Driver {
         float _v_left = 0;
         float _v_right = 0;
 };
+
+extern DriverConfig driverCfgs[2];
 
 #endif

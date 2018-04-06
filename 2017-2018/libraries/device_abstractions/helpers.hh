@@ -86,4 +86,12 @@ class EncoderTicker {
         long lastVal;
 };
 
+struct DriverConfig {
+    DriverConfig(int a, int b) : motorLimit(a), convergenceTime(b) {};
+    int motorLimit;
+    int convergenceTime;
+
+    void print();
+};
+
 #endif

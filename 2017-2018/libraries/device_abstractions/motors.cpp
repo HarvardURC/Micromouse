@@ -9,6 +9,10 @@ using namespace swconst;
 
 const bool debug = false; // set to true for serial debugging statements
 
+DriverConfig M0(motorLimitM0, convergenceTimeM0);
+DriverConfig S1(motorLimitS1, convergenceTimeS1);
+DriverConfig driverCfgs[2] = { M0, S1 };
+
 /* Motor functions */
 Motor::Motor(
     int powerPin,
@@ -69,19 +73,6 @@ void Motor::moveTicks(long ticks) {
     drive(0);
 }
 
-
-// Returns the speed the motor should go according to the PID to acheive the
-// setpoint.
-float Motor::getPIDSpeed(float setpoint) {
-    _pidSetpoint = setpoint;
-    _pidInput = _encoder.read();
-    debug_print("Encoder: ");
-    debug_println(_pidInput);
-    _pid.Compute();
-    return _pidOutput;
-}
-
-
 // Moves the ticks specified (mesaured by the encoder, and assisted by the PID)
 void Motor::moveTicksPID(long ticks) {
     _pidSetpoint = ticks;
@@ -97,6 +88,19 @@ void Motor::moveTicksPID(long ticks) {
     }
     drive(0);
 }
+
+// Returns the speed the motor should go according to the PID to acheive the
+// setpoint.
+float Motor::getPIDSpeed(float setpoint) {
+    _pidSetpoint = setpoint;
+    _pidInput = _encoder.read();
+    debug_print("Encoder: ");
+    debug_println(_pidInput);
+    _pid.Compute();
+    return _pidOutput;
+}
+
+
 
 
 /* Driver functions */
@@ -123,8 +127,7 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    motorLimit = motorLimitM0;
-    convergenceTime = convergenceTimeM0;
+    updateConfig(M0);
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
@@ -160,13 +163,6 @@ void Driver::brake() {
 void Driver::moveTicks(long ticks) {
     _leftMotor.moveTicks(ticks);
     _rightMotor.moveTicks(ticks);
-}
-
-
-// Untested
-void Driver::turnDegrees(float degrees) {
-    double initialAngle = _sensors.readIMUAngle();
-    movePID(fmod((initialAngle + degrees), 360) - 180);
 }
 
 
@@ -526,6 +522,7 @@ void Driver::tankGo(float goal_x, float goal_y) {
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
+
         // Go forward
         go(goal_x, goal_y, temp_a);
     }
@@ -613,8 +610,13 @@ void Driver::realign(int goal_dist) {
         int current_row = round(curr_ypos / cellSize);
         curr_ypos = current_row * cellSize;
     }
+    // angular state updates
+    float new_angle = direction * PI / 2;
+    float angle_correction_ratio = .5;
+    curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
+}
 
-    // float new_angle = direction * PI / 2;
-    // float angle_correction_ratio = .5;
-    // curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
+void Driver::updateConfig(DriverConfig cfg) {
+    motorLimit = cfg.motorLimit;
+    convergenceTime = cfg.convergenceTime;
 }

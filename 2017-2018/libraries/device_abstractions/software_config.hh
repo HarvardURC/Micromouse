@@ -49,11 +49,11 @@ namespace swconst {
 
     /* Mapping phase constants */
     const int convergenceTimeM0 = 20; // milliseconds
-    const int motorLimitM0 = 60; // highest motor PWM value
+    const int motorLimitM0 = 55; // highest motor PWM value
 
     /* Mapping phase PID vals */
     const float p_l = 12, i_l = 0, d_l = 0; // linear PIDs, x and y position
-    const float p_a = 12, i_a = 0, d_a = 0; // angle PID
+    const float p_a = 20, i_a = 0, d_a = 0; // angle PID
     const float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
     const float p_diag = 2, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
 
