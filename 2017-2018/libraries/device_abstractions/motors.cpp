@@ -648,8 +648,8 @@ void Driver::realign(int goal_dist) {
     // (when robot is turned, its closer to the wall with same front reading)
     float initialIMU = _sensors.readIMUAngle() * degToRad;
     while (1) {
-        float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
-        float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+        float left_front_dist = _sensors.readShortTof(LEFTFRONT);
+        float right_front_dist = _sensors.readShortTof(RIGHTFRONT);
 
         // float diag_diff = left_diag_dist - right_diag_dist;
         float front_diff = alpha*(left_front_dist - right_front_dist) + (1-alpha)*front_diff;
