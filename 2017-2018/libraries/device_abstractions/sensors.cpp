@@ -23,19 +23,19 @@ SensorArray::SensorArray(int tofLeftDiagPin, int tofLeftFrontPin,
       digitalWrite(sensor_pins[i], LOW);
     }
 
-    delay(500);
+    delay(50);
 
     Wire.begin();
 
     // Set sensor addresses
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
       digitalWrite(sensor_pins[i], HIGH);
-      delay(400);
+      delay(50);
       sensors[i]->setAddress(2 * i);
       // Uncomment to debug addresses of sensors
       // Serial.println(sensors[i]->readReg(0x212));
     }
-    delay(400);
+    delay(50);
 
     // Initializes sensors
     for (unsigned int i = 0; i < sensor_pins.size(); i++) {
@@ -116,11 +116,11 @@ void SensorArray::_initSensor(int idx) {
     sensor->configureDefault();
     sensor->setScaling(2);
     sensor->setTimeout(500);
-    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
+    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 15);
     sensor->stopContinuous();
-    delay(300);
-    sensor->startRangeContinuous(30);
+    delay(100);
+    sensor->startRangeContinuous(25);
     Serial.print(sensor_names[idx]);
     Serial.println(" online.");
-    delay(1000);
+    delay(100);
 }
