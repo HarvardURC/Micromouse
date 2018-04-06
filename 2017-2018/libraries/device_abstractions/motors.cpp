@@ -377,8 +377,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
-    const float distance_limit = 12; // if ignoring wall, ignore for 12cm
-
 
     float angle_travelled = 0;
 
@@ -387,7 +385,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
          * NOTE: will break if sensors not initialized */
         if ((goal_y != init_ypos || goal_x != init_xpos) &&
             sensorTimer > sensorRefreshTime &&
-            sensorCounter < 3)
+            sensorCounter < numWallChecks)
         {
             sensorTimer = 0;
             sensorCounter++;
@@ -641,9 +639,6 @@ void Driver::resetState() {
 
 
 void Driver::realign(int goal_dist) {
-    const int wall_error = 3;
-    const int front_threshold = 30;
-    const int diag_correction = 4;
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
     _pid_diag_tof.setpoint = diag_correction;

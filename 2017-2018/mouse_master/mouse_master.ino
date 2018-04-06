@@ -11,8 +11,6 @@
 
 using namespace pins;
 
-const float cellSize = 18; // cm
-
 Maze* maze;
 Driver* driver;
 SensorArray* sensorArr;
@@ -155,7 +153,7 @@ void makeNextMove(Position next) {
     ble.print("Diff direction: ");
     ble.println(diff.direction());
 
-    driver->tankGo(next.col * cellSize, next.row * cellSize);
+    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize);
     frontRgb->flashLED(1);
 }
 
@@ -227,7 +225,7 @@ void waitCommand() {
             }
             // move forward
             else if (commandIs(token, "w")) {
-                driver->forward(cellSize);
+                driver->forward(swconst::cellSize);
             }
             // turn left
             else if (commandIs(token, "a")) {

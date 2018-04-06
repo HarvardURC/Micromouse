@@ -19,10 +19,7 @@ RGB_LED* frontRgb;
 /* Global vars */
 int test_num = 0;
 int test_level = 0;
-bool debug = true;
 bool bluetooth = false; // allows operator to set test_level with bluetooth
-const char init_command = 'a';
-char command = init_command; // holds commands from bluetooth
 
 
 void setup() {
@@ -78,27 +75,27 @@ void loop() {
             switch(test_num) {
                 // LEVEL 1 TESTS
                 case 0:
-                    if (debug) debug_println("10cm forward");
+                    debug_println("10cm forward");
                     driver->forward(36);
                     break;
                 case 1:
-                    if (debug) debug_println("30cm forward");
+                    debug_println("30cm forward");
                     driver->forward(30);
                     break;
                 case 2:
-                    if (debug) debug_println("90 degrees left");
+                    debug_println("90 degrees left");
                     driver->turnLeft(90);
                     break;
                 case 3:
-                    if (debug) debug_println("90 degree right");
+                    debug_println("90 degree right");
                     driver->turnRight(90);
                     break;
                 case 4:
-                    if (debug) debug_println("180 degree turn");
+                    debug_println("180 degree turn");
                     driver->turnLeft(180);
                     break;
                 case 5:
-                    if (debug) debug_println("360 degree turn");
+                    debug_println("360 degree turn");
                     driver->turnRight(360);
                     break;
                 default:
@@ -111,12 +108,12 @@ void loop() {
             switch(test_num) {
                 // LEVEL 2 TESTS
                 case 0:
-                    if (debug) debug_println("Turn left then go forward.");
+                    debug_println("Turn left then go forward.");
                     driver->turnLeft(90);
                     driver->forward(10);
                     break;
                 case 1:
-                    if (debug) debug_println("Turn right 45 deg then forward.");
+                    debug_println("Turn right 45 deg then forward.");
                     driver->turnRight(45);
                     driver->forward(10);
                     break;
@@ -131,7 +128,7 @@ void loop() {
                 // LEVEL 3 TESTS
                 case 0:
                     // Back and forth
-                    if (debug) debug_println("Back and forth");
+                    debug_println("Back and forth");
                     driver->forward(20);
                     driver->turnLeft(180);
                     driver->forward(20);
@@ -147,7 +144,7 @@ void loop() {
             switch(test_num) {
                 // TANK MOVEMENT TEST
                 case 0:
-                    if (debug) debug_println("Going...");
+                    debug_println("Going...");
                     driver->forward(5.5);
                     driver->resetState();
 
@@ -171,7 +168,7 @@ void loop() {
             switch(test_num) {
                 // REALIGN TEST
                 case 0: {
-                    if (debug) debug_println("Realign test");
+                    debug_println("Realign test");
                     driver->realign(20);
                     break;
                 }
@@ -184,7 +181,7 @@ void loop() {
             switch(test_num) {
                 // Turning Testing
                 case 0: {
-                    if (debug) debug_println("5 Left tests");
+                    debug_println("5 Left tests");
                     for (int i = 0; i < 5; i++) {
                         driver->turnLeft(90);
                         backRgb->flashLED(2);
@@ -193,7 +190,7 @@ void loop() {
                     break;
                 }
                 case 1: {
-                    if (debug) debug_println("5 Right tests");
+                    debug_println("5 Right tests");
                     for (int i = 0; i < 5; i++) {
                         driver->turnRight(90);
                         backRgb->flashLED(2);
@@ -221,8 +218,7 @@ void loop() {
     frontRgb->switchLED(2);
     driver->resetState();
     backRgb->flashLED(0);
-    // if (bluetooth && command == init_command) { waitCommand(); }
-    // else { waitButton(); }
+
     waitButton();
 }
 
@@ -260,26 +256,6 @@ void adjustTestLevel() {
     }
     delay(1000);
 }
-
-
-/* Waits on a command from bluetooth controller */
-void waitCommand() {
-    while (1) {
-        /*while (ble.available()) {
-            command = ble.read();
-            break;
-        }*/
-        if (command != init_command) {
-            test_level = (int)command - '0';
-
-            frontRgb->flashLED(2);
-            delay(1000);
-            frontRgb->flashLED(1);
-            break;
-        }
-    }
-}
-
 
 /* Flashes the front LED green if the condition was true else red */
 void resultLed(bool success) {
