@@ -311,7 +311,8 @@ void waitCommand() {
             }
             else if (commandIs(token, "help")) {
                 ble.println("Possible commands: "
-                    "[go, start, reset, w, a, d, tune, celebrate, quit, setgoal]");
+                    "[go, start, reset, fullreset, w, a, d, tune,"
+                    " celebrate, quit, setgoal]");
             }
             else {
                 ble.println(
