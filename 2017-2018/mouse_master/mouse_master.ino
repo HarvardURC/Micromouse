@@ -134,7 +134,7 @@ void loop() {
     if (maze->counter == 0) {
         debug_print("Walls:");
         for (int i = 0; i < 4; i++) {
-            if (i == 3) { continue; } // ignore right front tof
+            if (i == RIGHTFRONT) { continue; } // ignore right front tof
             debug_print(driver->shortTofWallReadings[i]);
             debug_print(" ");
         }
@@ -232,6 +232,7 @@ void waitCommand() {
             // continue without interruption
             else if (commandIs(token, "start")) {
                 debug_println("Running maze.");
+                driver->resetState();
                 command_flag = false;
                 break;
             }
