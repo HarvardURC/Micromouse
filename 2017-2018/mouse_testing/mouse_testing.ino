@@ -79,7 +79,7 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     if (debug) debug_println("10cm forward");
-                    driver->forward(18);
+                    driver->forward(36);
                     break;
                 case 1:
                     if (debug) debug_println("30cm forward");
