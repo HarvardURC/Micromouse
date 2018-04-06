@@ -375,14 +375,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float encoder_weight = nowall_encoder_w;
     float rangefinder_weight = nowall_rangefinder_w;
 
-<<<<<<< HEAD
-=======
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
     const float distance_limit = 12; // if ignoring wall, ignore for 12cm
 
 
->>>>>>> 9d1a6f6d9427716bba85274c374e610c39c9e272
     float angle_travelled = 0;
 
     do {
@@ -492,50 +489,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
                         && ignore_rangefinder != 3)
                     {
-<<<<<<< HEAD
-                        // imu_weight = imu_w;
-                        // encoder_weight = encoder_w;
-                        // rangefinder_weight = rangefinder_w;
-
-                        // // walls on both sides to follow
-                        // if (((left_diag_dist >= tof_low_bound
-                        //     && left_diag_dist <= tof_high_bound)
-                        //     && (right_diag_dist >= tof_low_bound
-                        //     && right_diag_dist <= tof_high_bound))
-                        //     && ignore_rangefinder == 0)
-                        // {
-                        //     float ratio =  acosf(wall_follow_dist/right_diag_dist) -
-                        //                    acosf(wall_follow_dist/left_diag_dist);
-                        //     if (!isnanf(ratio) && !isinff(ratio)) {
-                        //         //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-                        //         rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
-                        //         rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                        //         last_rangefinder_angle = rangefinder_angle;
-                        //     }
-                        // }
-                        // // just use right wall to wallfollow
-                        // else if (right_diag_dist >= tof_low_bound
-                        //     && right_diag_dist <= tof_high_bound)
-                        // {
-                        //     ignore_rangefinder = 2;
-                        //     float ratio = acosf(wall_follow_dist/right_diag_dist) - PI/3;
-                        //     if (!isnanf(ratio) && !isinff(ratio)) {
-                        //         rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-                        //         rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                        //         last_rangefinder_angle = rangefinder_angle;
-                        //     }
-                        // }
-                        // // just use left wall to wallfollow
-                        // else {
-                        //     ignore_rangefinder = 1;
-                        //     float ratio = PI/3 - acosf(wall_follow_dist/left_diag_dist);
-                        //     if (!isnanf(ratio) && ! isinff(ratio)) {
-                        //         rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-                        //         rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                        //         last_rangefinder_angle = rangefinder_angle;
-                        //     }
-                        // }
-=======
                         imu_weight = imu_w;
                         encoder_weight = encoder_w;
                         rangefinder_weight = rangefinder_w;
@@ -574,7 +527,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                                 last_rangefinder_angle = rangefinder_angle;
                             }
                         }
->>>>>>> 9d1a6f6d9427716bba85274c374e610c39c9e272
                     }
                     // don't wall follow
                     else {
