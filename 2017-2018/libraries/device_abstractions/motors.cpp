@@ -364,11 +364,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int end_iter = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
     debug_printvar(angle_flag);
-    float last_imu_angle = _sensors.readIMUAngle();
+    float last_imu_angle = init_angle;
     float imu_angle = 0;
-    float imu_change = 0;
-    float last_rangefinder_angle = goal_a;
-    float rangefinder_angle = goal_a;
+    float imu_change = init_angle;
+    float last_rangefinder_angle = init_angle;
+    float rangefinder_angle = init_angle;
     float rangefinder_change = 0;
 
     float imu_weight = nowall_imu_w;
@@ -403,7 +403,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 computePids(init_xpos, init_ypos, angle_travelled);
 
                 // (same calcuation as temp_a in tankGo)
-                float travel_angle = atan2(
+                float travel_angle = atan2f(
                     -1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
                 float angle_diff = fabs(wrapAngle(curr_angle) -
@@ -447,9 +447,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 ticksToCm / sample_t;
 
             curr_xpos += (true_v_left + true_v_right) / 2  *
-                sample_t * -1 * sin(curr_angle);
+                sample_t * -1 * sinf(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 *
-                sample_t * cos(curr_angle);
+                sample_t * cosf(curr_angle);
             //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
             imu_angle = _sensors.readIMUAngle();
             imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
@@ -508,7 +508,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
                         {
                             ignore_rangefinder = 2;
-                            float ratio = acosf(20./right_diag_dist) - PI/3;
+                            float ratio = acosf(20./right_diag_dist) - 1.05;
                             if (!isnanf(ratio) && !isinff(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
@@ -518,7 +518,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         // just use left wall to wallfollow
                         else {
                             ignore_rangefinder = 1;
-                            float ratio = PI/3 - acosf(20./left_diag_dist);
+                            float ratio = 1.05 - acosf(20./left_diag_dist);
                             if (!isnanf(ratio) && ! isinff(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
@@ -584,8 +584,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
 
 void Driver::forward(float distance) {
-    float goal_x = curr_xpos - sin(curr_angle) * distance;
-    float goal_y = curr_ypos + cos(curr_angle) * distance;
+    float goal_x = curr_xpos - sinf(curr_angle) * distance;
+    float goal_y = curr_ypos + cosf(curr_angle) * distance;
     go(goal_x, goal_y, curr_angle);
 }
 
@@ -604,7 +604,7 @@ void Driver::turnRight(float degrees) {
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
 void Driver::tankGo(float goal_x, float goal_y) {
-    float temp_a = atan2(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
+    float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     if (debug) {
         debug_printvar(temp_a);

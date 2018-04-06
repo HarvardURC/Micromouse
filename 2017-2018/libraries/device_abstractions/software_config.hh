@@ -29,7 +29,7 @@ namespace swconst {
     const float frontSensorToWheelAxis = 4.75; // cm
 
     // the distance from the center of the cell to the wall where sensor reads
-    const float distCenterToInnerWall = 8.5;
+    const float distCenterToInnerWall = 8.4;
 
     // how far from wall to align to be in the center of the cell in cm
     const float alignDist = distCenterToInnerWall - frontSensorToWheelAxis;
@@ -56,7 +56,7 @@ namespace swconst {
     const int tof_high_bound = 100;
     const int front_wall_threshold = 80;
     const float wall_follow_dist = 20.;
-    const float distance_limit = 12; // if ignoring wall, ignore for 12cm
+    const float distance_limit = 17; // if ignoring wall, ignore for 12cm
 
     // front alignment desired distance
     const int front_wall_align = 18;
@@ -73,8 +73,8 @@ namespace swconst {
     const int motorLimitM0 = 50; // highest motor PWM value
 
     /* Mapping phase PID vals */
-    const float p_l = 12, i_l = 1, d_l = 0; // linear PIDs, x and y position
-    const float p_a = 18, i_a = 1, d_a = 0; // angle PID
+    const float p_l = 12, i_l = 0.5, d_l = 0.15; // linear PIDs, x and y position
+    const float p_a = 20, i_a = 0.5, d_a = 0.1; // angle PID
     const float p_tof = 12, i_tof = 0, d_tof = 0; // front ToF sensor PID
     const float p_diag = 3, i_diag = 0, d_diag = 0; // diagonal ToF sensors PID
 
