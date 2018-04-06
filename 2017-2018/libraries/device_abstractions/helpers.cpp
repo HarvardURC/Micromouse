@@ -104,12 +104,3 @@ EncoderTicker::EncoderTicker(Encoder* e_) {
     this->lastVal = 0;
     e->write(0);
 }
-
-/* Subtracts the current encoder value from the value last time the encoder
- * was read. */
-long EncoderTicker::diffLastRead() {
-    long curr = e->read();
-    long r = curr - this->lastVal;
-    this->lastVal = curr;
-    return r;
-}
