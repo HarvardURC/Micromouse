@@ -375,11 +375,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float encoder_weight = nowall_encoder_w;
     float rangefinder_weight = nowall_rangefinder_w;
 
-    int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
-    float ignore_init_pos = 0;
-    const float distance_limit = 18; // if ignoring wall, ignore for 18cm
-
-
     float angle_travelled = 0;
 
     do {
@@ -628,8 +623,8 @@ void Driver::tankGo(float goal_x, float goal_y) {
 
     // Re-align if near the wall
     if (_sensors.readShortTof(1) < 80 &&
-        !withinError(_sensors.readShortTof(1), 18, 2)) {
-        realign(18);
+        !withinError(_sensors.readShortTof(1), front_wall_align, 2)) {
+        realign(front_wall_align);
     }
 }
 
