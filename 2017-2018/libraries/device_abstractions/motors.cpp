@@ -482,11 +482,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 encoder_weight = nowall_encoder_w;
                 rangefinder_weight = nowall_rangefinder_w;
 
-                const int tof_low_bound = 20;
-                const int tof_high_bound = 100;
-
                 // not close to a wall on the front
-                if (front_dist > 80) {
+                if (front_dist > front_wall_threshold) {
                     // wall on left side
                     if (((left_diag_dist >= tof_low_bound
                         && left_diag_dist <= tof_high_bound)
@@ -505,7 +502,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         //     && right_diag_dist <= tof_high_bound))
                         //     && ignore_rangefinder == 0)
                         // {
-                        //     float ratio =  acosf(20./right_diag_dist) - acosf(20./left_diag_dist);
+                        //     float ratio =  acosf(wall_follow_dist/right_diag_dist) -
+                        //                    acosf(wall_follow_dist/left_diag_dist);
                         //     if (!isnanf(ratio) && !isinff(ratio)) {
                         //         //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
                         //         rangefinder_angle = alpha*.5*(ratio) + (1-alpha)*rangefinder_angle;
@@ -518,7 +516,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         //     && right_diag_dist <= tof_high_bound)
                         // {
                         //     ignore_rangefinder = 2;
-                        //     float ratio = acosf(20./right_diag_dist) - PI/3;
+                        //     float ratio = acosf(wall_follow_dist/right_diag_dist) - PI/3;
                         //     if (!isnanf(ratio) && !isinff(ratio)) {
                         //         rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                         //         rangefinder_change = rangefinder_angle - last_rangefinder_angle;
@@ -528,7 +526,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         // // just use left wall to wallfollow
                         // else {
                         //     ignore_rangefinder = 1;
-                        //     float ratio = PI/3 - acosf(20./left_diag_dist);
+                        //     float ratio = PI/3 - acosf(wall_follow_dist/left_diag_dist);
                         //     if (!isnanf(ratio) && ! isinff(ratio)) {
                         //         rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                         //         rangefinder_change = rangefinder_angle - last_rangefinder_angle;

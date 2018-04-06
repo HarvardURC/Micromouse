@@ -51,6 +51,15 @@ namespace swconst {
     const float nowall_encoder_w = 1;
     const float nowall_rangefinder_w = 0;
 
+    // wall-following constants: TUNE THESE ON COMPETITION DAY
+    const int tof_low_bound = 20;
+    const int tof_high_bound = 100;
+    const int front_wall_threshold = 80;
+    const float wall_follow_dist = 20.;
+
+    // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
+   int irThresholds[4] = {90, 90, 0, 90};
+
     /* Mapping phase constants */
     const int convergenceTimeM0 = 20; // milliseconds
     const int motorLimitM0 = 50; // highest motor PWM value

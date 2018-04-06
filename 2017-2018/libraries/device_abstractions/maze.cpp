@@ -2,6 +2,7 @@
 #include "maze.hh"
 #include "bluetooth.hh"
 #include "helpers.hh"
+#include "software_config.hh"
 
 /* Global Constants */
 // For Setting Wall bits in the wall array
@@ -271,8 +272,6 @@ int angleToDir(float angle) {
  * robot and determines where the walls are in the current cell and adds
  * them to the wallMap. */
 void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
-     // thresholds and readings for each of the 4 directions
-    int irThresholds[4] = {90, 90, 0, 90};
     long irReadings[4] = {front, leftDiag, 0, rightDiag};
 
     // if the current cell was marked as 240+ (unvisited), reduce it to <16

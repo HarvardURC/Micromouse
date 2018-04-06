@@ -23,5 +23,12 @@ void setup() {
 
 void loop() {
     sensorArr->readToSerialTof();
+    /* Competition Calibration:
+     *  tof_low_bound, tof_high_bound
+     *  front_wall_threshold
+     *  wall_follow_dist
+     *  Also:
+     *  IRThresholds in Maze::addWalls
+     */
     delay(10);
 }
