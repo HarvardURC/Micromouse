@@ -24,7 +24,7 @@ bool bluetooth = false; // allows operator to set test_level with bluetooth
 
 void setup() {
     Serial.begin(9600);
-    delay(500);
+    delay(100);
     if (bluetooth) {
         bluetoothInitialize();
     }
@@ -35,10 +35,10 @@ void setup() {
 
 
     sensorArr = new SensorArray(
-        tofLeftDiagS,
-        tofRightDiagS,
-        tofFrontS,
+        tofDiagL,
         tofFrontL,
+        tofFrontR,
+        tofDiagR,
         imuRST);
 
     driver = new Driver(
