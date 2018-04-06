@@ -42,10 +42,10 @@ void setup() {
     maze = new Maze();
 
     sensorArr = new SensorArray(
-      tofLeftDiagS,
-      tofRightDiagS,
-      tofFrontS,
+      tofDiagL,
       tofFrontL,
+      tofFrontR,
+      tofDiagR,
       imuRST);
 
     driver = new Driver(
@@ -124,14 +124,15 @@ void loop() {
     // update walls
     maze->addWalls(
         driver->curr_angle,
-        driver->shortTofWallReadings[0],
-        driver->shortTofWallReadings[1],
-        driver->shortTofWallReadings[2]);
+        driver->shortTofWallReadings[LEFTDIAG],
+        driver->shortTofWallReadings[LEFTFRONT],
+        driver->shortTofWallReadings[RIGHTDIAG]);
 
     // only print the walls on the speedrun
     if (maze->counter == 0) {
         ble.print("Walls:");
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
+            if (i == 3) { continue; } // ignore right front tof
             ble.print(driver->shortTofWallReadings[i]);
             ble.print(" ");
         }

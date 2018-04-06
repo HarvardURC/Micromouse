@@ -113,7 +113,7 @@ class Driver {
         int convergenceTime;
 
         // left, middle, right
-        long shortTofWallReadings[3];
+        long shortTofWallReadings[4];
 
         PidController _pid_x;
         PidController _pid_y;
