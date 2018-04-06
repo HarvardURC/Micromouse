@@ -14,10 +14,10 @@ SensorArray* sensorArr;
 
 void setup() {
     sensorArr = new SensorArray(
-        tofLeftDiagS,
-        tofRightDiagS,
-        tofFrontS,
+        tofDiagL,
         tofFrontL,
+        tofFrontR,
+        tofDiagR,
         imuRST);
 }
 

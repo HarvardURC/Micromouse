@@ -256,7 +256,8 @@ void Driver::readWalls() {
     }
     /* end debug code */
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
+        if (i == 3) { continue; } // ignore right front sensor
         if ((i == 1 && _sensors.readShortTof(i) < shortTofWallReadings[1]) ||
             (_sensors.readShortTof(i) > shortTofWallReadings[i]))
         {
@@ -270,7 +271,7 @@ void Driver::readWalls() {
  * Zeroes out the array of wall readings to prepare for another movement.
  */
 void Driver::clearWallData() {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         shortTofWallReadings[i] = 0;
     }
     shortTofWallReadings[1] = 1000;
@@ -472,9 +473,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     }
                 }
                 float alpha = 0.8;
-                float left_diag_dist = _sensors.readShortTof(0);
-                float front_dist = _sensors.readShortTof(1);
-                float right_diag_dist = _sensors.readShortTof(2);
+                float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+                float front_dist = _sensors.readShortTof(LEFTFRONT);
+                float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
 
                 imu_weight = nowall_imu_w;
                 encoder_weight = nowall_encoder_w;
@@ -624,8 +625,8 @@ void Driver::tankGo(float goal_x, float goal_y) {
     }
 
     // Re-align if near the wall
-    if (_sensors.readShortTof(1) < 80 &&
-        !withinError(_sensors.readShortTof(1), front_wall_align, 2)) {
+    if (_sensors.readShortTof(LEFTFRONT) < 80 &&
+        !withinError(_sensors.readShortTof(LEFTFRONT), front_wall_align, 2)) {
         realign(front_wall_align);
     }
 }
@@ -644,9 +645,9 @@ void Driver::realign(int goal_dist) {
     _pid_diag_tof.setpoint = diag_correction;
     int counter = 0;
     while (1) {
-        float front_dist = _sensors.readShortTof(1);
-        float left_diag_dist = _sensors.readShortTof(0);
-        float right_diag_dist = _sensors.readShortTof(2);
+        float front_dist = _sensors.readShortTof(LEFTFRONT);
+        float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+        float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
 
         float diag_diff = left_diag_dist - right_diag_dist;
 

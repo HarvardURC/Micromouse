@@ -33,9 +33,9 @@ namespace pins
     const int encoderR2 = 4;
 
     // sensors
-    const int tofFrontS = 35;
-    const int tofRightDiagS = 36;
-    const int tofLeftDiagS = 39;
+    const int tofFrontR = 35;
+    const int tofDiagR = 36;
+    const int tofDiagL = 39;
     const int tofFrontL = 22;
 
     // clock -- i2c
