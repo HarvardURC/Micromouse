@@ -463,10 +463,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     }
                 }
                 float ratio = acosf(20./left_diag_dist) - acosf(20./right_diag_dist);
-                if (!isnanf(ratio) && !isinff(ratio)) {
+                /*if (!isnanf(ratio) && !isinff(ratio)) {
                     //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
                     rangefinder_angle = alpha*.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist)) + (1-alpha)*rangefinder_angle;
-                }
+                }*/
                 Serial.print("L: ");
                 Serial.println(left_diag_dist);
                 Serial.print("R: ");
@@ -556,16 +556,30 @@ void Driver::realign(int goal_dist) {
     // right diag reads less than left diag
     _pid_diag_tof.setpoint = diag_correction;
     int counter = 0;
+    int direction = round(wrapAngle(curr_angle)) / (PI / 2);
+
+    // use imu to incorporate angle into front pid input
+    // (when robot is turned, its closer to the wall with same front reading)
+    float initialIMU = _sensors.readIMUAngle() * degToRad;
     while (1) {
-        float front_dist = _sensors.readShortTof(1);
         float left_diag_dist = _sensors.readShortTof(0);
         float right_diag_dist = _sensors.readShortTof(2);
-
         float diag_diff = left_diag_dist - right_diag_dist;
 
+        float currIMU = _sensors.readIMUAngle() * degToRad;
+        float temp_angle = wrapAngle(curr_angle + currIMU - initialIMU);
+        float ang_from_perp = fabs(temp_angle - direction * PI / 2);
+        // factor in angle and offsets of the front sensor to get distance from wall
+        Serial.println(_sensors.readShortTof(1));
+        Serial.println(_sensors.readLongTof() / 2);
+        float front_dist = _sensors.readShortTof(1) * fabs(cos(ang_from_perp))
+                           - 3 * sin(ang_from_perp);
+                           // (_sensors.readShortTof(1) + _sensors.readLongTof() / 2)
+                           // / 2 * fabs(cos(ang_from_perp));
+
         // end condition
-        if (withinError(front_dist, goal_dist, wall_error) &&
-            withinError(diag_diff, diag_correction, 6)) {
+        if (withinError(front_dist, goal_dist, 0) &&//wall_error) &&
+            withinError(diag_diff, diag_correction, 0)){//6)) {
             counter++;
         }
         else {
@@ -582,14 +596,14 @@ void Driver::realign(int goal_dist) {
         _pid_diag_tof.compute();
 
         float pwm = -1 * _pid_front_tof.output;
+        // can't input pidlimit so lowered cap by multiplying
         float angle_correction = _pid_diag_tof.output;
+        //Serial.println(pwm);
         drive(pwm - angle_correction, pwm + angle_correction);
     }
     brake();
 
     // correct state based on which wall it realigned on
-    int direction = round(curr_angle) / (PI / 2);
-
     // Pointing east or west -> x-axis
     if (direction % 2 == 1) {
         int current_col = round(curr_xpos / cellSize);
@@ -601,5 +615,6 @@ void Driver::realign(int goal_dist) {
     }
 
     // float new_angle = direction * PI / 2;
-    // curr_angle += (new_angle - curr_angle)
+    // float angle_correction_ratio = .5;
+    // curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
 }
