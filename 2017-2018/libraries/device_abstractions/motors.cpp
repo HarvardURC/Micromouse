@@ -348,6 +348,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis sensorTimer = 0;
     elapsedMillis printTimer = 0;
     int sensorCounter = 0;
+    int end_iter = 0;
+    bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
 
     // between -PI to PI
     goal_a = minTurn(goal_a, curr_angle);
@@ -362,10 +364,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
-    int end_iter = 0;
-    bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
-    debug_printvar(angle_flag);
-    float last_imu_angle = init_angle;
+    float last_imu_angle = _sensors.readIMUAngle();
     float imu_angle = 0;
     float imu_change = init_angle;
     float last_rangefinder_angle = init_angle;
