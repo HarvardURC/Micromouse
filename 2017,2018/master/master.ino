@@ -5,6 +5,7 @@
 #include <emile_motors.h>
 #include <i2c_t3.h>
 #include <vector>
+#include <string>
 
 #define NORTH 8
 #define EAST 4
@@ -67,9 +68,13 @@ std::vector<int> sensor_pins = {pins::tofLeft, pins::tofLeftDiag, pins::tofFront
 std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL6180X, new VL6180X};
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
-// initialize speed counter
+// initialize speed counter and speed run array
 int spd = 0;
 int prevSpd = 0;
+String speedPathCheck [150];
+int speedPath [150];
+int speedIndex = 0;
+
 // initialize storage array and variables
 int quickestPath [150];
 int moveIndex = 0;
@@ -119,23 +124,23 @@ void loop() {
 //  if (spd <= 0) {
     senseWalls();
     Serial.println("Made it past sense walls");
-
+  
     floodMaze();
     Serial.println("Made it past floodmaze");
-
+  
     Janus();
     Serial.println("Made it past janus");
-
+  
     //mouseRow += 1;
-
+  
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
-
+  
     delay(1000);
-
+    
 //  }
 
-
+    
 //   else {
 //     while (spd == prevSpd){
 //        addSpdCount();
@@ -189,9 +194,9 @@ void Janus() {
     Serial.println("the path back to the start: ");
     if (!backAtStart) {
       for (int i = 0; i < moveIndex; i++) {
-      turn(quickestPath[i]);
-      Serial.print(quickestPath[i]);
-      motors->forward();
+        turn(quickestPath[i]);
+        Serial.print(quickestPath[i]);
+        motors->forward();
       }
       backAtStart = true;
       Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -279,7 +284,7 @@ void turn(int desired) {
      motors->turnAroundRight();
      Serial.println("turning around!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   }
-
+  
   mouseDir = desired;
 }
 
@@ -583,12 +588,45 @@ void initSensor(int pin, VL6180X *sensor, int address) {
 
 void store(int nextMovement) {
     quickestPath[moveIndex] = nextMovement;
+    speedPath[speedIndex] = nextMovement;
+    char buffer [200];
+    speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
+    Serial.println(speedPathCheck[speedIndex]);
+    speedIndex++;
     moveIndex++;
+    if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
+      speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
+      speedPath[speedIndex - 2] = speedPath[speedIndex];
+      speedIndex -= 2;
+    }
 }
 
 void addSpdCount() {
     int addSpd = digitalRead(pins::buttonS8);
     int deleteSpd = -digitalRead(pins::buttonS6);
     spd += addSpd + deleteSpd;
+}
+
+void speedRun() {
+    for (int i = 0; i < speedIndex; i++) {
+      turn(speedPath[i]);
+      motors->forward();
+    }
+    for (int i = 0; i < speedIndex; i++) {
+      speedPath[i] = (speedPath[i] + 2) % 4;
+    }
+    int beginningArray, endArray;
+    int endingReference = speedIndex - 1;
+    for (int i = 0; i < speedIndex/2; i++, endingReference--) {
+      beginningArray = speedPath[i];
+      endArray = speedPath[endingReference];
+      speedPath[endingReference] = beginningArray;
+      speedPath[i] = endArray;
+      }
+    for (int i = 0; i < speedIndex; i++) {
+      turn(speedPath[i]);
+      Serial.print(speedPath[i]);
+      motors->forward();
+    }
 }
 
