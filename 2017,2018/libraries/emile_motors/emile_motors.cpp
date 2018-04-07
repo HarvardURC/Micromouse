@@ -181,7 +181,7 @@ void emile_motors::front_align()
 
 void emile_motors::back_align()
 {
-  moveTicks(-TICKS_CELL/1.8, -TICKS_CELL / 1.8);
+  moveTicks(-TICKS_CELL/2.0, -TICKS_CELL / 2.0);
   delay(100);
   moveTicks(TICKS_CELL/2.4, TICKS_CELL / 2.4);
   delay(200);

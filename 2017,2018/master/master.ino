@@ -40,7 +40,7 @@ int mouseCol;
 // 0 NORTH
 // 1 EAST
 // 2 SOUTH
-// 3 WEST 
+// 3 WEST
 int mouseDir;
 
 const int wallThreshold = 280;
@@ -160,14 +160,13 @@ void setup() {
 //
 //  int eepromAddr = 0;
 //  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
-//  
+//
 //  for (short i = 0; i < 256; i++) {
 //    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
 //  }
 //  for (short i = 0; i < 256; i++) {
 //    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
 //  }
-//
 
 }
 
@@ -189,7 +188,7 @@ void loop() {
     Serial.println("Made it past print virtual maze");
 
     delay(300);
-  } 
+  }
   else if (speed_run) {
     speedRun();
   }
@@ -222,7 +221,7 @@ void Janus() {
     int tempCol = START_COL;
 
     int tempDir = 0;
-    pathLength = 0; 
+    pathLength = 0;
 
     while (cellMap[tempRow][tempCol].floodDistance != 0) {
       tempDir = chooseDirection(tempRow, tempCol);
@@ -251,7 +250,7 @@ void Janus() {
 
     while (start <= end) {
       pathToStart[start] = (pathToCenter[end] + 2) % 4;
-      pathToStart[end] = (pathToCenter[start] + 2) % 4; 
+      pathToStart[end] = (pathToCenter[start] + 2) % 4;
       start++;
       end--;
     }
@@ -259,7 +258,7 @@ void Janus() {
     // FORMAT: Pathlength, pathToCenter, pathToStart
 //    int eepromAddr = 0;
 //    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
-//
+//    eepromAddr += EEPROM_writeA
 //    for (int i = 0; i < pathLength; i++){
 //      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
 //    }
@@ -703,7 +702,7 @@ void checkButtons() {
     } else {
       motors->MOTOR_SPEED += SPEED_INCREASE;
     }
-    
+
     S8_active = false;
     S8_long_active = false;
 
