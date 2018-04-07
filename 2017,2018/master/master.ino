@@ -15,8 +15,8 @@
 #define MAZE_WIDTH 16
 #define MAZE_HEIGHT 16
 
-#define CENTER_ROW 1
-#define CENTER_COL 1
+#define CENTER_ROW 2
+#define CENTER_COL 5
 
 #define START_ROW 0
 #define START_COL 0
@@ -157,16 +157,16 @@ void setup() {
   S8_active = false;
   S8_long_active = false;
   S6_active = false;
-
-  int eepromAddr = 0;
-  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
-  
-  for (short i = 0; i < 256; i++) {
-    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
-  }
-  for (short i = 0; i < 256; i++) {
-    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
-  }
+//
+//  int eepromAddr = 0;
+//  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
+//  
+//  for (short i = 0; i < 256; i++) {
+//    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
+//  }
+//  for (short i = 0; i < 256; i++) {
+//    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
+//  }
 
 
 }
@@ -257,15 +257,15 @@ void Janus() {
     }
     // Store map data to EEPROM:
     // FORMAT: Pathlength, pathToCenter, pathToStart
-    int eepromAddr = 0;
-    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
-
-    for (int i = 0; i < pathLength; i++){
-      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
-    }
-    for (int i = 0; i < pathLength; i++){
-      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
-    }
+//    int eepromAddr = 0;
+//    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
+//    eepromAddr += EEPROM_writeA
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
+//    }
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
+//    }
 
     // Go back to start
     for (int i = 0; i < pathLength; i++) {
@@ -750,22 +750,22 @@ void speedRun() {
   //   motors->forward();
   // }
 }
-
-
-template <class T> int EEPROM_writeAnything(int ee, const T& value)
-{
-   const byte* p = (const byte*)(const void*)&value;
-   int i;
-   for (i = 0; i < sizeof(value); i++)
-       EEPROM.write(ee++, *p++);
-   return i;
-}
-
-template <class T> int EEPROM_readAnything(int ee, T& value)
-{
-   byte* p = (byte*)(void*)&value;
-   int i;
-   for (i = 0; i < sizeof(value); i++)
-       *p++ = EEPROM.read(ee++);
-   return i;
-}
+//
+//
+//template <class T> int EEPROM_writeAnything(int ee, const T& value)
+//{
+//   const byte* p = (const byte*)(const void*)&value;
+//   int i;
+//   for (i = 0; i < sizeof(value); i++)
+//       EEPROM.write(ee++, *p++);
+//   return i;
+//}
+//
+//template <class T> int EEPROM_readAnything(int ee, T& value)
+//{
+//   byte* p = (byte*)(void*)&value;
+//   int i;
+//   for (i = 0; i < sizeof(value); i++)
+//       *p++ = EEPROM.read(ee++);
+//   return i;
+//}
