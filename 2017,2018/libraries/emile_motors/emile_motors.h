@@ -14,12 +14,14 @@ class emile_motors
 {
     public:
         // Constructor
+        int MOTOR_SPEED = 70;
         emile_motors(VL6180X* leftIR, VL6180X* rightIR, VL6180X* frontIR,
                     VL6180X* leftDiagIR, VL6180X* rightDiagIR);
         // flag for reset button
         int releaseFlag;
         /* Move forward one cell */
         void forward();
+        void fastForward();
         /* note: following functions must loop for appropriate time
            in addition to setting desired setpoint positions */
         // 90 deg turns

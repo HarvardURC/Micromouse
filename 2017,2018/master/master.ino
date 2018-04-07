@@ -158,7 +158,7 @@ void setup() {
   S8_long_active = false;
   S6_active = false;
 
-  eepromAddr = 0;
+  int eepromAddr = 0;
   eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
   
   for (short i = 0; i < 256; i++) {
@@ -257,7 +257,7 @@ void Janus() {
     }
     // Store map data to EEPROM:
     // FORMAT: Pathlength, pathToCenter, pathToStart
-    eepromAddr = 0;
+    int eepromAddr = 0;
     eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
 
     for (int i = 0; i < pathLength; i++){

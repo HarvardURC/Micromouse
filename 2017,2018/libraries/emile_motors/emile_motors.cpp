@@ -12,7 +12,6 @@
 #define WALL_DISTANCE_FRONT 208
 #define WALL_THRESHOLD 280 //208
 #define WALL_THRESHOLD_DIAG 223
-#define MOTOR_SPEED 70
 #define TICKS_TURN 610  // TODO: Tune
 const float TICKS_CELL = 1610; // (900/(2*pi*(1.6)))*18
 
@@ -55,9 +54,11 @@ emile_motors::emile_motors(VL6180X* leftIR, VL6180X* leftDiagIR, VL6180X* frontI
 // function to advance 1 cell, using wall follow if possible
 void emile_motors::forward()
 {
-    PIDLeft->SetTunings(0.6,0.01,0.01);
+  PIDLeft->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDRight->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDLeft->SetTunings(0.6,0.01,0.01);
   PIDRight->SetTunings(0.6,0.01,0.01);
-    moveTicks(TICKS_CELL, TICKS_CELL);
+  moveTicks(TICKS_CELL, TICKS_CELL);
   // turn calibration
   /*
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
@@ -90,6 +91,16 @@ void emile_motors::forward()
   */
 }
 
+// faster forwards
+void emile_motors::fastForward()
+{
+  PIDLeft->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDRight->SetOutputLimits(-1*MOTOR_SPEED, MOTOR_SPEED);
+  PIDLeft->SetTunings(0.6,0.01,0.01);
+  PIDRight->SetTunings(0.6,0.01,0.01);
+  moveTicks(TICKS_CELL, TICKS_CELL);
+}
+
 // 180 degree left turn
 void emile_motors::turnAroundLeft()
 {
@@ -107,15 +118,21 @@ void emile_motors::turnAroundRight()
 // 90 degree left turn
 void emile_motors::turnLeft()
 {
+  int backFlag = 0;
   if (_frontIR -> readRangeContinuousMillimeters() < WALL_THRESHOLD){
     front_align();
   }
-
+  if (_rightIR -> readRangeContinuousMillimeters() < WALL_THRESHOLD) {
+    backFlag = 1;
+  }
   // same here: shouldn't have to use different pid constants
-  PIDLeft->SetTunings(1.7,0.01,0.00); 
+  PIDLeft->SetTunings(1.7,0.01,0.00);
   PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
-  delay(500);
+  delay(250);
+  if (backFlag) {
+    back_align();
+  }
 }
 
 // 90 degree right turn
@@ -131,44 +148,42 @@ void emile_motors::turnRight()
   PIDLeft->SetTunings(1.7,0.01,0.00); // Adham's: 1.1,0.01,0.005
   PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(TICKS_TURN,-1 * TICKS_TURN);
-  delay(500);
+  delay(250);
   if (backFlag) {
     back_align();
   }
 }
 
-
-// TODO: FIXUP FRONT_ALIGN
 // aligns robot to the wall in front, straightening position
 // and leaving room so a 90 degree turn will result in center
 void emile_motors::front_align()
 {
-  /*
-  int d = _frontIR->readRangeContinuousMillimeters();
-  int rd = _rightDiagIR->readRangeContinuousMillimeters();
-  int ld = _leftDiagIR->readRangeContinuousMillimeters();
-  time = millis();
-  do {
-    // stage 1: move close to desired range (unconfirmed)
-    int ticks_offset = (d - WALL_DISTANCE_FRONT) / .1;
-    moveTicks(ticks_offset, ticks_offset);
-    // correct angle
-    rd = _rightDiagIR->readRangeContinuousMillimeters();
-    ld = _leftDiagIR->readRangeContinuousMillimeters();
-    int ticks_tilt = (rd - ld) / .5;
-    moveTicks(-1 * ticks_tilt, ticks_tilt);
-    d = _frontIR->readRangeContinuousMillimeters();
-  } while (abs(d - WALL_DISTANCE_FRONT) > 10 && (millis() - time < 3000));
-  stop();
-  delay(500);
-  */
+  // int d = _frontIR->readRangeContinuousMillimeters();
+  // int rd = _rightDiagIR->readRangeContinuousMillimeters();
+  // int ld = _leftDiagIR->readRangeContinuousMillimeters();
+  // time = millis();
+  // // PIDLeft->SetTunings(1.7,0.01,0.00);
+  // // PIDRight->SetTunings(1.7,0.01,0.00);
+  // do {
+  //   // stage 1: move close to desired range (unconfirmed)
+  //   d = _frontIR->readRangeContinuousMillimeters();
+  //   int ticks_offset = (d - WALL_DISTANCE_FRONT) / .1;
+  //   moveTicks(ticks_offset, ticks_offset);
+  //   // correct angle
+  //   rd = _rightDiagIR->readRangeContinuousMillimeters();
+  //   ld = _leftDiagIR->readRangeContinuousMillimeters();
+  //   int ticks_tilt = (rd - ld);
+  //   moveTicks(-1 * ticks_tilt, ticks_tilt);
+  // } while (abs(d - WALL_DISTANCE_FRONT) > 10 && (millis() - time < 500));
+  // stop();
+  // delay(3000);
 }
 
 void emile_motors::back_align()
 {
   moveTicks(-TICKS_CELL/1.8, -TICKS_CELL / 1.8);
-  delay(200);
-  moveTicks(TICKS_CELL/2.3, TICKS_CELL / 2.3);
+  delay(100);
+  moveTicks(TICKS_CELL/2.4, TICKS_CELL / 2.4);
   delay(200);
 }
 
@@ -182,7 +197,7 @@ void emile_motors::followTicksRight(int ticks)
   encoderRight->write(0);
   int distanceL = 0;
   int distanceR = 0;
-  PIDRight->SetTunings(4.20,0.01,0.01); // determine tunings
+  PIDRight->SetTunings(0.6,0.01,0.01); // determine tunings
   // follow until combined motor ticks double the ticks parameter
   while (distanceL + distanceR < ticks * 2)
   {
@@ -209,7 +224,7 @@ void emile_motors::followTicksLeft(int ticks)
   encoderRight->write(0);
   int distanceL = 0;
   int distanceR = 0;
-  PIDLeft->SetTunings(4.20,.01,0.01); // determine tunings
+  PIDLeft->SetTunings(0.6,0.01,0.01); // determine tunings
   // follow until combined motor ticks double the ticks parameter
   while (distanceL + distanceR < ticks * 2)
   {
@@ -228,7 +243,6 @@ void emile_motors::followTicksLeft(int ticks)
 
 void emile_motors::advance(int ticks)
 {
-  /*
   // use right wall if available
   if (_rightIR->readRangeContinuousMillimeters() < WALL_THRESHOLD){
     followTicksRight(ticks);
@@ -239,9 +253,8 @@ void emile_motors::advance(int ticks)
   }
   // if not able to wall follow, use odometry
   else{
-  */
     moveTicks(ticks,ticks);
-  //}
+  }
 }
 
 // moves left and right motors given # of ticks, maxes at 2 seconds
