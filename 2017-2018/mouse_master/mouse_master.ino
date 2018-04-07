@@ -33,9 +33,12 @@ void setup() {
     /* * * * * * * * * * * * * * * * *
     * MOUSE HARDWARE INTITALIZATION *
     * * * * * * * * * * * * * * * * **/
+    pinMode(motorMode, OUTPUT);
+    digitalWrite(motorMode, HIGH);
 
     Serial.begin(9600);
     delay(500);
+
 
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
