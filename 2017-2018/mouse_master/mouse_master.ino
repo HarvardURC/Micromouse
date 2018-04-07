@@ -50,6 +50,9 @@ void setup() {
       tofDiagR,
       imuRST);
 
+    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
+
     driver = new Driver(
     motorPowerL,
     motorDirectionL,
@@ -60,13 +63,12 @@ void setup() {
     encoderL2,
     encoderR1,
     encoderR2,
-    *sensorArr);
+    *sensorArr,
+    *frontRgb);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
     frontButt = new Button(frontButton);
-    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     /* * * * * * * * * * * * * * *
     * FLOODFILL INITIALIZATION  *
@@ -163,7 +165,9 @@ void makeNextMove(Position next) {
         next.row * swconst::cellSize,
         false,
         // maze->wallsOnSides(driver->curr_angle),
-        maze->wallBehind(diff.direction()));
+        false
+        // maze->wallBehind(diff.direction())
+        );
     frontRgb->flashLED(1);
 }
 

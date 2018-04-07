@@ -123,7 +123,8 @@ Driver::Driver(
     int encoderPinL2,
     int encoderPinR1,
     int encoderPinR2,
-    SensorArray sensors) :
+    SensorArray sensors,
+    RGB_LED rgb) :
     _pid_x(p_l_M0, i_l_M0, d_l_M0),
     _pid_y(p_l_M0, i_l_M0, d_l_M0),
     _pid_a(p_a_M0, i_a_M0, d_a_M0),
@@ -131,7 +132,8 @@ Driver::Driver(
     _pid_diag_tof(p_diag, i_diag, d_diag),
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
-    _sensors(sensors)
+    _sensors(sensors),
+    _rgb(rgb)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
@@ -582,6 +584,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                             break;
                         }
                     }
+                    if (ignore_rangefinder < 3) {
+                        _rgb.turnOn(ignore_rangefinder);
+                    }
                 }
                 else {
                     //imu_weight = imu_w;
@@ -594,9 +599,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     //digitalWrite(13,HIGH);
                 }
 
-                if (printTimer > 2) {
+                if (printTimer > 1000) {
                     printTimer = 0;
-                    //debug_printvar(angle_travelled);
+                    debug_printvar(withinError(goal_x, curr_xpos, errorX));
+                    debug_printvar(withinError(goal_y, curr_ypos, errorY));
+                    debug_printvar(withinError(goal_a, angle_travelled, errorA));
+                    debug_printvar((fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough));
                 }
             }
 
@@ -763,7 +771,8 @@ void Driver::backAlign() {
     // if there is a wall behind, back into it
     elapsedMillis encoderTimer = 0;
     debug_println("backaligning");
-    drive(backAlignPWM, backAlignPWM);
+    int backingPWM = backAlignPWM;
+    drive(backingPWM, backingPWM);
     EncoderTicker leftEnc(&_leftMotor._encoder);
     EncoderTicker rightEnc(&_rightMotor._encoder);
     long left_diff = 501;
@@ -773,7 +782,9 @@ void Driver::backAlign() {
             encoderTimer = 0;
             left_diff = leftEnc.diffLastRead();
             right_diff = rightEnc.diffLastRead();
+            backingPWM -= 1;
         }
+        drive(backingPWM, backingPWM);
     }
     brake();
     // state update
@@ -793,7 +804,7 @@ void Driver::backAlign() {
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
     delay(300);
-    forward(backedOffset);
+    moveTicks(backedOffset * ticksToCm);
 }
 
 void Driver::updateConfig(DriverConfig cfg) {

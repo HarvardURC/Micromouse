@@ -5,7 +5,7 @@ namespace swconst {
     /* PID controller  constants */
     const int pidSampleTime = 5; // parameter to PID library
     const float pidLimit = 50.0; // upperlimit on PID output
-    const float pidLoopTimeout = 8000; // global timeout ms on pid loops
+    const float pidLoopTimeout = 5000; // global timeout ms on pid loops
 
     // motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
     const float p_m = 0.002, i_m = 0, d_m = 0;
@@ -79,8 +79,8 @@ namespace swconst {
     const int motorLimitM0 = 45; // highest motor PWM value
 
     /* Mapping phase PID vals */
-    const float p_l_M0 = 12, i_l_M0 = 0.5, d_l_M0 = 0.15; // linear PIDs, x and y position
-    const float p_a_M0 = 18, i_a_M0 = 0.5, d_a_M0 = 0.1; // angle PID
+    const float p_l_M0 = 12, i_l_M0 = 0, d_l_M0 = 0.05; // linear PIDs, x and y position
+    const float p_a_M0 = 16, i_a_M0 = 0, d_a_M0 = 0.1; // angle PID
 
     const float p_l_M0T = 22, i_l_M0T = 0.5, d_l_M0T = 0.1; // linear PID ONLY FOR TURNS
     const float p_a_M0T = 28, i_a_M0T = 0.5, d_a_M0T = 0.1; // angle PID ONLY FOR TURNS
@@ -90,7 +90,7 @@ namespace swconst {
 
     /* Speedrun 1 constants */
     const int convergenceTimeS1 = 20;
-    const int motorLimitS1 = 55;
+    const int motorLimitS1 = 60;
 
     const float p_l_S1 = 12, i_l_S1 = 0.5, d_l_S1 = 0.15; // linear PIDs, x and y position
     const float p_a_S1 = 14, i_a_S1 = 0.5, d_a_S1 = 0.4; // angle PID

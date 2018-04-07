@@ -38,6 +38,13 @@ void RGB_LED::switchLED(int color) {
     }
 }
 
+void RGB_LED::turnOn(int color) {
+    for (int i = 0; i < 3; i++) {
+        _turnOff(i);
+    }
+    _turnOn(color);
+}
+
 void RGB_LED::_turnOn(int color) {
     pinMode(rgbPins[color], OUTPUT);
     digitalWrite(rgbPins[color], LOW);

@@ -18,6 +18,8 @@ class RGB_LED
         // Switches the light on if off and vice versa
         void switchLED(int color);
 
+        void turnOn(int color);
+
         int rgbPins[3];
         int rgbState[3];
 

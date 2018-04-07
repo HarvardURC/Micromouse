@@ -41,6 +41,8 @@ void setup() {
         tofDiagR,
         imuRST);
 
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
+
     driver = new Driver(
         motorPowerL,
         motorDirectionL,
@@ -51,13 +53,13 @@ void setup() {
         encoderL2,
         encoderR1,
         encoderR2,
-        *sensorArr);
+        *sensorArr,
+        *frontRgb);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
     frontButt = new Button(frontButton);
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     pinMode(motorMode, OUTPUT);
     digitalWrite(motorMode, HIGH);
