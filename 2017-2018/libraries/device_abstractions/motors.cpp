@@ -10,10 +10,16 @@ using namespace swconst;
 
 const bool debug = false; // set to true for serial debugging statements
 
+// regular mapping config
 DriverConfig M0(motorLimitM0, convergenceTimeM0, p_l_M0, i_l_M0, d_l_M0,
     p_a_M0, i_a_M0, d_a_M0);
+// mapping config only for turns
+DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
+    p_a_M0T, i_a_M0T, d_a_M0T);
+// speed run config
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
+// go mapping -> mapping with straight of ways -> speedrun
 std::vector<DriverConfig> driverCfgs = { M0, M0, S1 };
 
 /* Motor functions */
@@ -352,6 +358,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int end_iter = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
 
+    if (angle_flag) {
+        updateConfig(M0T);
+    } else {
+        updateConfig(M0);
+    }
+
     // between -PI to PI
     goal_a = minTurn(goal_a, curr_angle);
 
@@ -637,7 +649,7 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
-void Driver::tankGo(float goal_x, float goal_y) {
+void Driver::tankGo(float goal_x, float goal_y, bool back_wall) {
     float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     if (debug) {
@@ -648,11 +660,15 @@ void Driver::tankGo(float goal_x, float goal_y) {
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
+        if (back_wall){
+            backAlign();
+        }
 
-        delay(500);
+        delay(200);
         debug_println("Finished turn of tank go.");
         // Go forward
         go(goal_x, goal_y, temp_a);
+        debug_println("Finished straight go.");
     }
     else {
         go(goal_x, goal_y, temp_a);
@@ -734,6 +750,43 @@ void Driver::realign(int goal_dist) {
     // angular state updates
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
+}
+
+void Driver::backAlign() {
+    // if there is a wall behind, back into it
+    elapsedMillis encoderTimer = 0;
+    debug_println("backaligning");
+    drive(backAlignPWM, backAlignPWM);
+    EncoderTicker leftEnc(&_leftMotor._encoder);
+    EncoderTicker rightEnc(&_rightMotor._encoder);
+    long left_diff = 501;
+    long right_diff = 501;
+    while(abs(left_diff) > 300 || abs(right_diff) > 300) {
+        if (encoderTimer > 40) {
+            encoderTimer = 0;
+            left_diff = leftEnc.diffLastRead();
+            right_diff = rightEnc.diffLastRead();
+        }
+    }
+    brake();
+    // state update
+    int direction = round(wrapAngle(curr_angle) + PI / 4) / (PI / 2);
+    float diff_pos = direction == 1 || direction == 2 ? -1 * backedOffset : backedOffset;
+    // Pointing east or west -> x-axis
+    if (direction % 2 == 1) {
+        int current_col = round(curr_xpos / cellSize);
+        curr_xpos = current_col * cellSize - diff_pos;
+    }
+    else {
+        int current_row = round(curr_ypos / cellSize);
+        curr_ypos = current_row * cellSize - diff_pos;
+    }
+
+    // angular state update
+    float new_angle = direction * PI / 2;
+    curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
+    delay(100);
+    forward(backedOffset);
 }
 
 void Driver::updateConfig(DriverConfig cfg) {

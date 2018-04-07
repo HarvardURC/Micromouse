@@ -76,30 +76,20 @@ class PidController {
         PIDT<float> _pid;
 };
 
-
-class Ticker {
+/* A wrapper class for encoders to keep track of last accessed tick value */
+class EncoderTicker {
     public:
-        Ticker() {};
-
-        virtual float diffLastRead() {
-            float curr = read();
-            float r = curr - lastVal;
+        EncoderTicker(Encoder* e_);
+        long diffLastRead() {
+            long curr = read();
+            long r = curr - lastVal;
             lastVal = curr;
             return r;
         };
-        virtual float read() { return 0; }
-
-        float lastVal;
-};
-
-
-/* A wrapper class for encoders to keep track of last accessed tick value */
-class EncoderTicker : public Ticker {
-    public:
-        EncoderTicker(Encoder* e_);
-        float read() override { return (float)e->read(); }
+        long read() { return e->read(); }
     private:
         Encoder* e;
+        long lastVal;
 };
 
 struct DriverConfig {
