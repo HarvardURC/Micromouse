@@ -278,7 +278,7 @@ void Janus() {
 
     // stop mapping run
     mapping_run = false;
-  } 
+  } //jdjdjdjdjdjdjdjdjdj
   else {
     int thePath = chooseDirection(mouseRow, mouseCol);
 
