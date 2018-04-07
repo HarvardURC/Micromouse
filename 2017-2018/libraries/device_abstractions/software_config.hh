@@ -77,6 +77,10 @@ namespace swconst {
     /* Mapping phase PID vals */
     const float p_l_M0 = 12, i_l_M0 = 0.5, d_l_M0 = 0.15; // linear PIDs, x and y position
     const float p_a_M0 = 20, i_a_M0 = 0.5, d_a_M0 = 0.1; // angle PID
+
+    const float p_l_M0T = 22, i_l_M0T = 0.5, d_l_M0T = 0.1; // linear PID ONLY FOR TURNS
+    const float p_a_M0T = 22, i_a_M0T = 0.5, d_a_M0T = 0.1; // angle PID ONLY FOR TURNS
+
     const float p_tof = 8, i_tof = 0.5, d_tof = 0.1; // front ToF sensor PID
     const float p_diag = 3, i_diag = 0, d_diag = 0.05; // diagonal ToF sensors PID
 
