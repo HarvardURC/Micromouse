@@ -144,7 +144,7 @@ void setup() {
 
   // initialize speed
   speed = SPEED_START;
-  emile_motors->MOTOR_SPEED = speed;
+  motors->MOTOR_SPEED = speed;
 
   // starting path is 0
   pathLength = 0;
@@ -275,7 +275,7 @@ void Janus() {
     }
 
     // Increment spd to go on to speed runs
-    spd++;
+//    spd++;
 
     // stop mapping run
     mapping_run = false;
@@ -673,7 +673,7 @@ void checkButtons() {
   // S8 changes the speed, turns on speed_run
   // S6 overrides Teensy memory EEBROM, turns on mapping_run
 
-  if (digitalRead(pins::buttonS8) == HIGH) {
+  if (digitalRead(pins::buttonS8) == LOW) {
     if (!S8_active) {
       S8_active = true;
       S8_timer = millis();
@@ -717,7 +717,7 @@ void checkButtons() {
     }
   }
 
-  if (digitalRead(pins::buttonS6) == HIGH) {
+  if (digitalRead(pins::buttonS6) == LOWi) {
     S6_active = true;
   }
   else {
