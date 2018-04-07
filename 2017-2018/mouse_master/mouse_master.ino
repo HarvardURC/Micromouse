@@ -7,6 +7,7 @@
 #include "sensors.hh"
 #include "software_config.hh"
 
+//#define min(a,b) ((a)<(b)?(a):(b))
 #define BUFSIZE 20
 
 using namespace pins;
@@ -157,7 +158,9 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
-    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize);
+    debug_printvar(maze->wallBehind(diff.direction()));
+
+    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, maze->wallBehind(diff.direction()));
     frontRgb->flashLED(1);
 }
 
