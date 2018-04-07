@@ -7,7 +7,6 @@
 #include "sensors.hh"
 #include "software_config.hh"
 
-//#define min(a,b) ((a)<(b)?(a):(b))
 #define BUFSIZE 20
 
 using namespace pins;
@@ -24,7 +23,7 @@ RGB_LED* frontRgb;
 int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
-bool bluetooth = true; // activate bluetooth (and command system)
+bool bluetooth = false; // activate bluetooth (and command system)
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -78,15 +77,15 @@ void setup() {
     // Set maze boundary walls
     maze->setBoundaryWalls();
 
-    backRgb->flashLED(2);
     if (bluetooth) {
+        backRgb->flashLED(2);
         bluetoothInitialize();
         command[0] = '\0';
     }
     backRgb->flashLED(1);
 
     // front button will kill any running process
-    //attachInterrupt(frontButton, abort_isr, RISING);
+    // attachInterrupt(frontButton, abort_isr, RISING);
 }
 
 
@@ -98,8 +97,7 @@ void loop() {
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            int speedRunIdx = min(maze->counter / 2, driverCfgs.size() - 1);
-            driver->updateConfig(driverCfgs[speedRunIdx]);
+            driver->cfgNum = min(maze->counter / 2, 2);
             command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
@@ -365,13 +363,12 @@ bool commandIs(const char* token, const char* cmd, bool firstchar) {
  * Flashes the LEDs in celebration.
  */
 void celebrate() {
-    buzz->on();
     for (size_t j = 0; j < 4; j++) {
         for (size_t i = 0; i < 2; i++) {
             frontRgb->flashLED(i);
             backRgb->flashLED(i);
+            buzz->siren();
             delay(50);
         }
     }
-    buzz->off();
 }

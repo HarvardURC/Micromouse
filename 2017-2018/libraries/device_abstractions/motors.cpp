@@ -20,7 +20,7 @@ DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
 // go mapping -> mapping with straight of ways -> speedrun
-std::vector<DriverConfig> driverCfgs = { M0, M0, S1 };
+std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1 };
 
 /* Motor functions */
 Motor::Motor(
@@ -138,7 +138,7 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    updateConfig(M0);
+    cfgNum = 0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
@@ -363,7 +363,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
     if (angle_flag) {
         updateConfig(M0T);
     } else {
-        updateConfig(M0);
+        updateConfig(driverCfgsLinear[cfgNum]);
     }
 
     // between -PI to PI
@@ -374,7 +374,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
 
     const float init_xpos = curr_xpos;
     const float init_ypos = curr_ypos;
-    const float init_angle = curr_angle;
     _pid_x.setpoint = goal_x - init_xpos;
     _pid_y.setpoint = goal_y - init_ypos;
     _pid_a.setpoint = goal_a;
