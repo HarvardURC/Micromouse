@@ -7,6 +7,7 @@
 #include "sensors.hh"
 #include "software_config.hh"
 
+#define min(a,b) ((a)<(b)?(a):(b))
 #define BUFSIZE 20
 
 using namespace pins;
