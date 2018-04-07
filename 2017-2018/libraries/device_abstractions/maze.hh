@@ -43,6 +43,7 @@ class Maze {
         void setGoal(Position p);
         void setBoundaryWalls();
         bool wallsOnSides(float angle);
+        bool wallBehind(float angle);
 
         void printWallsCell(Position p);
 

@@ -87,7 +87,7 @@ class Driver {
         void clearWallData();
 
         void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
-        void tankGo(float goal_x, float goal_y);
+        void tankGo(float goal_x, float goal_y, bool back_wall = false);
         void realign(int goal_dist);
         void backAlign();
 

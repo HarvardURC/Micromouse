@@ -359,6 +359,11 @@ Position Maze::chooseNextCell(Position pos) {
     return lowestPos;
 }
 
+bool Maze::wallBehind(float angle) {
+    int direction = angleToDir(angle);
+    return (wallMap[currPos.offset()] & 1 << ((direction + 2) % 4));
+}
+
 bool Maze::wallsOnSides(float angle) {
     int direction = angleToDir(angle);
     return ((wallMap[currPos.offset()] & 1 << ((direction + 1) % 4))

@@ -613,7 +613,7 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
-void Driver::tankGo(float goal_x, float goal_y) {
+void Driver::tankGo(float goal_x, float goal_y, bool back_wall) {
     float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     if (debug) {
@@ -624,7 +624,9 @@ void Driver::tankGo(float goal_x, float goal_y) {
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
-        backAlign();
+        if (back_wall){
+            backAlign();
+        }
 
         delay(500);
         debug_println("Finished turn of tank go.");
