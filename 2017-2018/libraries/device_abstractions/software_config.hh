@@ -54,16 +54,16 @@ namespace swconst {
 
     // wall-following constants: TUNE THESE ON COMPETITION DAY
     const int tof_low_bound = 20;
-    const int tof_high_bound = 100;
-    const int front_wall_threshold = 80;
+    const int tof_high_bound = 70;
+    const int front_wall_threshold = 90;
     const float wall_follow_dist = 20.;
-    const float distance_limit = 17; // if ignoring wall, ignore for 12cm
+    const float distance_limit = 18; // if ignoring wall, ignore for 12cm
 
     // front alignment desired distance
     const int front_wall_align = 18;
     const int wall_error = 3; // error in sensor for reading wall
     const int front_threshold = 30; // maximum distance to start aligning
-    const float diag_correction = 3.5; // difference between left and right diags
+    const float diag_correction = 3; // difference between left and right diags
     const float angle_correction_ratio = .4; // how much to update angular state on frontalign
 
     // back alignment Constants
