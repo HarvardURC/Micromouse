@@ -19,8 +19,10 @@ DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
 // speed run config
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
+DriverConfig S2(motorLimitS2, convergenceTimeS2, p_l_S2, i_l_S2, d_l_S2,
+    p_a_S2, i_a_S2, d_a_S2);
 // go mapping -> mapping with straight of ways -> speedrun
-std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1 };
+std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1, S2 };
 
 /* Motor functions */
 Motor::Motor(
@@ -141,6 +143,7 @@ Driver::Driver(
     cfgNum = 0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
+    encoderOnlyFlag = false;
 
     clearWallData();
 }
@@ -351,10 +354,8 @@ void Driver::calculateInputPWM(bool angle_flag,
 void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool backwards) {
     float sample_t = 1. / interval;
     elapsedMillis timeElapsed = 1000;
-    elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis printTimer = 0;
     elapsedMillis timeout = 0;
     int sensorCounter = 0;
     int end_iter = 0;
@@ -442,13 +443,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
                 drive(_v_left, _v_right);
 
-                if (debug && bluetoothTimer >= 1000) {
-                    debug_printvar(_v_left);
-                    debug_printvar(_v_right);
-                    debug_println(" ");
-                    bluetoothTimer = 0;
-                }
-
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
                 if ((withinError(goal_x, curr_xpos, errorX) &&
@@ -487,7 +481,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
             last_imu_angle = imu_angle;
 
             // integrates rangefinder offset
-            if (!angle_flag) {
+            if (!angle_flag && !encoderOnlyFlag) {
                 if (ignore_rangefinder == 0) {
                     switch (heading(goal_x, goal_y)) {
                         case 0:
@@ -597,14 +591,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     //last_rangefinder_angle = rangefinder_angle;
                     //digitalWrite(13,HIGH);
                 }
-
-                // if (printTimer > 1000) {
-                //     printTimer = 0;
-                //     debug_printvar(withinError(goal_x, curr_xpos, errorX));
-                //     debug_printvar(withinError(goal_y, curr_ypos, errorY));
-                //     debug_printvar(withinError(goal_a, angle_travelled, errorA));
-                //     debug_printvar((fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough));
-                // }
             }
 
             /* Update angular state, curr_angle */

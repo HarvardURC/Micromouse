@@ -110,6 +110,8 @@ class Driver {
         float motorLimit;
         int convergenceTime;
 
+        bool encoderOnlyFlag;
+
         // left, middle, right
         long shortTofWallReadings[4];
 

@@ -114,7 +114,7 @@ void loop() {
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            driver->cfgNum = min(maze->counter / 2, 2);
+            driver->cfgNum = min(maze->counter / 2, 3);
             command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
@@ -229,12 +229,16 @@ void waitButton() {
                 if (maze->counter == 0) {
                     maze->counter++;
                 } else {
-                    maze->counter = min(maze->counter + 2, 4);
+                    maze->counter = min(maze->counter + 2, 6);
                 }
             }
-            else {
+            else if (timer < 10000) {
                 celebrate();
                 backupFlag = !backupFlag;
+            }
+            else {
+                buzz->siren();
+                driver->encoderOnlyFlag = true;
             }
         }
     }

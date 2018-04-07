@@ -94,6 +94,12 @@ namespace swconst {
 
     const float p_l_S1 = 12, i_l_S1 = 0.5, d_l_S1 = 0.15; // linear PIDs, x and y position
     const float p_a_S1 = 14, i_a_S1 = 0.5, d_a_S1 = 0.4; // angle PID
+
+    const int convergenceTimeS2 = 20;
+    const int motorLimitS2 = 120;
+
+    const float p_l_S2 = 25, i_l_S2 = 0.5, d_l_S2 = 0.15; // linear PIDs, x and y position
+    const float p_a_S2 = 30, i_a_S2 = 0.5, d_a_S2 = 0.4; // angle PID
 }
 
 #endif
