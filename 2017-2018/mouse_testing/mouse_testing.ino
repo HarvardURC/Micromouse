@@ -76,11 +76,11 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    driver->forward(18);
+                    driver->forward(36);
                     break;
                 case 1:
                     debug_println("36cm forward");
-                    driver->forward(36);
+                    driver->forward(90);
                     break;
                 case 2:
                     debug_println("90 degrees left");
