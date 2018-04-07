@@ -76,32 +76,24 @@ namespace swconst {
 
     /* Mapping phase constants */
     const int convergenceTimeM0 = 20; // milliseconds
-    const int motorLimitM0 = 55; // highest motor PWM value
+    const int motorLimitM0 = 45; // highest motor PWM value
 
     /* Mapping phase PID vals */
-    const float p_l_M0 = 5, i_l_M0 = 1, d_l_M0 = 0; // linear PIDs, x and y position 
-    // const float p_a_M0 = 7, i_a_M0 = 0, d_a_M0 = 0.1; // angle PID 
-    // const float p_l_M0 = 12, i_l_M0 = 0, d_l_M0 = 0.05; 
-    const float p_a_M0 = 12, i_a_M0 = 0, d_a_M0 = 0;
+    const float p_l_M0 = 12, i_l_M0 = 0, d_l_M0 = 0.05; // linear PIDs, x and y position
+    const float p_a_M0 = 16, i_a_M0 = 0, d_a_M0 = 0.1; // angle PID
 
     const float p_l_M0T = 22, i_l_M0T = 0.5, d_l_M0T = 0.1; // linear PID ONLY FOR TURNS
-    const float p_a_M0T = 22, i_a_M0T = 0.5, d_a_M0T = 0.1; // angle PID ONLY FOR TURNS
+    const float p_a_M0T = 28, i_a_M0T = 0.5, d_a_M0T = 0.1; // angle PID ONLY FOR TURNS
 
-    const float p_tof = 8, i_tof = 0, d_tof = 0; // front ToF sensor PID
+    const float p_tof = 10, i_tof = 0, d_tof = 0.1; // front ToF sensor PID
     const float p_diag = 150, i_diag = 0, d_diag = 1; // diagonal ToF sensors PID
 
     /* Speedrun 1 constants */
-    const int convergenceTimeS1 = 10;
-    const int motorLimitS1 = 70;
+    const int convergenceTimeS1 = 20;
+    const int motorLimitS1 = 60;
 
     const float p_l_S1 = 12, i_l_S1 = 0.5, d_l_S1 = 0.15; // linear PIDs, x and y position
     const float p_a_S1 = 14, i_a_S1 = 0.5, d_a_S1 = 0.4; // angle PID
-
-    const int convergenceTimeS2 = 20;
-    const int motorLimitS2 = 120;
-
-    const float p_l_S2 = 25, i_l_S2 = 0.5, d_l_S2 = 0.15; // linear PIDs, x and y position
-    const float p_a_S2 = 30, i_a_S2 = 0.5, d_a_S2 = 0.4; // angle PID
 }
 
 #endif
