@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 #include "maze.hh"
 #include "bluetooth.hh"
 #include "helpers.hh"
@@ -368,4 +369,22 @@ bool Maze::wallsOnSides(float angle) {
     int direction = angleToDir(angle);
     return ((wallMap[currPos.offset()] & 1 << ((direction + 1) % 4))
     && (wallMap[currPos.offset()] & 1 << ((direction + 3) % 4)));
+}
+
+void Maze::writeEEPROM() {
+    for (int i = 0; i < 256; i++) {
+        EEPROM.write(i, wallMap[i]);
+    }
+}
+
+void Maze::readEEPROM() {
+    for (int i = 0; i < 256; i++) {
+        wallMap[i] = EEPROM.read(i);
+    }
+}
+
+void Maze::clearEEPROM() {
+    for (int i = 0 ; i < 256; i++) {
+        EEPROM.write(i, 63);
+    }
 }

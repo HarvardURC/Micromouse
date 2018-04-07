@@ -1,4 +1,5 @@
 #include <elapsedMillis.h>
+#include <EEPROM.h>
 #include "bluetooth.hh"
 #include "config.h"
 #include "io.hh"
@@ -42,6 +43,7 @@ void setup() {
 
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     maze = new Maze();
 
@@ -52,8 +54,6 @@ void setup() {
       tofDiagR,
       imuRST);
 
-    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     driver = new Driver(
     motorPowerL,
@@ -93,10 +93,23 @@ void setup() {
 
 
 void loop() {
+    if (command_flag >= 0) {
+        debug_println("Waiting on command");
+        if (bluetooth) {
+            waitCommand();
+        } else {
+            waitButton();
+        }
+    }
+
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         debug_println("Swapping goal....");
+        if (maze->counter <= 2) {
+            buzz->siren();
+            maze->writeEEPROM();
+        }
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
@@ -108,14 +121,6 @@ void loop() {
         }
     }
 
-    if (command_flag >= 0) {
-        debug_println("Waiting on command");
-        if (bluetooth) {
-            waitCommand();
-        } else {
-            waitButton(backButt);
-        }
-    }
     // run the flood-fill algorithm
     maze->floodMaze();
 
@@ -181,16 +186,40 @@ void abort_isr() {
 /* waitButton()
  * Waits on a button press. When pressed it starts the run of the maze.
  */
-void waitButton(Button* but) {
+void waitButton() {
     while (1) {
-        if (but->read() == LOW) {
-            driver->resetState();
-            frontRgb->flashLED(2);
-            delay(1000);
-            frontRgb->flashLED(1);
+        if (backButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(backButt->read() == LOW) {
+                continue;
+            }
 
-            command_flag = -1000;
-            break;
+            if (timer < 3000) {
+                driver->resetState();
+                frontRgb->flashLED(2);
+                delay(1000);
+                frontRgb->flashLED(1);
+
+                command_flag = -1000;
+                break;
+            } else if (timer < 6000) {
+                maze->readEEPROM();
+                buzz->siren();
+            } else {
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                maze->clearEEPROM();
+            }
+        } else if (frontButt->read() == LOW) {
+            frontRgb->flashLED(1);
+            if (maze->counter == 0) {
+                maze->counter++;
+            } else {
+                maze->counter = min(maze->counter + 2, 4);
+            }
         }
     }
 }
