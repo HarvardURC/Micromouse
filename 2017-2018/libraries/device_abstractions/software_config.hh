@@ -67,7 +67,7 @@ namespace swconst {
     const float angle_correction_ratio = .4; // how much to update angular state on frontalign
 
     // back alignment Constants
-    const int backAlignPWM = -30;
+    const int backAlignPWM = -55;
     const float backedOffset = distCenterToInnerWall - 2;
 
     // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
