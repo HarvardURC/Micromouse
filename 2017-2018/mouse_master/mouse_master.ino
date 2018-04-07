@@ -355,6 +355,7 @@ bool commandIs(const char* token, const char* cmd, bool firstchar) {
  * Flashes the LEDs in celebration.
  */
 void celebrate() {
+    buzz->on();
     for (size_t j = 0; j < 4; j++) {
         for (size_t i = 0; i < 2; i++) {
             frontRgb->flashLED(i);
@@ -362,4 +363,5 @@ void celebrate() {
             delay(50);
         }
     }
+    buzz->off();
 }

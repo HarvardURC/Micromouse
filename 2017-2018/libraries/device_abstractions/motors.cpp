@@ -14,7 +14,7 @@ DriverConfig M0(motorLimitM0, convergenceTimeM0, p_l_M0, i_l_M0, d_l_M0,
     p_a_M0, i_a_M0, d_a_M0);
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
-std::vector<DriverConfig> driverCfgs = { M0, S1 };
+std::vector<DriverConfig> driverCfgs = { M0, M0, S1 };
 
 /* Motor functions */
 Motor::Motor(
@@ -543,10 +543,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
                 if (printTimer > 1000) {
                     printTimer = 0;
-                    // debug_printvar(ignore_rangefinder);
-                    // debug_printvar(left_diag_dist);
-                    // debug_printvar(right_diag_dist);
-                    // debug_printvar(angle_travelled);
+                    // debug_printvar(timeout);
                 }
                 switch (heading(goal_x, goal_y)) {
                     case 0:
