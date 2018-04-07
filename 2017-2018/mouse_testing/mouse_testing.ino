@@ -18,7 +18,7 @@ RGB_LED* frontRgb;
 
 /* Global vars */
 int test_num = 0;
-int test_level = 0;
+int test_level = 4;
 bool bluetooth = false; // allows operator to set test_level with bluetooth
 
 
