@@ -1,5 +1,5 @@
 #include <QueueArray.h>
-
+#include <EEPROM.h>
 #include <VL6180X.h>
 #include <config.h>
 #include <emile_motors.h>
@@ -95,9 +95,9 @@ std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "r
 int speed;
 
 //String pathToCenterCheck [150];
-int pathToCenter[256];
-int pathToStart[256];
-int pathLength;
+short pathToCenter[256];
+short pathToStart[256];
+short pathLength;
 
 // initialize motors object
 emile_motors* motors = new emile_motors(sensors[0], sensors[4], sensors[2], sensors[1], sensors[3]);
@@ -157,6 +157,18 @@ void setup() {
   S8_active = false;
   S8_long_active = false;
   S6_active = false;
+
+  eepromAddr = 0;
+  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
+  
+  for (short i = 0; i < 256; i++) {
+    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
+  }
+  for (short i = 0; i < 256; i++) {
+    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
+  }
+
+
 }
 
 // LOOP
@@ -242,6 +254,17 @@ void Janus() {
       pathToStart[end] = (pathToCenter[start] + 2) % 4; 
       start++;
       end--;
+    }
+    // Store map data to EEPROM:
+    // FORMAT: Pathlength, pathToCenter, pathToStart
+    eepromAddr = 0;
+    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
+
+    for (int i = 0; i < pathLength; i++){
+      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
+    }
+    for (int i = 0; i < pathLength; i++){
+      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
     }
 
     // Go back to start
@@ -728,3 +751,21 @@ void speedRun() {
   // }
 }
 
+
+template <class T> int EEPROM_writeAnything(int ee, const T& value)
+{
+   const byte* p = (const byte*)(const void*)&value;
+   int i;
+   for (i = 0; i < sizeof(value); i++)
+       EEPROM.write(ee++, *p++);
+   return i;
+}
+
+template <class T> int EEPROM_readAnything(int ee, T& value)
+{
+   byte* p = (byte*)(void*)&value;
+   int i;
+   for (i = 0; i < sizeof(value); i++)
+       *p++ = EEPROM.read(ee++);
+   return i;
+}
