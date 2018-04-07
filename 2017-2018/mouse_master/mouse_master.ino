@@ -157,7 +157,11 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
-    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize);
+    if (maze->wallsOnSides(driver->curr_angle)) {
+        driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, true);
+    } else {
+        driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize);
+    }
     frontRgb->flashLED(1);
 }
 

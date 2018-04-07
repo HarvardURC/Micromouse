@@ -76,7 +76,8 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    driver->forward(36);
+                    // driver->tankGo(0, -20);
+                    debug_println("Done....");
                     break;
                 case 1:
                     debug_println("36cm forward");
