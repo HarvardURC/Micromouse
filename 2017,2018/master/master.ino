@@ -142,6 +142,7 @@ void setup() {
 // LOOP
 void loop() {
   if (spd <= 0) {
+    delay(200);
     senseWalls();
     Serial.println("Made it past sense walls");
 
@@ -153,8 +154,6 @@ void loop() {
 
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
-
-    delay(1000);
   }
   else {
     while (spd == prevSpd) {
