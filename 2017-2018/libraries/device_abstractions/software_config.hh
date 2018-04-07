@@ -15,7 +15,7 @@ namespace swconst {
 
     const float errorX = 0.9; // centimeters
     const float errorY = errorX;
-    const float errorA = 0.1; // radians
+    const float errorA = 0.2; // radians
 
     const float perpendicularError = 0.5; // range to 90 degrees to terminate move
 

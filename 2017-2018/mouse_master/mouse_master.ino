@@ -117,7 +117,7 @@ void loop() {
     maze->floodMaze();
 
     // determine next cell to move to
-    Position next_move = maze->chooseNextCell(maze->currPos);
+    Position next_move = maze->chooseNextCell(maze->currPos, maze->counter >= 2);
     debug_print("Next move -- ");
     next_move.print(bluetooth);
 
@@ -158,9 +158,12 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
-    debug_printvar(maze->wallBehind(diff.direction()));
-
-    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, maze->wallBehind(diff.direction()));
+    driver->tankGo(
+        next.col * swconst::cellSize,
+        next.row * swconst::cellSize,
+        false,
+        // maze->wallsOnSides(driver->curr_angle),
+        maze->wallBehind(diff.direction()));
     frontRgb->flashLED(1);
 }
 
