@@ -15,8 +15,8 @@
 #define MAZE_WIDTH 16
 #define MAZE_HEIGHT 16
 
-#define CENTER_ROW 0
-#define CENTER_COL 3
+#define CENTER_ROW 1
+#define CENTER_COL 1
 
 #define START_ROW 0
 #define START_COL 0
@@ -27,7 +27,7 @@
 
 // VERY IMPORTANT: UPDATE STARTING_DIR each run
 
-#define STARTING_DIR 2
+#define STARTING_DIR 1
 
 #define LONG_PRESS_THRESHOLD 1000
 
@@ -76,7 +76,7 @@ void floodMaze();
 bool checkWall(int row, int col, int dir);
 void senseWalls();
 void Janus();
-int chooseDirection(int currentRow, int currentCol)
+int chooseDirection(int currentRow, int currentCol);
 void initializeFloodMaze();
 // void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
@@ -161,6 +161,7 @@ void setup() {
 
 // LOOP
 void loop() {
+<<<<<<< HEAD
   // if (spd <= 0) {
   //   senseWalls();
   //   Serial.println("Made it past sense walls");
@@ -737,6 +738,7 @@ void checkButtons() {
 
 void speedRun() {
   // Run through pathToCenter, turn and move robot forward according to direction at each index
+  motors->MOTOR_SPEED = 150;
   for (int i = 0; i < pathLength; i++) {
     turn(pathToCenter[i]);
     motors->forward();

@@ -19,7 +19,7 @@ struct motor {
 void move(std::vector<motor> motors, int direction);
 
 // Constants for test
-int speed = 50;
+int speed = 150;
 int time = 1000;
 int flag = 0;
 
