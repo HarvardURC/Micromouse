@@ -23,7 +23,7 @@ RGB_LED* frontRgb;
 bool command_flag = true; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
-bool bluetooth = true; // activate bluetooth (and command system)
+bool bluetooth = false; // activate bluetooth (and command system)
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -82,7 +82,7 @@ void setup() {
     backRgb->flashLED(1);
 
     // front button will kill any running process
-    attachInterrupt(frontButton, abort_isr, RISING);
+    //attachInterrupt(frontButton, abort_isr, RISING);
 }
 
 
@@ -150,6 +150,7 @@ void loop() {
  * coordinates in centimeters and runs tankGo() to for precise movement
  * in the mapping phase.
  */
+
 void makeNextMove(Position next) {
     Position diff = next - maze->currPos;
     debug_print("Diff direction: ");
@@ -195,7 +196,6 @@ void waitCommand() {
     float d = 0;
     PidController nullPid(0, 0, 0);
     PidController* pid = &nullPid;
-
     const int notifyTime = 8000;
     elapsedMillis timer = 0;
 

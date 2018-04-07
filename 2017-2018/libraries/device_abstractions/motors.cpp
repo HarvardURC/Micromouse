@@ -11,7 +11,7 @@ const bool debug = false; // set to true for serial debugging statements
 
 DriverConfig M0(motorLimitM0, convergenceTimeM0);
 DriverConfig S1(motorLimitS1, convergenceTimeS1);
-DriverConfig driverCfgs[2] = { M0, S1 };
+DriverConfig driverCfgs[2] = { S1, M0 };
 
 /* Motor functions */
 Motor::Motor(
@@ -127,7 +127,7 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    updateConfig(M0);
+    updateConfig(S1);
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
@@ -695,7 +695,7 @@ void Driver::realign(int goal_dist) {
     }
     // angular state updates
     float new_angle = direction * PI / 2;
-    float angle_correction_ratio = .5;
+    float angle_correction_ratio = .2; // how much to update angular state on frontalign
     curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
 }
 

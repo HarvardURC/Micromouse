@@ -62,7 +62,8 @@ namespace swconst {
     const int front_wall_align = 18;
     const int wall_error = 3; // error in sensor for reading wall
     const int front_threshold = 30; // maximum distance to start aligning
-    const int diag_correction = 3; // difference between left and right diags
+    const float diag_correction = 3.5; // difference between left and right diags
+
 
     // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
     const int irThresholds[4] = {90, 90, 0, 90}; // front, left, back, right
