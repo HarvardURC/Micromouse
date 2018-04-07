@@ -29,7 +29,10 @@ int mouseCol = 0;
 // 0 NORTH
 // 1 EAST
 // 2 SOUTH
-// 3 WEST
+// 3 WEST 
+
+// VERY IMPORTANT: UPDATE mouseDir each run
+
 int mouseDir = 2;
 
 const int wallThreshold = 280;
@@ -233,7 +236,7 @@ void Janus() {
     int start = 0;
     int end = pathLength - 1;
 
-    while (start < end) {
+    while (start <= end) {
       pathToStart[start] = (pathToCenter[end] + 2) % 4;
       pathToStart[end] = (pathToCenter[start] + 2) % 4; 
       start++;
@@ -657,24 +660,30 @@ void speedRun() {
     turn(pathToCenter[i]);
     motors->forward();
   }
-  // Reverse each of the directions once the robot has reached the center
+  Serial.println("REACHED THE CENTER!");
   for (int i = 0; i < pathLength; i++) {
-    pathToCenter[i] = (pathToCenter[i] + 2) % 4;
-  }
-  // Reverse the array
-  int beginningArray, endArray;
-  int endingReference = pathLength - 1;
-  for (int i = 0; i < pathLength / 2; i++, endingReference--) {
-    beginningArray = pathToCenter[i];
-    endArray = pathToCenter[endingReference];
-    pathToCenter[endingReference] = beginningArray;
-    pathToCenter[i] = endArray;
-  }
-  // Return to the start
-  for (int i = 0; i < pathLength; i++) {
-    turn(pathToCenter[i]);
-    Serial.print(pathToCenter[i]);
+    turn(pathToStart[i]);
     motors->forward();
   }
+  Serial.println("REACHED THE START");
+  // Reverse each of the directions once the robot has reached the center
+  // for (int i = 0; i < pathLength; i++) {
+  //   pathToCenter[i] = (pathToCenter[i] + 2) % 4;
+  // }
+  // // Reverse the array
+  // int beginningArray, endArray;
+  // int endingReference = pathLength - 1;
+  // for (int i = 0; i < pathLength / 2; i++, endingReference--) {
+  //   beginningArray = pathToCenter[i];
+  //   endArray = pathToCenter[endingReference];
+  //   pathToCenter[endingReference] = beginningArray;
+  //   pathToCenter[i] = endArray;
+  // }
+  // // Return to the start
+  // for (int i = 0; i < pathLength; i++) {
+  //   turn(pathToCenter[i]);
+  //   Serial.print(pathToCenter[i]);
+  //   motors->forward();
+  // }
 }
 
