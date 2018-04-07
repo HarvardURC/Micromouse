@@ -12,13 +12,16 @@
 #define SOUTH 2
 #define WEST 1
 
+#define MAZE_WIDTH 16
+#define MAZE_HEIGHT 16
+
 #define CENTER_ROW 0
 #define CENTER_COL 3
 
 #define START_ROW 0
 #define START_COL 0
 
-bool findMinotaur = true;
+// bool findMinotaur = true;
 
 int mouseRow = 0;
 int mouseCol = 0;
@@ -45,7 +48,7 @@ std::vector<int> sensorReadings = {1000, 1000, 1000, 1000, 1000};
 // CONVERT TO CELL MAP LATER
 unsigned char virtualWalls[256];
 
-Cell cellMap[16][16];
+Cell cellMap[MAZE_HEIGHT][MAZE_WIDTH];
 
 QueueArray<Cell> floodQueue;
 
@@ -59,7 +62,7 @@ void senseWalls();
 void Janus();
 int chooseDirection(int currentRow, int currentCol)
 void initializeFloodMaze();
-void generateWall();
+// void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
 // void store(int nextMovement);
@@ -74,14 +77,15 @@ std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "r
 // initialize speed counter and speed run array
 int spd = 0;
 int prevSpd = 0;
-String speedPathCheck [150];
-int speedPath [150];
-int speedIndex = -1;
+//String pathToCenterCheck [150];
+int pathToCenter[150];
+int pathToStart[150];
+int pathLength = 0;
 
 // initialize storage array and variables
-int quickestPath [150];
-int moveIndex = 0;
-bool backAtStart = false;
+// int quickestPath [150];
+// int moveIndex = 0;
+// bool backAtStart = false;
 
 // initialize motors object
 emile_motors* motors = new emile_motors(sensors[0], sensors[4], sensors[2], sensors[1], sensors[3]);
@@ -136,8 +140,6 @@ void loop() {
     Janus();
     Serial.println("Made it past janus");
 
-    //mouseRow += 1;
-
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
 
@@ -154,36 +156,36 @@ void loop() {
   }
 }
 
-void generateWall() {
-  // 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
-  for (int i = 0; i < 16; i = i + 2) {
-    for (int j = 0; j < 16; ++j) {
-      int nWalls = random(0, 3);
-      for (int k = 0; k < nWalls; ++k) {
-        int d = random (0, 3);
-        if (d == 0) {
-          cellMap[i][j].walls |= NORTH;
-        }
-        else if (d == 1) {
-          cellMap[i][j].walls |= EAST;
-        }
-        else if (d == 2) {
-          cellMap[i][j].walls |= SOUTH;
-        }
-        else {
-          cellMap[i][j].walls |= WEST;
-        }
-      }
-    }
-  }
-}
+// void generateWall() {
+//   // 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
+//   for (int i = 0; i < 16; i = i + 2) {
+//     for (int j = 0; j < 16; ++j) {
+//       int nWalls = random(0, 3);
+//       for (int k = 0; k < nWalls; ++k) {
+//         int d = random (0, 3);
+//         if (d == 0) {
+//           cellMap[i][j].walls |= NORTH;
+//         }
+//         else if (d == 1) {
+//           cellMap[i][j].walls |= EAST;
+//         }
+//         else if (d == 2) {
+//           cellMap[i][j].walls |= SOUTH;
+//         }
+//         else {
+//           cellMap[i][j].walls |= WEST;
+//         }
+//       }
+//     }
+//   }
+// }
 
 // Mouse chooses cell to move to
 void Janus() {
   if (cellMap[mouseRow][mouseCol].floodDistance == 0) {
     Serial.println("we're here");
-    // for (int i = 0; i < speedIndex; i++) {
-    //   quickestPath[i] = speedPath[i];
+    // for (int i = 0; i < pathLength; i++) {
+    //   quickestPath[i] = pathToCenter[i];
     // }
     //    int beginningArray, endArray;
     //    int endingReference = moveIndex - 1;
@@ -204,12 +206,12 @@ void Janus() {
     int tempCol = START_COL;
 
     int tempDir = 0;
-    speedIndex = 0; 
+    pathLength = 0; 
 
     while (cellMap[tempRow][tempCol].floodDistance != 0) {
       tempDir = chooseDirection(tempRow, tempCol);
 
-      speedPath[speedIndex] = tempDir;
+      pathToCenter[pathLength] = tempDir;
 
       if (tempDir == 0) {
         tempRow--;
@@ -224,33 +226,28 @@ void Janus() {
         tempCol--;
       }
 
-      speedIndex++;
+      pathLength++;
     }
 
+    // reverse pathToCenter for pathToStart
+    int start = 0;
+    int end = pathLength - 1;
 
-    // for (int i = 0; i < speedIndex; i++) {
-    //   quickestPath[i] = (quickestPath[i] + 2) % 4;
-    // }
-    // int beginningArray, endArray;
-    // int endingReference = speedIndex - 1;
-    // for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
-    //   beginningArray = quickestPath[i];
-    //   endArray = quickestPath[endingReference];
-    //   quickestPath[endingReference] = beginningArray;
-    //   quickestPath[i] = endArray;
-    // }
-    // Serial.println("the path back to the start: ");
-    // if (!backAtStart) {
-    //   for (int i = 0; i < speedIndex; i++) {
-    //     turn(quickestPath[i]);
-    //     Serial.print(quickestPath[i]);
-    //     motors->forward();
-    //   }
-    // }
-    // backAtStart = true;
-    // Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // spd++;
-    // return;
+    while (start < end) {
+      pathToStart[start] = (pathToCenter[end] + 2) % 4;
+      pathToStart[end] = (pathToCenter[start] + 2) % 4; 
+      start++;
+      end--;
+    }
+
+    // Go back to start
+    for (int i = 0; i < pathLength; i++) {
+      turn(pathToStart[i]);
+      motors->forward();
+    }
+
+    // Increment spd to go on to speed runs
+    spd++;
   } 
   else {
     int thePath = chooseDirection(mouseRow, mouseCol);
@@ -358,7 +355,7 @@ void floodMaze() {
     }
 
     // Check Eastern Cell
-    if (fCol < 15 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
+    if (fCol < MAZE_WIDTH - 1 && !cellMap[fRow][fCol + 1].visited && !checkWall(fRow, fCol, EAST)) {
       if (fDistance + 1 < cellMap[fRow][fCol + 1].floodDistance) {
         cellMap[fRow][fCol + 1].floodDistance = fDistance + 1;
       }
@@ -367,7 +364,7 @@ void floodMaze() {
     }
 
     // Check Southern Cell
-    if (fRow < 15 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
+    if (fRow < MAZE_HEIGHT - 1 && !cellMap[fRow + 1][fCol].visited && !checkWall(fRow, fCol, SOUTH)) {
       if (fDistance + 1 < cellMap[fRow + 1][fCol].floodDistance) {
         cellMap[fRow + 1][fCol].floodDistance = fDistance + 1;
       }
@@ -396,14 +393,14 @@ bool checkWall(int row, int col, int dir) {
     }
     return true;
   } else if (dir == EAST) {
-    if (col < 15) {
+    if (col < MAZE_WIDTH - 1) {
       if ((cellMap[row][col + 1].walls & WEST) != WEST && (cellMap[row][col].walls & EAST) != EAST) {
         return false;
       }
     }
     return true;
   } else if (dir == SOUTH) {
-    if (row < 15) {
+    if (row < MAZE_HEIGHT - 1) {
       if ((cellMap[row + 1][col].walls & NORTH) != NORTH && (cellMap[row][col].walls & SOUTH) != SOUTH) {
         return false;
       }
@@ -423,8 +420,8 @@ bool checkWall(int row, int col, int dir) {
 
 void initializeFloodMaze() {
   // When we run the flood maze, none of the cells should be visited already
-  for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
+  for (int i = 0; i < MAZE_HEIGHT; i++) {
+    for (int j = 0; j < MAZE_WIDTH; j++) {
       cellMap[i][j].visited = false;
       cellMap[i][j].floodDistance = 1000;
     }
@@ -458,8 +455,8 @@ void initializeFloodMaze() {
 }
 
 void initializeCellMap() {
-  for (short i = 0; i < 16; i++) {
-    for (short j = 0; j < 16; j++) {
+  for (short i = 0; i < MAZE_HEIGHT; i++) {
+    for (short j = 0; j < MAZE_WIDTH; j++) {
       Cell temp;
       temp.row = i;
       temp.column = j;
@@ -476,15 +473,15 @@ void initializeCellMap() {
 // REWRITE FOR 2 DIMENSIONAL
 void setBoundaryWalls() {
   // NOTE: Top of the maze is set to the the 0th row
-  for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
+  for (int i = 0; i < MAZE_HEIGHT; i++) {
+    for (int j = 0; j < MAZE_WIDTH; j++) {
       if (i == 0) {
         cellMap[i][j].walls |= NORTH;
       }
-      if (j == 15) {
+      if (j == MAZE_WIDTH - 1) {
         cellMap[i][j].walls |= EAST;
       }
-      if (i == 15) {
+      if (i == MAZE_HEIGHT - 1) {
         cellMap[i][j].walls |= SOUTH;
       }
       if (j == 0) {
@@ -495,7 +492,7 @@ void setBoundaryWalls() {
 }
 
 void printVirtualMaze() {
-  for (int row = 0; row < 16; row++) {
+  for (int row = 0; row < MAZE_HEIGHT; row++) {
     printVirtualRow(row, true);
     printVirtualRow(row, false);
   }
@@ -506,7 +503,7 @@ void printVirtualMaze() {
 
 // isPost boolean variables flags whether we are printing a row with vertical walls or horizontal walls
 void printVirtualRow(int row, bool isPostRow) {
-  for (int col = 0; col < 16; col++) {
+  for (int col = 0; col < MAZE_WIDTH; col++) {
 
     if (isPostRow) {
       Serial.print("+");
@@ -634,17 +631,17 @@ void initSensor(int pin, VL6180X *sensor, int address) {
 }
 
 // void store(int nextMovement) {
-//   speedIndex++;
+//   pathLength++;
 // //  moveIndex++;
 // //  quickestPath[moveIndex] = nextMovement;
-//   speedPath[speedIndex] = nextMovement;
+//   pathToCenter[pathLength] = nextMovement;
 //   char buffer [200];
-//   speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
-//   Serial.println(speedPathCheck[speedIndex]);
-//   if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
-//     speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
-//     speedPath[speedIndex - 2] = speedPath[speedIndex];
-//     speedIndex -= 2;
+//   pathToCenterCheck[pathLength] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
+//   Serial.println(pathToCenterCheck[pathLength]);
+//   if (pathToCenterCheck[pathLength - 2] == pathToCenterCheck[pathLength]) {
+//     pathToCenterCheck[pathLength - 2] = pathToCenterCheck[pathLength];
+//     pathToCenter[pathLength - 2] = pathToCenter[pathLength];
+//     pathLength -= 2;
 //   }
 // }
 
@@ -655,28 +652,28 @@ void addSpdCount() {
 }
 
 void speedRun() {
-  // Run through speedPath, turn and move robot forward according to direction at each index
-  for (int i = 0; i < speedIndex; i++) {
-    turn(speedPath[i]);
+  // Run through pathToCenter, turn and move robot forward according to direction at each index
+  for (int i = 0; i < pathLength; i++) {
+    turn(pathToCenter[i]);
     motors->forward();
   }
   // Reverse each of the directions once the robot has reached the center
-  for (int i = 0; i < speedIndex; i++) {
-    speedPath[i] = (speedPath[i] + 2) % 4;
+  for (int i = 0; i < pathLength; i++) {
+    pathToCenter[i] = (pathToCenter[i] + 2) % 4;
   }
   // Reverse the array
   int beginningArray, endArray;
-  int endingReference = speedIndex - 1;
-  for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
-    beginningArray = speedPath[i];
-    endArray = speedPath[endingReference];
-    speedPath[endingReference] = beginningArray;
-    speedPath[i] = endArray;
+  int endingReference = pathLength - 1;
+  for (int i = 0; i < pathLength / 2; i++, endingReference--) {
+    beginningArray = pathToCenter[i];
+    endArray = pathToCenter[endingReference];
+    pathToCenter[endingReference] = beginningArray;
+    pathToCenter[i] = endArray;
   }
   // Return to the start
-  for (int i = 0; i < speedIndex; i++) {
-    turn(speedPath[i]);
-    Serial.print(speedPath[i]);
+  for (int i = 0; i < pathLength; i++) {
+    turn(pathToCenter[i]);
+    Serial.print(pathToCenter[i]);
     motors->forward();
   }
 }
