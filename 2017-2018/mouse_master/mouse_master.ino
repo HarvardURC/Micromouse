@@ -27,7 +27,7 @@ bool bluetooth = false; // activate bluetooth (and command system)
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
-bool abort = 0;
+bool abort_run = 0;
 
 void setup() {
     /* * * * * * * * * * * * * * * * *
@@ -163,7 +163,7 @@ void makeNextMove(Position next) {
 
 
 void abort_isr() {
-    abort = 1;
+    abort_run = 1;
 }
 
 
