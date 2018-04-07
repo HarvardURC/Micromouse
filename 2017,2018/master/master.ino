@@ -1,5 +1,5 @@
 #include <QueueArray.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include <VL6180X.h>
 #include <config.h>
 #include <emile_motors.h>
@@ -15,8 +15,8 @@
 #define MAZE_WIDTH 16
 #define MAZE_HEIGHT 16
 
-#define CENTER_ROW 1
-#define CENTER_COL 1
+#define CENTER_ROW 2
+#define CENTER_COL 5
 
 #define START_ROW 0
 #define START_COL 0
@@ -157,17 +157,17 @@ void setup() {
   S8_active = false;
   S8_long_active = false;
   S6_active = false;
-
-  int eepromAddr = 0;
-  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
-  
-  for (short i = 0; i < 256; i++) {
-    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
-  }
-  for (short i = 0; i < 256; i++) {
-    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
-  }
-
+//
+//  int eepromAddr = 0;
+//  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
+//  
+//  for (short i = 0; i < 256; i++) {
+//    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
+//  }
+//  for (short i = 0; i < 256; i++) {
+//    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
+//  }
+//
 
 }
 
@@ -257,15 +257,15 @@ void Janus() {
     }
     // Store map data to EEPROM:
     // FORMAT: Pathlength, pathToCenter, pathToStart
-    int eepromAddr = 0;
-    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
-
-    for (int i = 0; i < pathLength; i++){
-      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
-    }
-    for (int i = 0; i < pathLength; i++){
-      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
-    }
+//    int eepromAddr = 0;
+//    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
+//
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
+//    }
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
+//    }
 
     // Go back to start
     for (int i = 0; i < pathLength; i++) {
@@ -278,7 +278,7 @@ void Janus() {
 
     // stop mapping run
     mapping_run = false;
-  } //jdjdjdjdjdjdjdjdjdj
+  }
   else {
     int thePath = chooseDirection(mouseRow, mouseCol);
 
@@ -715,11 +715,11 @@ void checkButtons() {
 }
 
 void speedRun() {
-  // Run through pathToCenter, turn and move robot forward according to direction at each index
+  // Run through pathToCenter, turn and move robot advance according to direction at each index
   // motors->MOTOR_SPEED = 150;
   for (int i = 0; i < pathLength; i++) {
     turn(pathToCenter[i]);
-    motors->forward();
+    motors->forward(); //TODO change to advance()
   }
   Serial.println("REACHED THE CENTER!");
   for (int i = 0; i < pathLength; i++) {
@@ -747,25 +747,25 @@ void speedRun() {
   // for (int i = 0; i < pathLength; i++) {
   //   turn(pathToCenter[i]);
   //   Serial.print(pathToCenter[i]);
-  //   motors->forward();
+  //   motors->advances();
   // }
 }
 
-
-template <class T> int EEPROM_writeAnything(int ee, const T& value)
-{
-   const byte* p = (const byte*)(const void*)&value;
-   int i;
-   for (i = 0; i < sizeof(value); i++)
-       EEPROM.write(ee++, *p++);
-   return i;
-}
-
-template <class T> int EEPROM_readAnything(int ee, T& value)
-{
-   byte* p = (byte*)(void*)&value;
-   int i;
-   for (i = 0; i < sizeof(value); i++)
-       *p++ = EEPROM.read(ee++);
-   return i;
-}
+//
+//template <class T> int EEPROM_writeAnything(int ee, const T& value)
+//{
+//   const byte* p = (const byte*)(const void*)&value;
+//   int i;
+//   for (i = 0; i < sizeof(value); i++)
+//       EEPROM.write(ee++, *p++);
+//   return i;
+//}
+//
+//template <class T> int EEPROM_readAnything(int ee, T& value)
+//{
+//   byte* p = (byte*)(void*)&value;
+//   int i;
+//   for (i = 0; i < sizeof(value); i++)
+//       *p++ = EEPROM.read(ee++);
+//   return i;
+//}
