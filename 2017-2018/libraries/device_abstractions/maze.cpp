@@ -325,9 +325,11 @@ Position Maze::chooseNextCell(Position pos, bool straights) {
             !(wallMap[pos.offset()] & 1 << i) &&
             cellMap[test_offset] < lowest)
         {
-            lowest = cellMap[test_offset];
-            lowestPos = getPosition(test_offset);
-            dir = i;
+            if (lowest == 255 || rand() % 2 == 1) {
+                lowest = cellMap[test_offset];
+                lowestPos = getPosition(test_offset);
+                dir = i;
+            }
         }
     }
 

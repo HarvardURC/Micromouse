@@ -786,7 +786,7 @@ void Driver::backAlign() {
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
     _rgb.flashLED(1);
-    delay(300);
+    delay(200);
     forward(backedOffset);
 }
 

@@ -5,7 +5,7 @@ namespace swconst {
     /* PID controller  constants */
     const int pidSampleTime = 5; // parameter to PID library
     const float pidLimit = 50.0; // upperlimit on PID output
-    const float pidLoopTimeout = 3000; // global timeout ms on pid loops
+    const float pidLoopTimeout = 2000; // global timeout ms on pid loops
 
     // motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
     const float p_m = 0.002, i_m = 0, d_m = 0;
@@ -75,8 +75,8 @@ namespace swconst {
     const int numWallChecks = 4; // number of times to check sensors for walls
 
     /* Mapping phase constants */
-    const int convergenceTimeM0 = 20; // milliseconds
-    const int motorLimitM0 = 45; // highest motor PWM value
+    const int convergenceTimeM0 = 30; // milliseconds
+    const int motorLimitM0 = 50; // highest motor PWM value
 
     /* Mapping phase PID vals */
     const float p_l_M0 = 12, i_l_M0 = 0, d_l_M0 = 0.05; // linear PIDs, x and y position
