@@ -310,7 +310,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
 
 /* Chooses the next cell based on the flood-fill algorithm's determination
  * of the adjacent cell which is closest to the destination. */
-Position Maze::chooseNextCell(Position pos) {
+Position Maze::chooseNextCell(Position pos, bool straights) {
     // stores the lowest adjacent distance from the destination
     unsigned char lowest = 255;
     int dir = 0;
@@ -333,7 +333,7 @@ Position Maze::chooseNextCell(Position pos) {
     }
 
     // long straight of ways
-    if (counter > 0) {
+    if (counter > 0 && straights) {
         int n_cells = 1;
         while (n_cells < 16) {
             // test if next cell is valid, if it is set it to lowestPos
