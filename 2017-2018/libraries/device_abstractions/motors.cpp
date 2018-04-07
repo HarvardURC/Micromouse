@@ -749,7 +749,7 @@ void Driver::backAlign() {
     // angular state update
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
-    delay(100);
+    delay(300);
     forward(backedOffset);
 }
 
