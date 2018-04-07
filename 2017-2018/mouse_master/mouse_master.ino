@@ -25,6 +25,7 @@ int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
 bool bluetooth = false; // activate bluetooth (and command system)
+bool backupFlag = false;
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -166,13 +167,14 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
+    bool backupMode = backupFlag ? maze->wallBehind(diff.direction()) : false;
+
     driver->tankGo(
         next.col * swconst::cellSize,
         next.row * swconst::cellSize,
         false,
         // maze->wallsOnSides(driver->curr_angle),
-        false
-        // maze->wallBehind(diff.direction())
+        backupMode
         );
     frontRgb->flashLED(1);
 }
@@ -188,6 +190,8 @@ void abort_isr() {
  */
 void waitButton() {
     while (1) {
+        /* press back button for a run, for 3-6 seconds for an EEPROM read
+         * and 6+ for EEPROM clear */
         if (backButt->read() == LOW) {
             elapsedMillis timer = 0;
             while(backButt->read() == LOW) {
@@ -213,12 +217,24 @@ void waitButton() {
                 buzz->siren();
                 maze->clearEEPROM();
             }
-        } else if (frontButt->read() == LOW) {
-            frontRgb->flashLED(1);
-            if (maze->counter == 0) {
-                maze->counter++;
-            } else {
-                maze->counter = min(maze->counter + 2, 4);
+        }
+        // press front button to increment speed run counter
+        else if (frontButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(frontButt->read() == LOW) {
+                continue;
+            }
+            if (timer < 5000) {
+                frontRgb->flashLED(1);
+                if (maze->counter == 0) {
+                    maze->counter++;
+                } else {
+                    maze->counter = min(maze->counter + 2, 4);
+                }
+            }
+            else {
+                celebrate();
+                backupFlag = !backupFlag;
             }
         }
     }
