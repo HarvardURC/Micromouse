@@ -89,6 +89,7 @@ void setup() {
     backRgb->flashLED(1);
 
     driver->encoderOnlyFlag = true;
+    driver->imuOn = false;
 
     // front button will kill any running process
     // attachInterrupt(frontButton, abort_isr, RISING);
@@ -191,23 +192,24 @@ void abort_isr() {
  * Waits on a button press. When pressed it starts the run of the maze.
  */
 void waitButton() {
+    const long ledtime = 2000;
     while (1) {
         /* press back button for a run, for 3-6 seconds for an EEPROM read
          * and 6+ for EEPROM clear */
         if (backButt->read() == LOW) {
             elapsedMillis timer = 0;
             while(backButt->read() == LOW) {
-                if (timer > 3000 && timer < 6000) {
-                    backRgb->turnOn(1);
-                } else if (timer >= 6000) {
-                    backRgb->turnOn(2);
-                } else {
+                if (timer < ledtime) {
                     backRgb->turnOn(0);
+                } else if (timer < ledtime * 2) {
+                    backRgb->turnOn(1);
+                } else {
+                    backRgb->turnOn(2);
                 }
             }
             backRgb->turnOff();
 
-            if (timer < 3000) {
+            if (timer < ledtime) {
                 driver->resetState();
                 frontRgb->flashLED(2);
                 delay(1000);
@@ -215,7 +217,7 @@ void waitButton() {
 
                 command_flag = -1000;
                 break;
-            } else if (timer < 6000) {
+            } else if (timer < ledtime * 2) {
                 maze->readEEPROM();
                 buzz->siren();
             } else {
@@ -231,9 +233,11 @@ void waitButton() {
         else if (frontButt->read() == LOW) {
             elapsedMillis timer = 0;
             while(frontButt->read() == LOW) {
-                if (timer > 3000 && timer < 6000) {
+                if (timer < ledtime) {
+                    backRgb->turnOn(0);
+                } else if (timer < ledtime * 2) {
                     backRgb->turnOn(1);
-                } else if (timer >= 6000) {
+                } else if (timer < ledtime * 3) {
                     backRgb->turnOn(2);
                 } else {
                     backRgb->turnOn(0);
@@ -241,7 +245,7 @@ void waitButton() {
             }
             backRgb->turnOff();
 
-            if (timer < 3000) {
+            if (timer < ledtime) {
                 frontRgb->flashLED(1);
                 if (maze->counter == 0) {
                     maze->counter++;
@@ -249,13 +253,18 @@ void waitButton() {
                     maze->counter = min(maze->counter + 2, 4);
                 }
             }
-            else if (timer < 6000) {
+            else if (timer < ledtime * 2) {
                 celebrate();
                 backupFlag = !backupFlag;
             }
-            else {
+            else if (timer < ledtime * 3) {
                 buzz->siren();
+                backupFlag = false;
                 driver->encoderOnlyFlag = false;
+            } else {
+                backupFlag = true;
+                driver->imuOn = true;
+                driver->encoderOnlyFlag = true;
             }
         }
     }

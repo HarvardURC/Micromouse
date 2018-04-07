@@ -111,6 +111,7 @@ class Driver {
         int convergenceTime;
 
         bool encoderOnlyFlag;
+        bool imuOn;
 
         // left, middle, right
         long shortTofWallReadings[4];
