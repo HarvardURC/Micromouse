@@ -121,8 +121,8 @@ void setup() {
     Serial.println(i);
   }
   // Initialize buttons
-  pinMode(pins::buttonS8, INPUT);
-  pinMode(pins::buttonS6, INPUT);
+  pinMode(pins::buttonS8, INPUT_PULLUP);
+  pinMode(pins::buttonS6, INPUT_PULLUP);
 
   // Initializes LED
   pinMode(pins::led, OUTPUT);
@@ -655,6 +655,9 @@ void checkButtons() {
   if (S6_active) {
     mapping_run = true;
     S6_active = false;
+    digitalWrite(pins::led, HIGH);
+    delay(500);
+    digitalWrite(pins::led, LOW);
     return;
   }
 
@@ -670,6 +673,10 @@ void checkButtons() {
 
     if (S8_long_active) {
       motors->MOTOR_SPEED -= SPEED_DECREASE;
+        digitalWrite(pins::led, HIGH);
+        delay(500);
+        digitalWrite(pins::led, LOW);
+        delay(500);
     } else {
       motors->MOTOR_SPEED += SPEED_INCREASE;
     }
@@ -678,6 +685,9 @@ void checkButtons() {
     S8_long_active = false;
 
     speed_run = true;
+    digitalWrite(pins::led, HIGH);
+    delay(500);
+    digitalWrite(pins::led, LOW);
   }
 }
 
