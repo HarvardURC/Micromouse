@@ -5,6 +5,7 @@ namespace swconst {
     /* PID controller  constants */
     const int pidSampleTime = 5; // parameter to PID library
     const float pidLimit = 50.0; // upperlimit on PID output
+    const float pidLoopTimeout = 8000; // global timeout ms on pid loops
 
     // motor/encoder PID (ONLY FOR MOTOR CLASS FUNCTIONS)
     const float p_m = 0.002, i_m = 0, d_m = 0;

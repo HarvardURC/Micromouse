@@ -98,7 +98,8 @@ void SensorArray::readToSerial() {
 
 
 int SensorArray::readShortTof(int sensor_index) {
-    return sensors[sensor_index]->readRangeContinuous();
+    int reading = sensors[sensor_index]->readRangeContinuous();
+    return reading > 180 ? 180 : reading;
 }
 
 

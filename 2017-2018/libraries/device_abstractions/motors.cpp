@@ -347,6 +347,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
     elapsedMillis printTimer = 0;
+    elapsedMillis timeout = 0;
     int sensorCounter = 0;
     int end_iter = 0;
     bool angle_flag = goal_x == curr_xpos && goal_y == curr_ypos;
@@ -576,7 +577,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             // the current angle wrapped from 0 to 2PI
             angle_travelled += angle_change;
         }
-    } while (1);
+    } while (timeout < pidLoopTimeout);
 
     brake();
     if (debug) debug_println("Done with movement.");
@@ -653,7 +654,8 @@ void Driver::realign(int goal_dist) {
 
     // use imu to incorporate angle into front pid input
     // (when robot is turned, its closer to the wall with same front reading)
-    while (1) {
+    elapsedMillis timeout = 0;
+    while (timeout < pidLoopTimeout / 2) {
         left_front_dist = _sensors.readShortTof(LEFTFRONT);
         right_front_dist = _sensors.readShortTof(RIGHTFRONT);
         // float diag_diff = left_diag_dist - right_diag_dist;
