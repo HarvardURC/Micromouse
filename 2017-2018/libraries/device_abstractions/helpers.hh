@@ -103,9 +103,28 @@ class EncoderTicker : public Ticker {
 };
 
 struct DriverConfig {
-    DriverConfig(int a, int b) : motorLimit(a), convergenceTime(b) {};
+    DriverConfig(int mL, int cT, float pl, float il, float dl,
+        float pa, float ia, float da)
+    : motorLimit(mL),
+    convergenceTime(cT),
+    p_l(pl),
+    i_l(il),
+    d_l(dl),
+    p_a(pa),
+    i_a(ia),
+    d_a(da) {};
+
+    // config items
     int motorLimit;
     int convergenceTime;
+
+    float p_l;
+    float i_l;
+    float d_l;
+
+    float p_a;
+    float i_a;
+    float d_a;
 
     void print();
 };

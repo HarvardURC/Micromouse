@@ -1,4 +1,5 @@
 #include <Encoder.h>
+#include <vector>
 #include "sensors.hh"
 #include "helpers.hh"
 
@@ -125,6 +126,6 @@ class Driver {
         float _v_right = 0;
 };
 
-extern DriverConfig driverCfgs[2];
+extern std::vector<DriverConfig> driverCfgs;
 
 #endif

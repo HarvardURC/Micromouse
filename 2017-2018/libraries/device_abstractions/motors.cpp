@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
 #include <math.h>
+#include <vector>
 #include "motors.hh"
 #include "bluetooth.hh"
 #include "software_config.hh"
@@ -9,9 +10,11 @@ using namespace swconst;
 
 const bool debug = false; // set to true for serial debugging statements
 
-DriverConfig M0(motorLimitM0, convergenceTimeM0);
-DriverConfig S1(motorLimitS1, convergenceTimeS1);
-DriverConfig driverCfgs[2] = { S1, M0 };
+DriverConfig M0(motorLimitM0, convergenceTimeM0, p_l_M0, i_l_M0, d_l_M0,
+    p_a_M0, i_a_M0, d_a_M0);
+DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
+    p_a_S1, i_a_S1, d_a_S1);
+std::vector<DriverConfig> driverCfgs = { M0, S1 };
 
 /* Motor functions */
 Motor::Motor(
@@ -115,9 +118,9 @@ Driver::Driver(
     int encoderPinR1,
     int encoderPinR2,
     SensorArray sensors) :
-    _pid_x(p_l, i_l, d_l),
-    _pid_y(p_l, i_l, d_l),
-    _pid_a(p_a, i_a, d_a),
+    _pid_x(p_l_M0, i_l_M0, d_l_M0),
+    _pid_y(p_l_M0, i_l_M0, d_l_M0),
+    _pid_a(p_a_M0, i_a_M0, d_a_M0),
     _pid_front_tof(p_tof, i_tof, d_tof),
     _pid_diag_tof(p_diag, i_diag, d_diag),
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
@@ -127,7 +130,7 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    updateConfig(S1);
+    updateConfig(M0);
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
 
@@ -468,10 +471,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         }
                     }
                 }
-                float alpha = 0.8;
-                float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
-                float left_front_dist = _sensors.readShortTof(LEFTFRONT);
-                float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+                // float alpha = 0.8;
+                // float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+                // float left_front_dist = _sensors.readShortTof(LEFTFRONT);
+                // float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
 
                 imu_weight = nowall_imu_w;
                 encoder_weight = nowall_encoder_w;
@@ -695,11 +698,13 @@ void Driver::realign(int goal_dist) {
     }
     // angular state updates
     float new_angle = direction * PI / 2;
-    float angle_correction_ratio = .2; // how much to update angular state on frontalign
     curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
 }
 
 void Driver::updateConfig(DriverConfig cfg) {
     motorLimit = cfg.motorLimit;
     convergenceTime = cfg.convergenceTime;
+    _pid_x.setTunings(cfg.p_l, cfg.i_l, cfg.d_l);
+    _pid_y.setTunings(cfg.p_l, cfg.i_l, cfg.d_l);
+    _pid_a.setTunings(cfg.p_a, cfg.i_a, cfg.d_a);
 }

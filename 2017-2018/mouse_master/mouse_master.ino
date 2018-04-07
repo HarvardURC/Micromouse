@@ -20,10 +20,10 @@ Button* frontButt;
 RGB_LED* backRgb;
 RGB_LED* frontRgb;
 
-bool command_flag = true; // wait for a command or button press
+int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
-bool bluetooth = false; // activate bluetooth (and command system)
+bool bluetooth = true; // activate bluetooth (and command system)
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -94,16 +94,16 @@ void loop() {
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            driver->updateConfig(driverCfgs[maze->counter / 2]);
-            driverCfgs[maze->counter / 2].print();
-            command_flag = true;
+            int speedRunIdx = min(maze->counter / 2, driverCfgs.size() - 1);
+            driver->updateConfig(driverCfgs[speedRunIdx]);
+            command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
             celebrate();
         }
     }
 
-    if (command_flag) {
+    if (command_flag >= 0) {
         debug_println("Waiting on command");
         if (bluetooth) {
             waitCommand();
@@ -177,7 +177,7 @@ void waitButton(Button* but) {
             delay(1000);
             frontRgb->flashLED(1);
 
-            command_flag = false;
+            command_flag = -1000;
             break;
         }
     }
@@ -224,6 +224,9 @@ void waitCommand() {
             }
             // go to next cell
             else if (commandIs(token, "go")) {
+                int numMoves = atoi(strtok(NULL, " "));
+                command_flag = -1 * numMoves;
+
                 frontRgb->flashLED(2);
                 delay(1000);
                 frontRgb->flashLED(1);
@@ -233,7 +236,7 @@ void waitCommand() {
             else if (commandIs(token, "start")) {
                 debug_println("Running maze.");
                 driver->resetState();
-                command_flag = false;
+                command_flag = -1000;
                 break;
             }
             // move forward
@@ -259,7 +262,7 @@ void waitCommand() {
             }
             else if (commandIs(token, "tune")) {
                 tuning = 0;
-                debug_println("Pick PID to tune. [linear, angular, front tof]");
+                debug_println("Pick PID to tune. [linear, angular, fronttof]");
             }
             else if (commandIs(token, "quit")) {
                 tuning = -1;
@@ -291,7 +294,7 @@ void waitCommand() {
                     else if (commandIs(token, "angular")) {
                         tuning = 2;
                     }
-                    else if (commandIs(token, "front tof")) {
+                    else if (commandIs(token, "fronttof")) {
                         tuning = 3;
                     }
                 }
@@ -310,7 +313,7 @@ void waitCommand() {
                         }
                         case 3: {
                             pid = &driver->_pid_front_tof;
-                            debug_print("front tof: ");
+                            debug_print("fronttof: ");
                             break;
                         }
                     }

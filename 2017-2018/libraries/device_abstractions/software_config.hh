@@ -63,7 +63,7 @@ namespace swconst {
     const int wall_error = 3; // error in sensor for reading wall
     const int front_threshold = 30; // maximum distance to start aligning
     const float diag_correction = 3.5; // difference between left and right diags
-
+    const float angle_correction_ratio = .2; // how much to update angular state on frontalign
 
     // thresholds for the 4 directions: TUNE THESE ON COMPETITION DAY
     const int irThresholds[4] = {90, 90, 0, 90}; // front, left, back, right
@@ -74,14 +74,17 @@ namespace swconst {
     const int motorLimitM0 = 55; // highest motor PWM value
 
     /* Mapping phase PID vals */
-    const float p_l = 12, i_l = 0.5, d_l = 0.15; // linear PIDs, x and y position
-    const float p_a = 20, i_a = 0.5, d_a = 0.1; // angle PID
+    const float p_l_M0 = 12, i_l_M0 = 0.5, d_l_M0 = 0.15; // linear PIDs, x and y position
+    const float p_a_M0 = 20, i_a_M0 = 0.5, d_a_M0 = 0.1; // angle PID
     const float p_tof = 8, i_tof = 0.5, d_tof = 0.1; // front ToF sensor PID
     const float p_diag = 3, i_diag = 0, d_diag = 0.05; // diagonal ToF sensors PID
 
     /* Speedrun 1 constants */
     const int convergenceTimeS1 = 10;
     const int motorLimitS1 = 70;
+
+    const float p_l_S1 = 12, i_l_S1 = 0.5, d_l_S1 = 0.15; // linear PIDs, x and y position
+    const float p_a_S1 = 14, i_a_S1 = 0.5, d_a_S1 = 0.4; // angle PID
 }
 
 #endif
