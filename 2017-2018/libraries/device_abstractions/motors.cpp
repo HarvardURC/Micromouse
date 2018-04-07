@@ -601,10 +601,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
 
                 if (printTimer > 1000) {
                     printTimer = 0;
-                    debug_printvar(withinError(goal_x, curr_xpos, errorX));
-                    debug_printvar(withinError(goal_y, curr_ypos, errorY));
-                    debug_printvar(withinError(goal_a, angle_travelled, errorA));
-                    debug_printvar((fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough));
+                    // debug_printvar(withinError(goal_x, curr_xpos, errorX));
+                    // debug_printvar(withinError(goal_y, curr_ypos, errorY));
+                    // debug_printvar(withinError(goal_a, angle_travelled, errorA));
+                    // debug_printvar((fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough));
                 }
             }
 

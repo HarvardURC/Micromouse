@@ -18,7 +18,7 @@ RGB_LED* frontRgb;
 
 /* Global vars */
 int test_num = 0;
-int test_level = 4;
+int test_level = 0;
 bool bluetooth = false; // allows operator to set test_level with bluetooth
 
 
@@ -78,12 +78,11 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    // driver->tankGo(0, -20);
-                    debug_println("Done....");
+                    driver->forward(18);
                     break;
                 case 1:
                     debug_println("36cm forward");
-                    driver->forward(90);
+                    driver->forward(36);
                     break;
                 case 2:
                     debug_println("90 degrees left");
