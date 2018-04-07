@@ -19,10 +19,8 @@ DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
 // speed run config
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
-DriverConfig S2(motorLimitS2, convergenceTimeS2, p_l_S2, i_l_S2, d_l_S2,
-    p_a_S2, i_a_S2, d_a_S2);
 // go mapping -> mapping with straight of ways -> speedrun
-std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1, S2 };
+std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1};
 
 /* Motor functions */
 Motor::Motor(
@@ -452,7 +450,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
 
                 if (end_iter > convergenceTime) {
                     break;
-                }   
+                }
             }
 
             /* Update positional state, curr_xpos and curr_ypos */
