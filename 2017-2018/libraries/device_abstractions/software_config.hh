@@ -13,9 +13,9 @@ namespace swconst {
     /* Error thresholds */
     const int encoderError = 5000; // error threshold for the encoder values
 
-    const float errorX = 0.3; // centimeters
+    const float errorX = 0.7; // centimeters
     const float errorY = errorX;
-    const float errorA = 0.1; // radians
+    const float errorA = 0.3; // radians
 
     const float perpendicularError = 0.5; // range to 90 degrees to terminate move
 
@@ -45,16 +45,16 @@ namespace swconst {
 
     /* Sensor constants */
     const float imu_w = 0;                     // ratio of IMU
-    const float encoder_w = 0;                 // vs. encoder measurements
-    const float rangefinder_w = 1;             // vs. rangefinder measurement for angle
+    const float encoder_w = 1;                 // vs. encoder measurements
+    const float rangefinder_w = 0;             // vs. rangefinder measurement for angle
 
     const float nowall_imu_w = 0;
     const float nowall_encoder_w = 1;
     const float nowall_rangefinder_w = 0;
 
     // wall-following constants: TUNE THESE ON COMPETITION DAY
-    const int tof_low_bound = 20;
-    const int tof_high_bound = 55;
+    const int tof_low_bound = 10;
+    const int tof_high_bound = 50;
     const int front_wall_threshold = 90;
     const float wall_follow_dist = 20.;
     const float distance_limit = 18; // if ignoring wall, ignore for 12cm
@@ -79,8 +79,10 @@ namespace swconst {
     const int motorLimitM0 = 55; // highest motor PWM value
 
     /* Mapping phase PID vals */
-    const float p_l_M0 = 5, i_l_M0 = 1, d_l_M0 = 0; // linear PIDs, x and y position
-    const float p_a_M0 = 3.5, i_a_M0 = 0.1, d_a_M0 = 0; // angle PID
+    const float p_l_M0 = 5, i_l_M0 = 1, d_l_M0 = 0; // linear PIDs, x and y position 
+    // const float p_a_M0 = 7, i_a_M0 = 0, d_a_M0 = 0.1; // angle PID 
+    // const float p_l_M0 = 12, i_l_M0 = 0, d_l_M0 = 0.05; 
+    const float p_a_M0 = 12, i_a_M0 = 0, d_a_M0 = 0;
 
     const float p_l_M0T = 22, i_l_M0T = 0.5, d_l_M0T = 0.1; // linear PID ONLY FOR TURNS
     const float p_a_M0T = 22, i_a_M0T = 0.5, d_a_M0T = 0.1; // angle PID ONLY FOR TURNS
@@ -94,6 +96,12 @@ namespace swconst {
 
     const float p_l_S1 = 12, i_l_S1 = 0.5, d_l_S1 = 0.15; // linear PIDs, x and y position
     const float p_a_S1 = 14, i_a_S1 = 0.5, d_a_S1 = 0.4; // angle PID
+
+    const int convergenceTimeS2 = 20;
+    const int motorLimitS2 = 120;
+
+    const float p_l_S2 = 25, i_l_S2 = 0.5, d_l_S2 = 0.15; // linear PIDs, x and y position
+    const float p_a_S2 = 30, i_a_S2 = 0.5, d_a_S2 = 0.4; // angle PID
 }
 
 #endif

@@ -47,6 +47,10 @@ class Maze {
 
         void printWallsCell(Position p);
 
+        void writeEEPROM();
+        void readEEPROM();
+        void clearEEPROM();
+
         /** Constants **/
 
         /* Current cell in the maze of the robot */

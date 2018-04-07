@@ -1,4 +1,5 @@
 #include <elapsedMillis.h>
+#include <EEPROM.h>
 #include "bluetooth.hh"
 #include "config.h"
 #include "io.hh"
@@ -7,7 +8,6 @@
 #include "sensors.hh"
 #include "software_config.hh"
 
-//#define min(a,b) ((a)<(b)?(a):(b))
 #define BUFSIZE 20
 
 using namespace pins;
@@ -24,7 +24,8 @@ RGB_LED* frontRgb;
 int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
-bool bluetooth = true; // activate bluetooth (and command system)
+bool bluetooth = false; // activate bluetooth (and command system)
+bool backupFlag = true;
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -34,12 +35,16 @@ void setup() {
     /* * * * * * * * * * * * * * * * *
     * MOUSE HARDWARE INTITALIZATION *
     * * * * * * * * * * * * * * * * **/
+    pinMode(motorMode, OUTPUT);
+    digitalWrite(motorMode, HIGH);
 
     Serial.begin(9600);
     delay(500);
 
+
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     maze = new Maze();
 
@@ -50,8 +55,6 @@ void setup() {
       tofDiagR,
       imuRST);
 
-    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     driver = new Driver(
     motorPowerL,
@@ -78,28 +81,42 @@ void setup() {
     // Set maze boundary walls
     maze->setBoundaryWalls();
 
-    backRgb->flashLED(2);
     if (bluetooth) {
+        backRgb->flashLED(2);
         bluetoothInitialize();
         command[0] = '\0';
     }
     backRgb->flashLED(1);
 
+    driver->encoderOnlyFlag = true;
+
     // front button will kill any running process
-    //attachInterrupt(frontButton, abort_isr, RISING);
+    // attachInterrupt(frontButton, abort_isr, RISING);
 }
 
 
 void loop() {
+    if (command_flag >= 0) {
+        debug_println("Waiting on command");
+        if (bluetooth) {
+            waitCommand();
+        } else {
+            waitButton();
+        }
+    }
+
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         debug_println("Swapping goal....");
+        if (maze->counter <= 2) {
+            buzz->siren();
+            maze->writeEEPROM();
+        }
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            int speedRunIdx = min(maze->counter / 2, driverCfgs.size() - 1);
-            driver->updateConfig(driverCfgs[speedRunIdx]);
+            driver->cfgNum = min(maze->counter / 2, 3);
             command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
@@ -107,14 +124,6 @@ void loop() {
         }
     }
 
-    if (command_flag >= 0) {
-        debug_println("Waiting on command");
-        if (bluetooth) {
-            waitCommand();
-        } else {
-            waitButton(backButt);
-        }
-    }
     // run the flood-fill algorithm
     maze->floodMaze();
 
@@ -160,13 +169,14 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
+    bool backupMode = backupFlag ? maze->wallBehind(diff.direction()) : false;
+
     driver->tankGo(
         next.col * swconst::cellSize,
         next.row * swconst::cellSize,
         false,
         // maze->wallsOnSides(driver->curr_angle),
-        false
-        // maze->wallBehind(diff.direction())
+        backupMode
         );
     frontRgb->flashLED(1);
 }
@@ -180,16 +190,73 @@ void abort_isr() {
 /* waitButton()
  * Waits on a button press. When pressed it starts the run of the maze.
  */
-void waitButton(Button* but) {
+void waitButton() {
     while (1) {
-        if (but->read() == LOW) {
-            driver->resetState();
-            frontRgb->flashLED(2);
-            delay(1000);
-            frontRgb->flashLED(1);
+        /* press back button for a run, for 3-6 seconds for an EEPROM read
+         * and 6+ for EEPROM clear */
+        if (backButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(backButt->read() == LOW) {
+                if (timer > 3000 && timer < 6000) {
+                    backRgb->turnOn(1);
+                } else if (timer >= 6000) {
+                    backRgb->turnOn(2);
+                } else {
+                    backRgb->turnOn(0);
+                }
+            }
+            backRgb->turnOff();
 
-            command_flag = -1000;
-            break;
+            if (timer < 3000) {
+                driver->resetState();
+                frontRgb->flashLED(2);
+                delay(1000);
+                frontRgb->flashLED(1);
+
+                command_flag = -1000;
+                break;
+            } else if (timer < 6000) {
+                maze->readEEPROM();
+                buzz->siren();
+            } else {
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                maze->clearEEPROM();
+            }
+        }
+        // press front button to increment speed run counter
+        else if (frontButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(frontButt->read() == LOW) {
+                if (timer > 3000 && timer < 6000) {
+                    backRgb->turnOn(1);
+                } else if (timer >= 6'/000) {
+                    backRgb->turnOn(2);
+                } else {
+                    backRgb->turnOn(0);
+                }
+            }
+            backRgb->turnOff();
+
+            if (timer < 3000) {
+                frontRgb->flashLED(1);
+                if (maze->counter == 0) {
+                    maze->counter++;
+                } else {
+                    maze->counter = min(maze->counter + 2, 6);
+                }
+            }
+            else if (timer < 6000) {
+                celebrate();
+                backupFlag = !backupFlag;
+            }
+            else {
+                buzz->siren();
+                driver->encoderOnlyFlag = true;
+            }
         }
     }
 }
@@ -365,13 +432,12 @@ bool commandIs(const char* token, const char* cmd, bool firstchar) {
  * Flashes the LEDs in celebration.
  */
 void celebrate() {
-    buzz->on();
     for (size_t j = 0; j < 4; j++) {
         for (size_t i = 0; i < 2; i++) {
             frontRgb->flashLED(i);
             backRgb->flashLED(i);
+            buzz->siren();
             delay(50);
         }
     }
-    buzz->off();
 }

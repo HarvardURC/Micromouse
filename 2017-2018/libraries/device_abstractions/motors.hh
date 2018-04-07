@@ -106,8 +106,11 @@ class Driver {
         float curr_angle;
 
         // the maximum input PWM to drive motors, changes for speedruns
+        float cfgNum;
         float motorLimit;
         int convergenceTime;
+
+        bool encoderOnlyFlag;
 
         // left, middle, right
         long shortTofWallReadings[4];
@@ -130,6 +133,6 @@ class Driver {
         float _v_right = 0;
 };
 
-extern std::vector<DriverConfig> driverCfgs;
+extern std::vector<DriverConfig> driverCfgsLinear;
 
 #endif

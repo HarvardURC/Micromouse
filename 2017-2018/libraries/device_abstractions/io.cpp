@@ -45,6 +45,12 @@ void RGB_LED::turnOn(int color) {
     _turnOn(color);
 }
 
+void RGB_LED::turnOff() {
+    for (int i = 0; i < 3; i++) {
+        _turnOff(i);
+    }
+}
+
 void RGB_LED::_turnOn(int color) {
     pinMode(rgbPins[color], OUTPUT);
     digitalWrite(rgbPins[color], LOW);

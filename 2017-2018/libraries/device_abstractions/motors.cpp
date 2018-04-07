@@ -19,8 +19,10 @@ DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
 // speed run config
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
+DriverConfig S2(motorLimitS2, convergenceTimeS2, p_l_S2, i_l_S2, d_l_S2,
+    p_a_S2, i_a_S2, d_a_S2);
 // go mapping -> mapping with straight of ways -> speedrun
-std::vector<DriverConfig> driverCfgs = { M0, M0, S1 };
+std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1, S2 };
 
 /* Motor functions */
 Motor::Motor(
@@ -138,9 +140,10 @@ Driver::Driver(
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    updateConfig(M0);
+    cfgNum = 0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
+    encoderOnlyFlag = false;
 
     clearWallData();
 }
@@ -351,10 +354,8 @@ void Driver::calculateInputPWM(bool angle_flag,
 void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool backwards) {
     float sample_t = 1. / interval;
     elapsedMillis timeElapsed = 1000;
-    elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis printTimer = 0;
     elapsedMillis timeout = 0;
     int sensorCounter = 0;
     int end_iter = 0;
@@ -363,7 +364,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
     if (angle_flag) {
         updateConfig(M0T);
     } else {
-        updateConfig(M0);
+        updateConfig(driverCfgsLinear[cfgNum]);
     }
 
     // between -PI to PI
@@ -374,7 +375,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
 
     const float init_xpos = curr_xpos;
     const float init_ypos = curr_ypos;
-    const float init_angle = curr_angle;
     _pid_x.setpoint = goal_x - init_xpos;
     _pid_y.setpoint = goal_y - init_ypos;
     _pid_a.setpoint = goal_a;
@@ -399,17 +399,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
     float front_diff = 0;
     pinMode(13, OUTPUT);
 
-    // checks if calibrated
-    uint8_t sys;
-    uint8_t gyro;
-    uint8_t accel;
-    uint8_t mag;
-    bno.getCalibration(&sys, &gyro, &accel, &mag);
-    if (sys > 1) {
-        digitalWrite(13, HIGH);
-        delay(10);
-        digitalWrite(13, LOW);
-    }
 
     do {
         /* stores sensor readings to detect walls
@@ -441,14 +430,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     wrapAngle(travel_angle));
 
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
+                debugPidMovement(angle_travelled);
                 drive(_v_left, _v_right);
-
-                if (debug && bluetoothTimer >= 1000) {
-                    debug_printvar(_v_left);
-                    debug_printvar(_v_right);
-                    debug_println(" ");
-                    bluetoothTimer = 0;
-                }
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
@@ -466,9 +449,10 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                 else {
                     end_iter = max(end_iter - 5, 0);
                 }
+
                 if (end_iter > convergenceTime) {
                     break;
-                }
+                }   
             }
 
             /* Update positional state, curr_xpos and curr_ypos */
@@ -488,7 +472,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
             last_imu_angle = imu_angle;
 
             // integrates rangefinder offset
-            if (!angle_flag) {
+            if (!angle_flag && !encoderOnlyFlag) {
                 if (ignore_rangefinder == 0) {
                     switch (heading(goal_x, goal_y)) {
                         case 0:
@@ -514,10 +498,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                 imu_weight = nowall_imu_w;
                 encoder_weight = nowall_encoder_w;
                 rangefinder_weight = nowall_rangefinder_w;
+                digitalWrite(13, LOW);
+
 
                 // not close to a wall on the front
                 if (front_dist > front_wall_threshold) {
-                    digitalWrite(13, LOW);
                     // wall on left side
                     if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
                         || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
@@ -526,6 +511,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                         imu_weight = imu_w;
                         encoder_weight = encoder_w;
                         rangefinder_weight = rangefinder_w;
+                        digitalWrite(13, HIGH);
+
 
                         // walls on both sides to follow
                         if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
@@ -563,10 +550,17 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     }
                     // don't wall follow
                     else {
+                        if (ignore_rangefinder != 3) {
+                            brake();
+                            delay(200);
+                        }
                         ignore_rangefinder = 3;
-                        rangefinder_angle = 0;
-                        rangefinder_change = 0;
-                        last_rangefinder_angle = 0;
+                        _rgb._turnOff(0);
+                        _rgb._turnOff(1);
+                        _rgb._turnOff(2);
+                        // rangefinder_angle = 0;
+                        // rangefinder_change = 0;
+                        // last_rangefinder_angle = 0;
                     }
                     switch (heading(goal_x, goal_y)) {
                         case 0:
@@ -597,14 +591,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     //rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                     //last_rangefinder_angle = rangefinder_angle;
                     //digitalWrite(13,HIGH);
-                }
-
-                if (printTimer > 1000) {
-                    printTimer = 0;
-                    // debug_printvar(withinError(goal_x, curr_xpos, errorX));
-                    // debug_printvar(withinError(goal_y, curr_ypos, errorY));
-                    // debug_printvar(withinError(goal_a, angle_travelled, errorA));
-                    // debug_printvar((fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough));
+                    rangefinder_angle = 0;
+                    rangefinder_change = 0;
+                    last_rangefinder_angle = 0;
                 }
             }
 
@@ -619,7 +608,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
             // the current angle wrapped from 0 to 2PI
             if (backwards) {
                 angle_travelled -= angle_change;
-            } else if (0) { // ignore this condition, TODO
+            } else if (0 & !angle_flag && rangefinder_weight == 0) { // ignore this condition, TODO
                 angle_travelled = wrapAngle(PI+(init_imu_angle - imu_angle) * degToRad)-PI;;
             } else {
                 angle_travelled += angle_change;
@@ -777,12 +766,11 @@ void Driver::backAlign() {
     EncoderTicker rightEnc(&_rightMotor._encoder);
     long left_diff = 501;
     long right_diff = 501;
-    while(abs(left_diff) > 300 || abs(right_diff) > 300) {
+    while(abs(left_diff) > 500 || abs(right_diff) > 500) {
         if (encoderTimer > 40) {
             encoderTimer = 0;
             left_diff = leftEnc.diffLastRead();
             right_diff = rightEnc.diffLastRead();
-            backingPWM -= 1;
         }
         drive(backingPWM, backingPWM);
     }
@@ -803,8 +791,9 @@ void Driver::backAlign() {
     // angular state update
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
+    _rgb.flashLED(1);
     delay(300);
-    moveTicks(backedOffset * ticksToCm);
+    forward(backedOffset);
 }
 
 void Driver::updateConfig(DriverConfig cfg) {

@@ -64,6 +64,7 @@ void setup() {
     pinMode(motorMode, OUTPUT);
     digitalWrite(motorMode, HIGH);
 
+
     backRgb->flashLED(1);
     frontRgb->switchLED(2);
 
@@ -78,7 +79,7 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    driver->forward(18);
+                    driver->backAlign();
                     break;
                 case 1:
                     debug_println("36cm forward");
