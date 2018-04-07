@@ -161,7 +161,6 @@ void setup() {
 
 // LOOP
 void loop() {
-<<<<<<< HEAD
   // if (spd <= 0) {
   //   senseWalls();
   //   Serial.println("Made it past sense walls");
