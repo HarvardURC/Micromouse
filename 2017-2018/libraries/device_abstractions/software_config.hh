@@ -45,8 +45,8 @@ namespace swconst {
 
     /* Sensor constants */
     const float imu_w = 0;                     // ratio of IMU
-    const float encoder_w = 1;                 // vs. encoder measurements
-    const float rangefinder_w = 0;             // vs. rangefinder measurement for angle
+    const float encoder_w = 0;                 // vs. encoder measurements
+    const float rangefinder_w = 1;             // vs. rangefinder measurement for angle
 
     const float nowall_imu_w = 0;
     const float nowall_encoder_w = 1;

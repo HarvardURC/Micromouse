@@ -602,7 +602,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
             // the current angle wrapped from 0 to 2PI
             if (backwards) {
                 angle_travelled -= angle_change;
-            } else if (0 & !angle_flag && rangefinder_weight == 0) { // ignore this condition, TODO
+            } else if (!angle_flag && rangefinder_weight == 0) { // ignore this condition, TODO
                 angle_travelled = wrapAngle(PI+(init_imu_angle - imu_angle) * degToRad)-PI;;
             } else {
                 angle_travelled += angle_change;
