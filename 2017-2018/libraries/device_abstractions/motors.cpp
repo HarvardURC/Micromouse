@@ -550,10 +550,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     }
                     // don't wall follow
                     else {
-                        if (ignore_rangefinder != 3) {
-                            brake();
-                            delay(200);
-                        }
                         ignore_rangefinder = 3;
                         _rgb._turnOff(0);
                         _rgb._turnOff(1);
