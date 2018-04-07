@@ -13,7 +13,7 @@
 #define WEST 1
 
 #define CENTER_ROW 0
-#define CENTER_COL 3j
+#define CENTER_COL 3
 
 #define START_ROW 0
 #define START_COL 0
@@ -57,11 +57,12 @@ void floodMaze();
 bool checkWall(int row, int col, int dir);
 void senseWalls();
 void Janus();
+int chooseDirection(int currentRow, int currentCol)
 void initializeFloodMaze();
 void generateWall();
 void initSensor(int pin, VL6180X *sensor, int address);
 void turn(int desired);
-void store(int nextMovement);
+// void store(int nextMovement);
 void addSpdCount();
 void speedRun();
 
@@ -119,6 +120,8 @@ void setup() {
 
   // randomSeed(17);
   // generateWall();
+  mouseRow = START_ROW;
+  mouseCol = START_COL;
 }
 
 // LOOP
@@ -139,10 +142,7 @@ void loop() {
     Serial.println("Made it past print virtual maze");
 
     delay(1000);
-
   }
-
-
   else {
     while (spd == prevSpd) {
       addSpdCount();
@@ -180,11 +180,11 @@ void generateWall() {
 
 // Mouse chooses cell to move to
 void Janus() {
-  if (findMinotaur && cellMap[mouseRow][mouseCol].floodDistance == 0) {
+  if (cellMap[mouseRow][mouseCol].floodDistance == 0) {
     Serial.println("we're here");
-    for (int i = 0; i < speedIndex; i++) {
-      quickestPath[i] = speedPath[i];
-    }
+    // for (int i = 0; i < speedIndex; i++) {
+    //   quickestPath[i] = speedPath[i];
+    // }
     //    int beginningArray, endArray;
     //    int endingReference = moveIndex - 1;
     //    for (int i = 0; i < moveIndex/2; i++, endingReference--) {
@@ -193,65 +193,93 @@ void Janus() {
     //      quickestPath[endingReference] = beginningArray;
     //      quickestPath[i] = endArray;
     //      }
-    for (int i = 0; i < speedIndex; i++) {
-      quickestPath[i] = (quickestPath[i] + 2) % 4;
-    }
-    int beginningArray, endArray;
-    int endingReference = speedIndex - 1;
-    for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
-      beginningArray = quickestPath[i];
-      endArray = quickestPath[endingReference];
-      quickestPath[endingReference] = beginningArray;
-      quickestPath[i] = endArray;
-    }
-    Serial.println("the path back to the start: ");
-    if (!backAtStart) {
-      for (int i = 0; i < speedIndex; i++) {
-        turn(quickestPath[i]);
-        Serial.print(quickestPath[i]);
-        motors->forward();
+
+    // FLOOD THE MAZE
+    // STORE SPEED PATH
+
+    floodMaze();
+
+    // Virtual cell placeholders
+    int tempRow = START_ROW;
+    int tempCol = START_COL;
+
+    int tempDir = 0;
+    speedIndex = 0; 
+
+    while (cellMap[tempRow][tempCol].floodDistance != 0) {
+      tempDir = chooseDirection(tempRow, tempCol);
+
+      speedPath[speedIndex] = tempDir;
+
+      if (tempDir == 0) {
+        tempRow--;
       }
-    }
-    backAtStart = true;
-    Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    spd++;
-    return;
-  }
+      else if (tempDir == 1) {
+        tempCol++;
+      }
+      else if (tempDir == 2) {
+        tempRow++;
+      }
+      else if (tempDir == 3) {
+        tempCol--;
+      }
 
-  // Initialize with arbitrarily large values
-  // floodDistance of surrounding cells
-  // 0 NORTH
-  // 1 EAST
-  // 2 SOUTH
-  // 3 WEST
+      speedIndex++;
+    }
+
+
+    // for (int i = 0; i < speedIndex; i++) {
+    //   quickestPath[i] = (quickestPath[i] + 2) % 4;
+    // }
+    // int beginningArray, endArray;
+    // int endingReference = speedIndex - 1;
+    // for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
+    //   beginningArray = quickestPath[i];
+    //   endArray = quickestPath[endingReference];
+    //   quickestPath[endingReference] = beginningArray;
+    //   quickestPath[i] = endArray;
+    // }
+    // Serial.println("the path back to the start: ");
+    // if (!backAtStart) {
+    //   for (int i = 0; i < speedIndex; i++) {
+    //     turn(quickestPath[i]);
+    //     Serial.print(quickestPath[i]);
+    //     motors->forward();
+    //   }
+    // }
+    // backAtStart = true;
+    // Serial.println("back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    // spd++;
+    // return;
+  } 
+  else {
+    int thePath = chooseDirection(mouseRow, mouseCol);
+
+    Serial.print("thePath: ");
+    Serial.println(thePath);
+
+    // Move during first run
+    turn(thePath);
+    motors->forward();
+    // store(thePath);
+
+    if (thePath == 0) {
+      mouseRow--;
+    }
+    else if (thePath == 1) {
+      mouseCol++;
+    }
+    else if (thePath == 2) {
+      mouseRow++;
+    }
+    else if (thePath == 3) {
+      mouseCol--;
+    }
+  }
+}
+
+int chooseDirection(int currentRow, int currentCol) {
   int choices[4] = {1000, 1000, 1000, 1000};
-
-  // TODO check for walls
-  // NORTH
-  if (!checkWall(mouseRow, mouseCol, NORTH)) {
-    choices[0] = cellMap[mouseRow - 1][mouseCol].floodDistance;
-  }
-  // EAST
-  if (!checkWall(mouseRow, mouseCol, EAST)) {
-    choices[1] = cellMap[mouseRow][mouseCol + 1].floodDistance;
-  }
-  // SOUTH
-  if (!checkWall(mouseRow, mouseCol, SOUTH)) {
-    choices[2] = cellMap[mouseRow + 1][mouseCol].floodDistance;
-  }
-  // WEST
-  if (!checkWall(mouseRow, mouseCol, WEST)) {
-    choices[3] = cellMap[mouseRow][mouseCol - 1].floodDistance;
-  }
-  // thePath stores the cell with lowest
-  int minDistance = 1000;
-  int thePath = 0;
-  for (int i = 0; i < 4; i++) {
-    if (choices[i] < minDistance) {
-      minDistance = choices[i];
-      thePath = i;
-    }
-  }
 
   // 0 NORTH
   // 1 EAST
@@ -259,27 +287,33 @@ void Janus() {
   // 3 WEST
   // We want thePath == mouseDir
 
-  Serial.print("thePath: ");
-  Serial.println(thePath);
-  turn(thePath);
-  motors->forward();
-  store(thePath);
+  // NORTH
+  if (!checkWall(currentRow, currentCol, NORTH)) {
+    choices[0] = cellMap[currentRow - 1][currentCol].floodDistance;
+  }
+  // EAST
+  if (!checkWall(currentRow, currentCol, EAST)) {
+    choices[1] = cellMap[currentRow][currentCol + 1].floodDistance;
+  }
+  // SOUTH
+  if (!checkWall(currentRow, currentCol, SOUTH)) {
+    choices[2] = cellMap[currentRow + 1][currentCol].floodDistance;
+  }
+  // WEST
+  if (!checkWall(currentRow, currentCol, WEST)) {
+    choices[3] = cellMap[currentRow][currentCol - 1].floodDistance;
+  }
+  // bestPath stores the cell with lowest
+  int minDistance = 1000;
+  int bestPath = 0;
+  for (int i = 0; i < 4; i++) {
+    if (choices[i] < minDistance) {
+      minDistance = choices[i];
+      bestPath = i;
+    }
+  }
 
-  // TODO update mouseRow and mouseCol in moveForward()
-
-  //   Virtual movement
-  if (thePath == 0) {
-    mouseRow--;
-  }
-  else if (thePath == 1) {
-    mouseCol++;
-  }
-  else if (thePath == 2) {
-    mouseRow++;
-  }
-  else if (thePath == 3) {
-    mouseCol--;
-  }
+  return bestPath;
 }
 
 void turn(int desired) {
@@ -398,29 +432,29 @@ void initializeFloodMaze() {
 
   // Adham, in case you think this is a bad variable name.
   // Minotaur was at the center of the Labyrinth, so by finding the Minotaur we are finding the center of the maze
-  if (findMinotaur) {
+  // if (findMinotaur) {
     // Set center to 4 cells in the middle
-    cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
-    cellMap[CENTER_ROW][CENTER_COL].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
+  cellMap[CENTER_ROW][CENTER_COL].floodDistance = 0;
+  cellMap[CENTER_ROW][CENTER_COL].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
 
-    cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
-    cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
+  //   cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
+  //   cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
+  //   floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
 
-    cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
-    cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
+  //   cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
+  //   cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
+  //   floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
 
-    cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
-    cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
-    floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
-  } else {
-    // Set objective cell to start (for runs where we want to reset the robot's position)
-    cellMap[START_ROW][START_COL].floodDistance = 0;
-    cellMap[START_ROW][START_COL].visited = true;
-    floodQueue.enqueue(cellMap[START_ROW][START_COL]);
-  }
+  //   cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
+  //   cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
+  //   floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
+  // } else {
+  //   // Set objective cell to start (for runs where we want to reset the robot's position)
+  //   cellMap[START_ROW][START_COL].floodDistance = 0;
+  //   cellMap[START_ROW][START_COL].visited = true;
+  //   floodQueue.enqueue(cellMap[START_ROW][START_COL]);
+  // }
 }
 
 void initializeCellMap() {
@@ -599,20 +633,20 @@ void initSensor(int pin, VL6180X *sensor, int address) {
   Serial.println(" connected.");
 }
 
-void store(int nextMovement) {
-  speedIndex++;
-//  moveIndex++;
-//  quickestPath[moveIndex] = nextMovement;
-  speedPath[speedIndex] = nextMovement;
-  char buffer [200];
-  speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
-  Serial.println(speedPathCheck[speedIndex]);
-  if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
-    speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
-    speedPath[speedIndex - 2] = speedPath[speedIndex];
-    speedIndex -= 2;
-  }
-}
+// void store(int nextMovement) {
+//   speedIndex++;
+// //  moveIndex++;
+// //  quickestPath[moveIndex] = nextMovement;
+//   speedPath[speedIndex] = nextMovement;
+//   char buffer [200];
+//   speedPathCheck[speedIndex] = sprintf(buffer, "%d, %d", mouseRow, mouseCol);
+//   Serial.println(speedPathCheck[speedIndex]);
+//   if (speedPathCheck[speedIndex - 2] == speedPathCheck[speedIndex]) {
+//     speedPathCheck[speedIndex - 2] = speedPathCheck[speedIndex];
+//     speedPath[speedIndex - 2] = speedPath[speedIndex];
+//     speedIndex -= 2;
+//   }
+// }
 
 void addSpdCount() {
   int addSpd = digitalRead(pins::buttonS8);
@@ -621,13 +655,16 @@ void addSpdCount() {
 }
 
 void speedRun() {
+  // Run through speedPath, turn and move robot forward according to direction at each index
   for (int i = 0; i < speedIndex; i++) {
     turn(speedPath[i]);
     motors->forward();
   }
+  // Reverse each of the directions once the robot has reached the center
   for (int i = 0; i < speedIndex; i++) {
     speedPath[i] = (speedPath[i] + 2) % 4;
   }
+  // Reverse the array
   int beginningArray, endArray;
   int endingReference = speedIndex - 1;
   for (int i = 0; i < speedIndex / 2; i++, endingReference--) {
@@ -636,6 +673,7 @@ void speedRun() {
     speedPath[endingReference] = beginningArray;
     speedPath[i] = endArray;
   }
+  // Return to the start
   for (int i = 0; i < speedIndex; i++) {
     turn(speedPath[i]);
     Serial.print(speedPath[i]);
