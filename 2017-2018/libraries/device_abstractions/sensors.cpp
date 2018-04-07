@@ -1,11 +1,3 @@
-#include <Arduino.h>
-#include <i2c_t3.h>
-#include <VL6180X.h>
-#include <vector>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <utility/imumaths.h>
-
 #include "config.h"
 #include "sensors.hh"
 

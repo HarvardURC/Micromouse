@@ -365,10 +365,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     _pid_y.setpoint = fabs(goal_y - init_ypos);
     _pid_a.setpoint = goal_a;
 
-    float last_imu_angle = _sensors.readIMUAngle();
+    float init_imu_angle = _sensors.readIMUAngle();
+    float last_imu_angle = init_imu_angle;
     float imu_angle = 0;
     float imu_change = 0;
-    float last_rangefinder_angle = init_angle;
+    float last_rangefinder_angle = 0;
     float rangefinder_angle = 0;
     float rangefinder_change = 0;
 
@@ -379,7 +380,22 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
 
-    float angle_travelled = 0;
+    float angle_travelled = 0; // -PI to PI
+    float front_dist = 0;
+    float front_diff = 0;
+    pinMode(13, OUTPUT);
+
+
+    uint8_t sys;
+    uint8_t gyro;
+    uint8_t accel;
+    uint8_t mag;
+    bno.getCalibration(&sys, &gyro, &accel, &mag);
+    if (sys > 1) {
+        digitalWrite(13, HIGH);
+        delay(30);
+        digitalWrite(13, LOW);
+    }
 
     do {
         /* stores sensor readings to detect walls
@@ -451,7 +467,8 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 sample_t * -1 * sinf(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 *
                 sample_t * cosf(curr_angle);
-            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
+
+            // IMU update
             imu_angle = _sensors.readIMUAngle();
             imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
             last_imu_angle = imu_angle;
@@ -472,17 +489,21 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         }
                     }
                 }
-                float alpha = 0.8;
+                float alpha = 0.9;
                 float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
-                float left_front_dist = _sensors.readShortTof(LEFTFRONT);
                 float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+                float left_front_dist = _sensors.readShortTof(LEFTFRONT);
+                float right_front_dist = _sensors.readShortTof(RIGHTFRONT);
+                front_dist = .5*alpha*(left_front_dist + right_front_dist) + (1-alpha)*front_dist;
+                front_diff = alpha*(left_front_dist - right_front_dist - diag_correction) + (1-alpha)*front_diff;
 
                 imu_weight = nowall_imu_w;
                 encoder_weight = nowall_encoder_w;
                 rangefinder_weight = nowall_rangefinder_w;
 
                 // not close to a wall on the front
-                if (left_front_dist > front_wall_threshold) {
+                if (front_dist > front_wall_threshold) {
+                    digitalWrite(13, LOW);
                     // wall on left side
                     if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
                         || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
@@ -499,7 +520,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         {
                             float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
                             if (!isnanf(ratio) && !isinff(ratio)) {
-                                //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -508,58 +528,69 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         // just use right wall to wallfollow
                         else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
                         {
-                            ignore_rangefinder = 2;
                             float ratio = acosf(20./right_diag_dist) - 1.05;
                             if (!isnanf(ratio) && !isinff(ratio)) {
+                                if (ignore_rangefinder != 2) {
+                                    last_rangefinder_angle = rangefinder_angle;
+                                }
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
                             }
+                            ignore_rangefinder = 2;
                         }
                         // just use left wall to wallfollow
                         else {
-                            ignore_rangefinder = 1;
                             float ratio = 1.05 - acosf(20./left_diag_dist);
                             if (!isnanf(ratio) && ! isinff(ratio)) {
+                                if (ignore_rangefinder != 1) {
+                                    last_rangefinder_angle = rangefinder_angle;
+                                }
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
                             }
+                            ignore_rangefinder = 1;
                         }
                     }
                     // don't wall follow
                     else {
                         ignore_rangefinder = 3;
-                        rangefinder_angle = curr_angle;
+                        rangefinder_angle = 0;
                         rangefinder_change = 0;
-                        last_rangefinder_angle = curr_angle;
+                        last_rangefinder_angle = 0;
+                    }
+                    switch (heading(goal_x, goal_y)) {
+                        case 0:
+                        case 2: {
+                            if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
+                                ignore_rangefinder = 0;
+                            }
+                            break;
+                        }
+                        case 1:
+                        case 3: {
+                            if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
+                                ignore_rangefinder = 0;
+                            }
+                            break;
+                        }
                     }
                 }
                 else {
-                    rangefinder_angle = curr_angle;
-                    rangefinder_change = 0;
-                    last_rangefinder_angle = curr_angle;
+                    imu_weight = imu_w;
+                    encoder_weight = encoder_w;
+                    rangefinder_weight = rangefinder_w;
+
+                    rangefinder_angle = alpha * atan2f(front_diff*2 , 52) + (1-alpha)*rangefinder_angle; // rangefinders 52 mm apart
+                    rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                    last_rangefinder_angle = rangefinder_angle;
+                    digitalWrite(13,HIGH);
                 }
 
-                if (printTimer > 1000) {
+                if (printTimer > 2) {
                     printTimer = 0;
-                    // debug_printvar(timeout);
-                }
-                switch (heading(goal_x, goal_y)) {
-                    case 0:
-                    case 2: {
-                        if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
-                            ignore_rangefinder = 0;
-                        }
-                        break;
-                    }
-                    case 1:
-                    case 3: {
-                        if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
-                            ignore_rangefinder = 0;
-                        }
-                        break;
-                    }
+                    //debug_printvar(angle_travelled);
                 }
             }
 
@@ -572,7 +603,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             curr_angle = wrapAngle(curr_angle + angle_change);
 
             // the current angle wrapped from 0 to 2PI
-            angle_travelled += angle_change;
+            if (1){
+                angle_travelled += angle_change;
+            }
+            else {
+                angle_travelled = wrapAngle(PI+(init_imu_angle - imu_angle) * degToRad)-PI;
+            }
         }
     } while (timeout < pidLoopTimeout);
 
@@ -639,14 +675,14 @@ void Driver::resetState() {
 void Driver::realign(int goal_dist) {
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
-    _pid_diag_tof.setpoint = diag_correction;
-    float alpha = 0.8;
+    _pid_diag_tof.setpoint = 0;
+    float alpha = 0.9;
     int counter = 0;
     int direction = round(wrapAngle(curr_angle) + PI / 4) / (PI / 2);
 
     float left_front_dist = _sensors.readShortTof(LEFTFRONT);
     float right_front_dist = _sensors.readShortTof(RIGHTFRONT);
-    float front_diff = left_front_dist - right_front_dist;
+    float front_diff = left_front_dist - right_front_dist - diag_correction;
     float front_dist = .5*(left_front_dist + right_front_dist);
 
     // use imu to incorporate angle into front pid input
@@ -656,12 +692,12 @@ void Driver::realign(int goal_dist) {
         left_front_dist = _sensors.readShortTof(LEFTFRONT);
         right_front_dist = _sensors.readShortTof(RIGHTFRONT);
         // float diag_diff = left_diag_dist - right_diag_dist;
-        front_diff = alpha*(left_front_dist - right_front_dist) + (1-alpha)*front_diff;
+        front_diff = alpha*(left_front_dist - right_front_dist - diag_correction) + (1-alpha)*front_diff;
         front_dist = alpha*.5*(left_front_dist + right_front_dist) + (1-alpha)*front_dist;
 
         // end condition
         if (withinError(front_dist, goal_dist, wall_error) &&
-            withinError(front_diff, diag_correction, 3)) {
+            withinError(front_diff, 0, 2)) {
             counter++;
         }
         else {
@@ -673,7 +709,7 @@ void Driver::realign(int goal_dist) {
         }
 
         _pid_front_tof.input = front_dist;
-        _pid_diag_tof.input = front_dist < front_threshold ? front_diff : 0;
+        _pid_diag_tof.input = front_dist < front_threshold ? atan2f(front_diff*2, 52.) : 0;
         _pid_front_tof.compute();
         _pid_diag_tof.compute();
 
