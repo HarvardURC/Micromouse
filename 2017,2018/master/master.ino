@@ -21,19 +21,20 @@
 #define START_ROW 0
 #define START_COL 0
 
+// VERY IMPORTANT: UPDATE mouseDir each run
+
+#define STARTING_DIR 2
+
 // bool findMinotaur = true;
 
-int mouseRow = 0;
-int mouseCol = 0;
+int mouseRow;
+int mouseCol;
 
 // 0 NORTH
 // 1 EAST
 // 2 SOUTH
 // 3 WEST 
-
-// VERY IMPORTANT: UPDATE mouseDir each run
-
-int mouseDir = 2;
+int mouseDir;
 
 const int wallThreshold = 280;
 
@@ -78,12 +79,12 @@ std::vector<VL6180X*> sensors = {new VL6180X, new VL6180X, new VL6180X, new VL61
 std::vector<String> sensor_names = {"left", "leftDiag", "front", "rightDiag", "right"};
 
 // initialize speed counter and speed run array
-int spd = 0;
-int prevSpd = 0;
+int spd;
+int prevSpd;
 //String pathToCenterCheck [150];
 int pathToCenter[150];
 int pathToStart[150];
-int pathLength = 0;
+int pathLength;
 
 // initialize storage array and variables
 // int quickestPath [150];
@@ -129,6 +130,13 @@ void setup() {
   // generateWall();
   mouseRow = START_ROW;
   mouseCol = START_COL;
+
+  mouseDir = STARTING_DIR;
+
+  spd = 0;
+  prevSpd = 0;
+
+  pathLength = 0;
 }
 
 // LOOP
