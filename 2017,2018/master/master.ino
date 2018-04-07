@@ -161,30 +161,6 @@ void setup() {
 
 // LOOP
 void loop() {
-  // if (spd <= 0) {
-  //   senseWalls();
-  //   Serial.println("Made it past sense walls");
-
-  //   floodMaze();
-  //   Serial.println("Made it past floodmaze");
-
-  //   Janus();
-  //   Serial.println("Made it past janus");
-
-  //   printVirtualMaze();
-  //   Serial.println("Made it past print virtual maze");
-
-  //   delay(1000);
-  // }
-  // else {
-  //   while (spd == prevSpd) {
-  //     addSpdCount();
-  //   }
-  //   prevSpd = spd;
-  //   //motors->forward();
-  //   // MODIFY TOP MOTOR SPEED RELATIVE TO SPD
-  //   speedRun();
-  // }
   checkButtons();
 
   if (mapping_run) {
@@ -200,7 +176,7 @@ void loop() {
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
 
-    delay(1000);
+    delay(300);
   } 
   else if (speed_run) {
     speedRun();
@@ -672,72 +648,42 @@ void initSensor(int pin, VL6180X *sensor, int address) {
 void checkButtons() {
   // S8 changes the speed, turns on speed_run
   // S6 overrides Teensy memory EEBROM, turns on mapping_run
-
-  if (digitalRead(pins::buttonS8) == LOW) {
-    if (!S8_active) {
-      S8_active = true;
-      S8_timer = millis();
-    }
-
-    if (millis() - S8_timer > LONG_PRESS_THRESHOLD && !S8_long_active) {
-      S8_long_active = true;
-    }
-  }
-  else {
-    if (S8_active) {
-      if (S8_long_active) {
-        // Long Press
-        // Decrease speed 
-        speed -= SPEED_DECREASE;
-
-        // Blink LED twice
-        digitalWrite(pins::led, HIGH);
-        delay(1000);
-        digitalWrite(pins::led, LOW);
-        delay(500);
-        digitalWrite(pins::led, HIGH);
-        delay(1000);
-        digitalWrite(pins::led, LOW);
-
-        S8_long_active = false;
-      } else {
-        // Short press
-        // Increase speed
-        speed += SPEED_INCREASE;
-
-        // Blink LED once
-        digitalWrite(pins::led, HIGH);
-        delay(1000);
-        digitalWrite(pins::led, LOW);
-      }
-
-      speed_run = true;
-
-      S8_active = false;
-    }
-  }
-
-  if (digitalRead(pins::buttonS6) == LOWi) {
+  while (digitalRead(pins::buttonS6) == LOW) {
     S6_active = true;
   }
-  else {
-    if (S6_active) {
-      // Erase paths from EEBROM
 
-      digitalWrite(pins::led, HIGH);
-      delay(3000);
-      digitalWrite(pins::led, LOW);
-    }
-
+  if (S6_active) {
     mapping_run = true;
-
     S6_active = false;
+    return;
+  }
+
+  S8_timer = millis();
+  while (digitalRead(pins::buttonS8) == LOW) {
+    S8_active = true;
+  }
+  if (millis() - S8_timer > LONG_PRESS_THRESHOLD && S8_active) {
+    S8_long_active = true;
+  }
+
+  if (S8_active) {
+
+    if (S8_long_active) {
+      motors->MOTOR_SPEED -= SPEED_DECREASE;
+    } else {
+      motors->MOTOR_SPEED += SPEED_INCREASE;
+    }
+    
+    S8_active = false;
+    S8_long_active = false;
+
+    speed_run = true;
   }
 }
 
 void speedRun() {
   // Run through pathToCenter, turn and move robot forward according to direction at each index
-  motors->MOTOR_SPEED = 150;
+  // motors->MOTOR_SPEED = 150;
   for (int i = 0; i < pathLength; i++) {
     turn(pathToCenter[i]);
     motors->forward();
