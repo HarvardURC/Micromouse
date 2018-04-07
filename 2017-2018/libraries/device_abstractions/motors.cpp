@@ -397,7 +397,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     float front_diff = 0;
     pinMode(13, OUTPUT);
 
-
+    // checks if calibrated
     uint8_t sys;
     uint8_t gyro;
     uint8_t accel;
@@ -405,7 +405,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     bno.getCalibration(&sys, &gyro, &accel, &mag);
     if (sys > 1) {
         digitalWrite(13, HIGH);
-        delay(30);
+        delay(10);
         digitalWrite(13, LOW);
     }
 
@@ -542,9 +542,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         {
                             float ratio = acosf(20./right_diag_dist) - 1.05;
                             if (!isnanf(ratio) && !isinff(ratio)) {
-                                if (ignore_rangefinder != 2) {
-                                    last_rangefinder_angle = rangefinder_angle;
-                                }
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -555,9 +552,6 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                         else {
                             float ratio = 1.05 - acosf(20./left_diag_dist);
                             if (!isnanf(ratio) && ! isinff(ratio)) {
-                                if (ignore_rangefinder != 1) {
-                                    last_rangefinder_angle = rangefinder_angle;
-                                }
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -590,14 +584,14 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     }
                 }
                 else {
-                    imu_weight = imu_w;
-                    encoder_weight = encoder_w;
-                    rangefinder_weight = rangefinder_w;
+                    //imu_weight = imu_w;
+                    //encoder_weight = encoder_w;
+                    //rangefinder_weight = rangefinder_w;
 
-                    rangefinder_angle = alpha * atan2f(front_diff*2 , 52) + (1-alpha)*rangefinder_angle; // rangefinders 52 mm apart
-                    rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-                    last_rangefinder_angle = rangefinder_angle;
-                    digitalWrite(13,HIGH);
+                    //rangefinder_angle = alpha * atan2f(front_diff*2 , 52) + (1-alpha)*rangefinder_angle; // rangefinders 52 mm apart
+                    //rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                    //last_rangefinder_angle = rangefinder_angle;
+                    //digitalWrite(13,HIGH);
                 }
 
                 if (printTimer > 2) {

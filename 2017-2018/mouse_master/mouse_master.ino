@@ -160,7 +160,7 @@ void makeNextMove(Position next) {
 
     debug_printvar(maze->wallBehind(diff.direction()));
 
-    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, maze->wallBehind(diff.direction()));
+    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, false /*maze->wallBehind(diff.direction())*/);
     frontRgb->flashLED(1);
 }
 
