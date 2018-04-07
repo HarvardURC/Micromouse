@@ -264,7 +264,7 @@ void waitButton() {
             } else {
                 backupFlag = true;
                 driver->imuOn = true;
-                driver->encoderOnlyFlag = true;
+                driver->encoderOnlyFlag = false;
             }
         }
     }

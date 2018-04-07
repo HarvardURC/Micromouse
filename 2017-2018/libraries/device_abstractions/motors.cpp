@@ -702,7 +702,7 @@ void Driver::realign(int goal_dist) {
     // use imu to incorporate angle into front pid input
     // (when robot is turned, its closer to the wall with same front reading)
     elapsedMillis timeout = 0;
-    while (timeout < pidLoopTimeout / 2) {
+    while (timeout < pidLoopTimeout) {
         left_front_dist = _sensors.readShortTof(LEFTFRONT);
         right_front_dist = _sensors.readShortTof(RIGHTFRONT);
         // float diag_diff = left_diag_dist - right_diag_dist;
