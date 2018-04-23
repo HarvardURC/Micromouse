@@ -25,7 +25,8 @@ int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
 bool bluetooth = false; // activate bluetooth (and command system)
-bool backupFlag = true;
+// allows backing up instead of turning 180 degrees
+bool backupFlag = false;
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -90,9 +91,6 @@ void setup() {
 
     driver->encoderOnlyFlag = true;
     driver->imuOn = false;
-
-    // front button will kill any running process
-    // attachInterrupt(frontButton, abort_isr, RISING);
 }
 
 
@@ -183,13 +181,9 @@ void makeNextMove(Position next) {
 }
 
 
-void abort_isr() {
-    abort_run = 1;
-}
-
-
 /* waitButton()
  * Waits on a button press. When pressed it starts the run of the maze.
+ * Allows for a variety of functionality, check README for details.
  */
 void waitButton() {
     const long ledtime = 2000;
@@ -325,18 +319,6 @@ void waitCommand() {
                 driver->resetState();
                 command_flag = -1000;
                 break;
-            }
-            // move forward
-            else if (commandIs(token, "w")) {
-                driver->forward(swconst::cellSize);
-            }
-            // turn left
-            else if (commandIs(token, "a")) {
-                driver->turnLeft(90);
-            }
-            // turn right
-            else if (commandIs(token, "d")) {
-                driver->turnRight(90);
             }
             else if (commandIs(token, "celebrate")) {
                 celebrate();

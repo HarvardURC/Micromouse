@@ -79,7 +79,7 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    driver->backAlign();
+                    driver->forward(18);
                     break;
                 case 1:
                     debug_println("36cm forward");
@@ -173,6 +173,12 @@ void loop() {
                 case 0: {
                     debug_println("Realign test");
                     driver->realign(20);
+                    break;
+                }
+                // BACKALIGN TEST
+                case 1: {
+                    debug_println("Backalign test");
+                    driver->backAlign();
                     break;
                 }
                 default:
