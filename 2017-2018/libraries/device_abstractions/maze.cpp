@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 #include "maze.hh"
 #include "bluetooth.hh"
 #include "helpers.hh"
@@ -16,8 +17,8 @@ using namespace swconst;
 // Starting and ending position
 #define STARTROW 0
 #define STARTCOL 0
-#define ENDROW 2
-#define ENDCOL 0
+#define ENDROW 7
+#define ENDCOL 7
 
 // maps 0-3 direction to array offset, NORTH=0, WEST, SOUTH, EAST
 int offsetMap[4] = {16, -1, -16, 1};
@@ -135,13 +136,11 @@ void Maze::floodMaze() {
 
     // if we're on an even run, set the destination to be the center of the maze
     if (counter % 2 == 0) {
-        stackPointer = 1;
-        cellStack[0] = (16 * goalPos.row) + goalPos.col;
-        // stackPointer = 4;
-        // cellStack[0] = (16 * ENDROW) + ENDCOL;
-        // cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
-        // cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
-        // cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
+        stackPointer = 4;
+        cellStack[0] = (16 * ENDROW) + ENDCOL;
+        cellStack[1] = (16 * (ENDROW + 1)) + ENDCOL;
+        cellStack[2] = (16 * ENDROW) + (ENDCOL + 1);
+        cellStack[3] = (16 * (ENDROW + 1)) + (ENDCOL + 1);
     }
     // otherwise, the destination is the start of the maze
     else {
@@ -310,7 +309,7 @@ void Maze::addWalls(float angle, long leftDiag, long front, long rightDiag) {
 
 /* Chooses the next cell based on the flood-fill algorithm's determination
  * of the adjacent cell which is closest to the destination. */
-Position Maze::chooseNextCell(Position pos) {
+Position Maze::chooseNextCell(Position pos, bool straights) {
     // stores the lowest adjacent distance from the destination
     unsigned char lowest = 255;
     int dir = 0;
@@ -326,14 +325,16 @@ Position Maze::chooseNextCell(Position pos) {
             !(wallMap[pos.offset()] & 1 << i) &&
             cellMap[test_offset] < lowest)
         {
-            lowest = cellMap[test_offset];
-            lowestPos = getPosition(test_offset);
-            dir = i;
+            if (lowest == 255 || rand() % 2 == 1) {
+                lowest = cellMap[test_offset];
+                lowestPos = getPosition(test_offset);
+                dir = i;
+            }
         }
     }
 
     // long straight of ways
-    if (counter > 0) {
+    if (counter > 0 && straights) {
         int n_cells = 1;
         while (n_cells < 16) {
             // test if next cell is valid, if it is set it to lowestPos
@@ -368,4 +369,22 @@ bool Maze::wallsOnSides(float angle) {
     int direction = angleToDir(angle);
     return ((wallMap[currPos.offset()] & 1 << ((direction + 1) % 4))
     && (wallMap[currPos.offset()] & 1 << ((direction + 3) % 4)));
+}
+
+void Maze::writeEEPROM() {
+    for (int i = 0; i < 256; i++) {
+        EEPROM.write(i, wallMap[i]);
+    }
+}
+
+void Maze::readEEPROM() {
+    for (int i = 0; i < 256; i++) {
+        wallMap[i] = EEPROM.read(i);
+    }
+}
+
+void Maze::clearEEPROM() {
+    for (int i = 0 ; i < 256; i++) {
+        EEPROM.write(i, 63);
+    }
 }

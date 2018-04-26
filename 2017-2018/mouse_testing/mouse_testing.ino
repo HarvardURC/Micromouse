@@ -41,6 +41,8 @@ void setup() {
         tofDiagR,
         imuRST);
 
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
+
     driver = new Driver(
         motorPowerL,
         motorDirectionL,
@@ -51,16 +53,17 @@ void setup() {
         encoderL2,
         encoderR1,
         encoderR2,
-        *sensorArr);
+        *sensorArr,
+        *frontRgb);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
     frontButt = new Button(frontButton);
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     pinMode(motorMode, OUTPUT);
     digitalWrite(motorMode, HIGH);
+
 
     backRgb->flashLED(1);
     frontRgb->switchLED(2);
@@ -76,11 +79,11 @@ void loop() {
                 // LEVEL 1 TESTS
                 case 0:
                     debug_println("18cm forward");
-                    driver->forward(36);
+                    driver->forward(18);
                     break;
                 case 1:
                     debug_println("36cm forward");
-                    driver->forward(90);
+                    driver->forward(36);
                     break;
                 case 2:
                     debug_println("90 degrees left");
@@ -170,6 +173,12 @@ void loop() {
                 case 0: {
                     debug_println("Realign test");
                     driver->realign(20);
+                    break;
+                }
+                // BACKALIGN TEST
+                case 1: {
+                    debug_println("Backalign test");
+                    driver->backAlign();
                     break;
                 }
                 default:

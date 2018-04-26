@@ -20,7 +20,7 @@ DriverConfig M0T(motorLimitM0, convergenceTimeM0, p_l_M0T, i_l_M0T, d_l_M0T,
 DriverConfig S1(motorLimitS1, convergenceTimeS1, p_l_S1, i_l_S1, d_l_S1,
     p_a_S1, i_a_S1, d_a_S1);
 // go mapping -> mapping with straight of ways -> speedrun
-std::vector<DriverConfig> driverCfgs = { M0, M0, S1 };
+std::vector<DriverConfig> driverCfgsLinear = { M0, M0, S1};
 
 /* Motor functions */
 Motor::Motor(
@@ -123,7 +123,8 @@ Driver::Driver(
     int encoderPinL2,
     int encoderPinR1,
     int encoderPinR2,
-    SensorArray sensors) :
+    SensorArray sensors,
+    RGB_LED rgb) :
     _pid_x(p_l_M0, i_l_M0, d_l_M0),
     _pid_y(p_l_M0, i_l_M0, d_l_M0),
     _pid_a(p_a_M0, i_a_M0, d_a_M0),
@@ -131,14 +132,16 @@ Driver::Driver(
     _pid_diag_tof(p_diag, i_diag, d_diag),
     _leftMotor(powerPinL, directionPinL, encoderPinL1, encoderPinL2, sensors),
     _rightMotor(powerPinR, directionPinR, encoderPinR1, encoderPinR2, sensors),
-    _sensors(sensors)
+    _sensors(sensors),
+    _rgb(rgb)
 {
     curr_xpos = 0.0;
     curr_ypos = 0.0;
     curr_angle = 0.0;
-    updateConfig(M0);
+    cfgNum = 0;
     pinMode(motorModePin, OUTPUT);
     digitalWrite(motorModePin, HIGH);
+    encoderOnlyFlag = false;
 
     clearWallData();
 }
@@ -201,8 +204,8 @@ void Driver::movePID(float setpoint) {
 // (assumes PID setpoints are relative distances from init to goal)
 void Driver::computePids(float init_xpos, float init_ypos,
     float angle_travelled) {
-    _pid_x.input = fabs(curr_xpos - init_xpos);
-    _pid_y.input = fabs(curr_ypos - init_ypos);
+    _pid_x.input = curr_xpos - init_xpos;
+    _pid_y.input = curr_ypos - init_ypos;
     _pid_a.input = angle_travelled;
 
     _pid_x.compute();
@@ -349,13 +352,11 @@ void Driver::calculateInputPWM(bool angle_flag,
 
 
 /* Moves based on absolute position on a coordinate grid */
-void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
+void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool backwards) {
     float sample_t = 1. / interval;
     elapsedMillis timeElapsed = 1000;
-    elapsedMillis bluetoothTimer = 0;
     elapsedMillis pidTimer = 0;
     elapsedMillis sensorTimer = 0;
-    elapsedMillis printTimer = 0;
     elapsedMillis timeout = 0;
     int sensorCounter = 0;
     int end_iter = 0;
@@ -364,7 +365,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     if (angle_flag) {
         updateConfig(M0T);
     } else {
-        updateConfig(M0);
+        updateConfig(driverCfgsLinear[cfgNum]);
     }
 
     // between -PI to PI
@@ -375,15 +376,15 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
 
     const float init_xpos = curr_xpos;
     const float init_ypos = curr_ypos;
-    const float init_angle = curr_angle;
-    _pid_x.setpoint = fabs(goal_x - init_xpos);
-    _pid_y.setpoint = fabs(goal_y - init_ypos);
+    _pid_x.setpoint = goal_x - init_xpos;
+    _pid_y.setpoint = goal_y - init_ypos;
     _pid_a.setpoint = goal_a;
 
-    float last_imu_angle = _sensors.readIMUAngle();
+    float init_imu_angle = _sensors.readIMUAngle();
+    float last_imu_angle = init_imu_angle;
     float imu_angle = 0;
     float imu_change = 0;
-    float last_rangefinder_angle = init_angle;
+    float last_rangefinder_angle = 0;
     float rangefinder_angle = 0;
     float rangefinder_change = 0;
 
@@ -394,7 +395,11 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
     int ignore_rangefinder = 0; // 0 for use all, 1 for left, 2 for right, 3 for none
     float ignore_init_pos = 0;
 
-    float angle_travelled = 0;
+    float angle_travelled = 0; // -PI to PI
+    float front_dist = 0;
+    float front_diff = 0;
+    pinMode(13, OUTPUT);
+
 
     do {
         /* stores sensor readings to detect walls
@@ -426,21 +431,15 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     wrapAngle(travel_angle));
 
                 calculateInputPWM(angle_flag, goal_x, goal_y, angle_diff);
+                debugPidMovement(angle_travelled);
                 drive(_v_left, _v_right);
-
-                if (debug && bluetoothTimer >= 1000) {
-                    debug_printvar(_v_left);
-                    debug_printvar(_v_right);
-                    debug_println(" ");
-                    bluetoothTimer = 0;
-                }
 
                 /* If the movement looks like it's reached the goal position
                 or it's converged, stop the movement */
                 if ((withinError(goal_x, curr_xpos, errorX) &&
                      withinError(goal_y, curr_ypos, errorY) &&
                      withinError(goal_a, angle_travelled, errorA)) ||
-                    (_v_left < motorCloseEnough && _v_right < motorCloseEnough) ||
+                    (fabs(_v_left) < motorCloseEnough && fabs(_v_right) < motorCloseEnough) ||
                     // perpendicular to goal direction means it's either
                     // right next to destination, or it's hopeless anyway
                     (!angle_flag &&
@@ -449,8 +448,9 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                     end_iter++;
                 }
                 else {
-                    end_iter = 0;
+                    end_iter = max(end_iter - 5, 0);
                 }
+
                 if (end_iter > convergenceTime) {
                     break;
                 }
@@ -466,117 +466,133 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
                 sample_t * -1 * sinf(curr_angle);
             curr_ypos += (true_v_left + true_v_right) / 2 *
                 sample_t * cosf(curr_angle);
-            //float imu_rads = (360 - _sensors.readIMUAngle()) * degToRad;
+
+            // IMU update
             imu_angle = _sensors.readIMUAngle();
             imu_change = wrapAngle(PI+(last_imu_angle - imu_angle) * degToRad)-PI; //imu backwards in angle
             last_imu_angle = imu_angle;
 
             // integrates rangefinder offset
-            // if (!angle_flag) {
-            //     if (ignore_rangefinder == 0) {
-            //         switch (heading(goal_x, goal_y)) {
-            //             case 0:
-            //             case 2: {
-            //                 ignore_init_pos = curr_ypos;
-            //                 break;
-            //             }
-            //             case 1:
-            //             case 3: {
-            //                 ignore_init_pos = curr_xpos;
-            //                 break;
-            //             }
-            //         }
-            //     }
-            //     float alpha = 0.8;
-            //     float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
-            //     float left_front_dist = _sensors.readShortTof(LEFTFRONT);
-            //     float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
-            //
-            //     imu_weight = nowall_imu_w;
-            //     encoder_weight = nowall_encoder_w;
-            //     rangefinder_weight = nowall_rangefinder_w;
-            //
-            //     // not close to a wall on the front
-            //     if (left_front_dist > front_wall_threshold) {
-            //         // wall on left side
-            //         if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
-            //             || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
-            //             && ignore_rangefinder != 3)
-            //         {
-            //             imu_weight = imu_w;
-            //             encoder_weight = encoder_w;
-            //             rangefinder_weight = rangefinder_w;
-            //
-            //             // walls on both sides to follow
-            //             if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
-            //                 && (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
-            //                 && ignore_rangefinder == 0)
-            //             {
-            //                 float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
-            //                 if (!isnanf(ratio) && !isinff(ratio)) {
-            //                     //rangefinder_angle = alpha*(PI/2. - PI/2. * ratio) + (1-alpha)*rangefinder_angle;
-            //                     rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-            //                     rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-            //                     last_rangefinder_angle = rangefinder_angle;
-            //                 }
-            //             }
-            //             // just use right wall to wallfollow
-            //             else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
-            //             {
-            //                 ignore_rangefinder = 2;
-            //                 float ratio = acosf(20./right_diag_dist) - 1.05;
-            //                 if (!isnanf(ratio) && !isinff(ratio)) {
-            //                     rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-            //                     rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-            //                     last_rangefinder_angle = rangefinder_angle;
-            //                 }
-            //             }
-            //             // just use left wall to wallfollow
-            //             else {
-            //                 ignore_rangefinder = 1;
-            //                 float ratio = 1.05 - acosf(20./left_diag_dist);
-            //                 if (!isnanf(ratio) && ! isinff(ratio)) {
-            //                     rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
-            //                     rangefinder_change = rangefinder_angle - last_rangefinder_angle;
-            //                     last_rangefinder_angle = rangefinder_angle;
-            //                 }
-            //             }
-            //         }
-            //         // don't wall follow
-            //         else {
-            //             ignore_rangefinder = 3;
-            //             rangefinder_angle = curr_angle;
-            //             rangefinder_change = 0;
-            //             last_rangefinder_angle = curr_angle;
-            //         }
-            //     }
-            //     else {
-            //         rangefinder_angle = curr_angle;
-            //         rangefinder_change = 0;
-            //         last_rangefinder_angle = curr_angle;
-            //     }
-            //
-            //     if (printTimer > 1000) {
-            //         printTimer = 0;
-            //         // debug_printvar(timeout);
-            //     }
-            //     switch (heading(goal_x, goal_y)) {
-            //         case 0:
-            //         case 2: {
-            //             if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
-            //                 ignore_rangefinder = 0;
-            //             }
-            //             break;
-            //         }
-            //         case 1:
-            //         case 3: {
-            //             if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
-            //                 ignore_rangefinder = 0;
-            //             }
-            //             break;
-            //         }
-            //     }
-            // }
+            if (!angle_flag && !encoderOnlyFlag) {
+                if (ignore_rangefinder == 0) {
+                    switch (heading(goal_x, goal_y)) {
+                        case 0:
+                        case 2: {
+                            ignore_init_pos = curr_ypos;
+                            break;
+                        }
+                        case 1:
+                        case 3: {
+                            ignore_init_pos = curr_xpos;
+                            break;
+                        }
+                    }
+                }
+                float alpha = 0.9;
+                float left_diag_dist = _sensors.readShortTof(LEFTDIAG);
+                float right_diag_dist = _sensors.readShortTof(RIGHTDIAG);
+                float left_front_dist = _sensors.readShortTof(LEFTFRONT);
+                float right_front_dist = _sensors.readShortTof(RIGHTFRONT);
+                front_dist = .5*alpha*(left_front_dist + right_front_dist) + (1-alpha)*front_dist;
+                front_diff = alpha*(left_front_dist - right_front_dist - diag_correction) + (1-alpha)*front_diff;
+
+                imu_weight = nowall_imu_w;
+                encoder_weight = nowall_encoder_w;
+                rangefinder_weight = nowall_rangefinder_w;
+                digitalWrite(13, LOW);
+
+
+                // not close to a wall on the front
+                if (front_dist > front_wall_threshold) {
+                    // wall on left side
+                    if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
+                        || (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
+                        && ignore_rangefinder != 3)
+                    {
+                        imu_weight = imu_w;
+                        encoder_weight = encoder_w;
+                        rangefinder_weight = rangefinder_w;
+                        digitalWrite(13, HIGH);
+
+
+                        // walls on both sides to follow
+                        if (((left_diag_dist >= tof_low_bound && left_diag_dist <= tof_high_bound)
+                            && (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound))
+                            && ignore_rangefinder == 0)
+                        {
+                            float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                        }
+                        // just use right wall to wallfollow
+                        else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
+                        {
+                            float ratio = acosf(20./right_diag_dist) - 1.05;
+                            if (!isnanf(ratio) && !isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                            ignore_rangefinder = 2;
+                        }
+                        // just use left wall to wallfollow
+                        else {
+                            float ratio = 1.05 - acosf(20./left_diag_dist);
+                            if (!isnanf(ratio) && ! isinff(ratio)) {
+                                rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
+                                rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                                last_rangefinder_angle = rangefinder_angle;
+                            }
+                            ignore_rangefinder = 1;
+                        }
+                    }
+                    // don't wall follow
+                    else {
+                        ignore_rangefinder = 3;
+                        _rgb._turnOff(0);
+                        _rgb._turnOff(1);
+                        _rgb._turnOff(2);
+                        // rangefinder_angle = 0;
+                        // rangefinder_change = 0;
+                        // last_rangefinder_angle = 0;
+                    }
+                    switch (heading(goal_x, goal_y)) {
+                        case 0:
+                        case 2: {
+                            if (fabs(curr_ypos - ignore_init_pos) >= distance_limit) {
+                                ignore_rangefinder = 0;
+                            }
+                            break;
+                        }
+                        case 1:
+                        case 3: {
+                            if (fabs(curr_xpos - ignore_init_pos) >= distance_limit) {
+                                ignore_rangefinder = 0;
+                            }
+                            break;
+                        }
+                    }
+                    if (ignore_rangefinder < 3) {
+                        _rgb.turnOn(ignore_rangefinder);
+                    }
+                }
+                else {
+                    //imu_weight = imu_w;
+                    //encoder_weight = encoder_w;
+                    //rangefinder_weight = rangefinder_w;
+
+                    //rangefinder_angle = alpha * atan2f(front_diff*2 , 52) + (1-alpha)*rangefinder_angle; // rangefinders 52 mm apart
+                    //rangefinder_change = rangefinder_angle - last_rangefinder_angle;
+                    //last_rangefinder_angle = rangefinder_angle;
+                    //digitalWrite(13,HIGH);
+                    rangefinder_angle = 0;
+                    rangefinder_change = 0;
+                    last_rangefinder_angle = 0;
+                }
+            }
 
             /* Update angular state, curr_angle */
             float true_ang_v = (true_v_right - true_v_left) / L;
@@ -587,7 +603,13 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval) {
             curr_angle = wrapAngle(curr_angle + angle_change);
 
             // the current angle wrapped from 0 to 2PI
-            angle_travelled += angle_change;
+            if (backwards) {
+                angle_travelled -= angle_change;
+            } else if (imuOn && !angle_flag && rangefinder_weight == 0) { // ignore this condition, TODO
+                angle_travelled = wrapAngle(PI+(init_imu_angle - imu_angle) * degToRad)-PI;;
+            } else {
+                angle_travelled += angle_change;
+            }
         }
     } while (timeout < pidLoopTimeout);
 
@@ -619,11 +641,23 @@ void Driver::tankGo(float goal_x, float goal_y, bool back_wall) {
     // calculation for the desired angle to face the goal coordinates
     float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
-    if (debug) {
-        debug_printvar(temp_a);
-    }
+    debug_printvar(curr_angle);
+    debug_printvar(temp_a);
+    debug_printvar(fabs(temp_a - curr_angle));
+    debug_printvar(backwards);
 
-    if (fabs(temp_a - curr_angle) > PI / 12) {
+    if (withinError(fabs(temp_a - curr_angle), PI, 0.4) && backwards) {
+        // go to the opposite angle
+        debug_printvar(temp_a);
+        debug_printvar(curr_angle);
+        float opp_angle = wrapAngle(temp_a + PI);
+        go(curr_xpos, curr_ypos, opp_angle);
+        delay(500);
+        // go backwards
+        go(goal_x, goal_y, opp_angle, 1, true);
+
+    }
+    else if (fabs(temp_a - curr_angle) > PI / 12) {
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
@@ -659,28 +693,28 @@ void Driver::resetState() {
 void Driver::realign(int goal_dist) {
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
-    _pid_diag_tof.setpoint = diag_correction;
-    float alpha = 0.8;
+    _pid_diag_tof.setpoint = 0;
+    float alpha = 0.9;
     int counter = 0;
     int direction = round(wrapAngle(curr_angle) + PI / 4) / (PI / 2);
 
     float left_front_dist = _sensors.readShortTof(LEFTFRONT);
     float right_front_dist = _sensors.readShortTof(RIGHTFRONT);
-    float front_diff = left_front_dist - right_front_dist;
+    float front_diff = left_front_dist - right_front_dist - diag_correction;
     float front_dist = .5*(left_front_dist + right_front_dist);
 
     // use single loop to get to proper distance and perpendicular to front wall
     elapsedMillis timeout = 0;
-    while (timeout < pidLoopTimeout / 2) {
+    while (timeout < pidLoopTimeout) {
         left_front_dist = _sensors.readShortTof(LEFTFRONT);
         right_front_dist = _sensors.readShortTof(RIGHTFRONT);
         // float diag_diff = left_diag_dist - right_diag_dist;
-        front_diff = alpha*(left_front_dist - right_front_dist) + (1-alpha)*front_diff;
+        front_diff = alpha*(left_front_dist - right_front_dist - diag_correction) + (1-alpha)*front_diff;
         front_dist = alpha*.5*(left_front_dist + right_front_dist) + (1-alpha)*front_dist;
 
         // end condition
         if (withinError(front_dist, goal_dist, wall_error) &&
-            withinError(front_diff, diag_correction, 3)) {
+            withinError(front_diff, 0, 2)) {
             counter++;
         }
         else {
@@ -692,7 +726,7 @@ void Driver::realign(int goal_dist) {
         }
 
         _pid_front_tof.input = front_dist;
-        _pid_diag_tof.input = front_dist < front_threshold ? front_diff : 0;
+        _pid_diag_tof.input = front_dist < front_threshold ? atan2f(front_diff*2, 52.) : 0;
         _pid_front_tof.compute();
         _pid_diag_tof.compute();
 
@@ -724,7 +758,8 @@ void Driver::backAlign() {
     // if there is a wall behind, back into it
     elapsedMillis encoderTimer = 0;
     debug_println("backaligning");
-    drive(backAlignPWM, backAlignPWM);
+    int backingPWM = backAlignPWM;
+    drive(backingPWM, backingPWM);
     EncoderTicker leftEnc(&_leftMotor._encoder);
     EncoderTicker rightEnc(&_rightMotor._encoder);
     long left_diff = 501;
@@ -736,6 +771,7 @@ void Driver::backAlign() {
             left_diff = leftEnc.diffLastRead();
             right_diff = rightEnc.diffLastRead();
         }
+        drive(backingPWM, backingPWM);
     }
     brake();
     // state update
@@ -754,7 +790,8 @@ void Driver::backAlign() {
     // angular state update
     float new_angle = direction * PI / 2;
     curr_angle += (new_angle - curr_angle); //* angle_correction_ratio;
-    delay(100);
+    _rgb.flashLED(1);
+    delay(200);
     forward(backedOffset);
 }
 

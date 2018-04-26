@@ -1,4 +1,5 @@
 #include <elapsedMillis.h>
+#include <EEPROM.h>
 #include "bluetooth.hh"
 #include "config.h"
 #include "io.hh"
@@ -7,7 +8,6 @@
 #include "sensors.hh"
 #include "software_config.hh"
 
-//#define min(a,b) ((a)<(b)?(a):(b))
 #define BUFSIZE 20
 
 using namespace pins;
@@ -24,7 +24,9 @@ RGB_LED* frontRgb;
 int command_flag = 0; // wait for a command or button press
 int swap_flag = 0; // if true return to the start
 char command[BUFSIZE]; // buffer to hold bluetooth commands
-bool bluetooth = true; // activate bluetooth (and command system)
+bool bluetooth = false; // activate bluetooth (and command system)
+// allows backing up instead of turning 180 degrees
+bool backupFlag = false;
 
 bool commandIs(const char* token, const char* cmd, bool firstchar=false);
 
@@ -34,12 +36,16 @@ void setup() {
     /* * * * * * * * * * * * * * * * *
     * MOUSE HARDWARE INTITALIZATION *
     * * * * * * * * * * * * * * * * **/
+    pinMode(motorMode, OUTPUT);
+    digitalWrite(motorMode, HIGH);
 
     Serial.begin(9600);
     delay(500);
 
+
     backRgb = new RGB_LED(backLedR, backLedG, backLedB);
     backRgb->flashLED(0);
+    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     maze = new Maze();
 
@@ -49,6 +55,7 @@ void setup() {
       tofFrontR,
       tofDiagR,
       imuRST);
+
 
     driver = new Driver(
     motorPowerL,
@@ -60,13 +67,12 @@ void setup() {
     encoderL2,
     encoderR1,
     encoderR2,
-    *sensorArr);
+    *sensorArr,
+    *frontRgb);
 
     buzz = new Buzzer(buzzer);
     backButt = new Button(backButton);
     frontButt = new Button(frontButton);
-    backRgb = new RGB_LED(backLedR, backLedG, backLedB);
-    frontRgb = new RGB_LED(frontLedR, frontLedG, frontLedB);
 
     /* * * * * * * * * * * * * * *
     * FLOODFILL INITIALIZATION  *
@@ -76,28 +82,40 @@ void setup() {
     // Set maze boundary walls
     maze->setBoundaryWalls();
 
-    backRgb->flashLED(2);
     if (bluetooth) {
+        backRgb->flashLED(2);
         bluetoothInitialize();
         command[0] = '\0';
     }
     backRgb->flashLED(1);
 
-    // front button will kill any running process
-    //attachInterrupt(frontButton, abort_isr, RISING);
+    driver->encoderOnlyFlag = true;
+    driver->imuOn = false;
 }
 
 
 void loop() {
+    if (command_flag >= 0) {
+        debug_println("Waiting on command");
+        if (bluetooth) {
+            waitCommand();
+        } else {
+            waitButton();
+        }
+    }
+
     if ((maze->currPos == maze->goalPos && maze->counter % 2 == 0) ||
         (maze->currPos == maze->startPos && maze->counter % 2 == 1)) {
         maze->counter++;
         debug_println("Swapping goal....");
+        if (maze->counter <= 2) {
+            buzz->siren();
+            maze->writeEEPROM();
+        }
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            int speedRunIdx = min(maze->counter / 2, driverCfgs.size() - 1);
-            driver->updateConfig(driverCfgs[speedRunIdx]);
+            driver->cfgNum = min(maze->counter / 2, 2);
             command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
@@ -105,19 +123,11 @@ void loop() {
         }
     }
 
-    if (command_flag >= 0) {
-        debug_println("Waiting on command");
-        if (bluetooth) {
-            waitCommand();
-        } else {
-            waitButton(backButt);
-        }
-    }
     // run the flood-fill algorithm
     maze->floodMaze();
 
     // determine next cell to move to
-    Position next_move = maze->chooseNextCell(maze->currPos);
+    Position next_move = maze->chooseNextCell(maze->currPos, maze->counter >= 2);
     debug_print("Next move -- ");
     next_move.print(bluetooth);
 
@@ -158,31 +168,98 @@ void makeNextMove(Position next) {
     debug_print("Diff direction: ");
     debug_println(diff.direction());
 
-    debug_printvar(maze->wallBehind(diff.direction()));
+    bool backupMode = backupFlag ? maze->wallBehind(diff.direction()) : false;
 
-    driver->tankGo(next.col * swconst::cellSize, next.row * swconst::cellSize, maze->wallBehind(diff.direction()));
+    driver->tankGo(
+        next.col * swconst::cellSize,
+        next.row * swconst::cellSize,
+        false,
+        // maze->wallsOnSides(driver->curr_angle),
+        backupMode
+        );
     frontRgb->flashLED(1);
-}
-
-
-void abort_isr() {
-    abort_run = 1;
 }
 
 
 /* waitButton()
  * Waits on a button press. When pressed it starts the run of the maze.
+ * Allows for a variety of functionality, check README for details.
  */
-void waitButton(Button* but) {
+void waitButton() {
+    const long ledtime = 2000;
     while (1) {
-        if (but->read() == LOW) {
-            driver->resetState();
-            frontRgb->flashLED(2);
-            delay(1000);
-            frontRgb->flashLED(1);
+        /* press back button for a run, for 3-6 seconds for an EEPROM read
+         * and 6+ for EEPROM clear */
+        if (backButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(backButt->read() == LOW) {
+                if (timer < ledtime) {
+                    backRgb->turnOn(0);
+                } else if (timer < ledtime * 2) {
+                    backRgb->turnOn(1);
+                } else {
+                    backRgb->turnOn(2);
+                }
+            }
+            backRgb->turnOff();
 
-            command_flag = -1000;
-            break;
+            if (timer < ledtime) {
+                driver->resetState();
+                frontRgb->flashLED(2);
+                delay(1000);
+                frontRgb->flashLED(1);
+
+                command_flag = -1000;
+                break;
+            } else if (timer < ledtime * 2) {
+                maze->readEEPROM();
+                buzz->siren();
+            } else {
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                delay(50);
+                buzz->siren();
+                maze->clearEEPROM();
+            }
+        }
+        // press front button to increment speed run counter
+        else if (frontButt->read() == LOW) {
+            elapsedMillis timer = 0;
+            while(frontButt->read() == LOW) {
+                if (timer < ledtime) {
+                    backRgb->turnOn(0);
+                } else if (timer < ledtime * 2) {
+                    backRgb->turnOn(1);
+                } else if (timer < ledtime * 3) {
+                    backRgb->turnOn(2);
+                } else {
+                    backRgb->turnOn(0);
+                }
+            }
+            backRgb->turnOff();
+
+            if (timer < ledtime) {
+                frontRgb->flashLED(1);
+                if (maze->counter == 0) {
+                    maze->counter++;
+                } else {
+                    maze->counter = min(maze->counter + 2, 4);
+                }
+            }
+            else if (timer < ledtime * 2) {
+                celebrate();
+                backupFlag = !backupFlag;
+            }
+            else if (timer < ledtime * 3) {
+                buzz->siren();
+                backupFlag = false;
+                driver->encoderOnlyFlag = false;
+            } else {
+                backupFlag = true;
+                driver->imuOn = true;
+                driver->encoderOnlyFlag = false;
+            }
         }
     }
 }
@@ -242,18 +319,6 @@ void waitCommand() {
                 driver->resetState();
                 command_flag = -1000;
                 break;
-            }
-            // move forward
-            else if (commandIs(token, "w")) {
-                driver->forward(swconst::cellSize);
-            }
-            // turn left
-            else if (commandIs(token, "a")) {
-                driver->turnLeft(90);
-            }
-            // turn right
-            else if (commandIs(token, "d")) {
-                driver->turnRight(90);
             }
             else if (commandIs(token, "celebrate")) {
                 celebrate();
@@ -358,13 +423,12 @@ bool commandIs(const char* token, const char* cmd, bool firstchar) {
  * Flashes the LEDs in celebration.
  */
 void celebrate() {
-    buzz->on();
     for (size_t j = 0; j < 4; j++) {
         for (size_t i = 0; i < 2; i++) {
             frontRgb->flashLED(i);
             backRgb->flashLED(i);
+            buzz->siren();
             delay(50);
         }
     }
-    buzz->off();
 }

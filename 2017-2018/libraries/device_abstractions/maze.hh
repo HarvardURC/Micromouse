@@ -37,7 +37,7 @@ class Maze {
         void floodMaze();
         void addWalls(float angle, long leftDiag, long front, long rightDiag);
         void printMaze();
-        Position chooseNextCell(Position pos);
+        Position chooseNextCell(Position pos, bool straights = false);
         void reset();
         void updatePosition(Position p);
         void setGoal(Position p);
@@ -46,6 +46,10 @@ class Maze {
         bool wallBehind(float angle);
 
         void printWallsCell(Position p);
+
+        void writeEEPROM();
+        void readEEPROM();
+        void clearEEPROM();
 
         /** Constants **/
 

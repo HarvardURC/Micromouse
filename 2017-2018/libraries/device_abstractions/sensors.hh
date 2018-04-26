@@ -1,4 +1,11 @@
 #include <VL6180X.h>
+#include <Arduino.h>
+#include <i2c_t3.h>
+#include <VL6180X.h>
+#include <vector>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
 
 #ifndef sensors_hh
 #define sensors_hh
@@ -7,6 +14,8 @@
 #define LEFTFRONT 1
 #define RIGHTFRONT 2
 #define RIGHTDIAG 3
+
+extern Adafruit_BNO055 bno;
 
 class SensorArray {
     public:

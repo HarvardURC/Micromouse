@@ -2,6 +2,7 @@
 #include <vector>
 #include "sensors.hh"
 #include "helpers.hh"
+#include "io.hh"
 
 #ifndef motors_hh
 #define motors_hh
@@ -63,7 +64,8 @@ class Driver {
             int encoderPinL2,
             int encoderPinR1,
             int encoderPinR2,
-            SensorArray sensors
+            SensorArray sensors,
+            RGB_LED rgb
         );
 
         // Moves the motors forward at the input PWM value. PWMs to motors
@@ -116,8 +118,12 @@ class Driver {
         float curr_angle;
 
         // the maximum input PWM to drive motors, changes for speedruns
+        float cfgNum;
         float motorLimit;
         int convergenceTime;
+
+        bool encoderOnlyFlag;
+        bool imuOn;
 
         // left, middle, right
         long shortTofWallReadings[4];
@@ -134,11 +140,12 @@ class Driver {
         Motor _leftMotor;
         Motor _rightMotor;
         SensorArray _sensors;
+        RGB_LED _rgb;
 
         float _v_left = 0;
         float _v_right = 0;
 };
 
-extern std::vector<DriverConfig> driverCfgs;
+extern std::vector<DriverConfig> driverCfgsLinear;
 
 #endif

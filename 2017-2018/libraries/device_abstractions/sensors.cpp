@@ -1,11 +1,3 @@
-#include <Arduino.h>
-#include <i2c_t3.h>
-#include <VL6180X.h>
-#include <vector>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <utility/imumaths.h>
-
 #include "config.h"
 #include "sensors.hh"
 
@@ -117,11 +109,11 @@ void SensorArray::_initSensor(int idx) {
     sensor->configureDefault();
     sensor->setScaling(2);
     sensor->setTimeout(500);
-    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 15);
+    sensor->writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 20);
     sensor->stopContinuous();
-    delay(100);
-    sensor->startRangeContinuous(25);
+    delay(200);
+    sensor->startRangeContinuous(30);
     Serial.print(sensor_names[idx]);
     Serial.println(" online.");
-    delay(100);
+    delay(200);
 }

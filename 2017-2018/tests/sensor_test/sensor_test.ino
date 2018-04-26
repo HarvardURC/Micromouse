@@ -30,5 +30,11 @@ void loop() {
      *  Also:
      *  IRThresholds in Maze::addWalls
      */
+    // float left_front_dist = sensorArr->readShortTof(LEFTFRONT);
+    // float right_front_dist = sensorArr->readShortTof(RIGHTFRONT);
+    // float front_diff = left_front_dist - right_front_dist - 2;
+    // float rangefinder_angle = atan2f(front_diff * 2 , 52.); // rangefinders 52 mm apart
+    // Serial.println(rangefinder_angle);
+
     delay(10);
 }

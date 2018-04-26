@@ -92,6 +92,8 @@ class EncoderTicker {
         long lastVal;
 };
 
+
+/* A structure for containing different sets of speedrun constants. */
 struct DriverConfig {
     DriverConfig(int mL, int cT, float pl, float il, float dl,
         float pa, float ia, float da)
