@@ -7,6 +7,7 @@
 #include "motors.hh"
 #include "sensors.hh"
 #include "software_config.hh"
+#include <algorithm>
 
 #define BUFSIZE 20
 
@@ -115,7 +116,7 @@ void loop() {
         if (maze->currPos == maze->startPos) {
             command[0] = '\0';
             driver->resetState();
-            driver->cfgNum = min(maze->counter / 2, 2);
+            driver->cfgNum = std::min(maze->counter / 2, 2);
             command_flag = 1;
         }
         else if (maze->currPos == maze->goalPos) {
@@ -173,7 +174,6 @@ void makeNextMove(Position next) {
     driver->tankGo(
         next.col * swconst::cellSize,
         next.row * swconst::cellSize,
-        false,
         // maze->wallsOnSides(driver->curr_angle),
         backupMode
         );
@@ -244,7 +244,7 @@ void waitButton() {
                 if (maze->counter == 0) {
                     maze->counter++;
                 } else {
-                    maze->counter = min(maze->counter + 2, 4);
+                    maze->counter = std::min(maze->counter + 2, 4);
                 }
             }
             else if (timer < ledtime * 2) {

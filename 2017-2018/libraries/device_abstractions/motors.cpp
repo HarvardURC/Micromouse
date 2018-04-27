@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
-#include <math.h>
 #include <vector>
 #include "motors.hh"
 #include "bluetooth.hh"
 #include "software_config.hh"
+#include <cmath>
 
 using namespace swconst;
 
@@ -448,7 +448,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     end_iter++;
                 }
                 else {
-                    end_iter = max(end_iter - 5, 0);
+                    end_iter = std::max(end_iter - 5, 0);
                 }
 
                 if (end_iter > convergenceTime) {
@@ -521,7 +521,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                             && ignore_rangefinder == 0)
                         {
                             float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
-                            if (!isnanf(ratio) && !isinff(ratio)) {
+                            if (!std::isnan(ratio) && !std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -531,7 +531,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                         else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
                         {
                             float ratio = acosf(20./right_diag_dist) - 1.05;
-                            if (!isnanf(ratio) && !isinff(ratio)) {
+                            if (!std::isnan(ratio) && !std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -541,7 +541,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                         // just use left wall to wallfollow
                         else {
                             float ratio = 1.05 - acosf(20./left_diag_dist);
-                            if (!isnanf(ratio) && ! isinff(ratio)) {
+                            if (!std::isnan(ratio) && ! std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -637,7 +637,7 @@ void Driver::turnRight(float degrees) {
 
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
-void Driver::tankGo(float goal_x, float goal_y, bool back_wall) {
+void Driver::tankGo(float goal_x, float goal_y, bool back_wall, bool backwards) {
     // calculation for the desired angle to face the goal coordinates
     float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 

@@ -95,9 +95,9 @@ class Driver {
         void clearWallData();
 
         // single move to absolution coordinates
-        void go(float goal_x, float goal_y, float goal_a, size_t interval = 1);
+        void go(float goal_x, float goal_y, float goal_a, size_t interval = 1, bool backwards = false);
         // main navigation function, move via tank turn and straight drive
-        void tankGo(float goal_x, float goal_y, bool back_wall = false);
+        void tankGo(float goal_x, float goal_y, bool back_wall = false, bool backwards = false);
         // realign on a front wall using distance sensors
         void realign(int goal_dist);
         // align on back wall by physically backing up
