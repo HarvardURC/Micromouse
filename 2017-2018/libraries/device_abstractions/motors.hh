@@ -7,6 +7,7 @@
 #ifndef motors_hh
 #define motors_hh
 
+// class for single motor + encoder
 class Motor {
     public:
         // Constructor
@@ -23,6 +24,8 @@ class Motor {
         // Reads the current encoder value
         long readTicks();
 
+        /* Note: Main control logic in Driver class (go, tankGo)
+           does not use the following motor functions */
         // Moves until the motor for input ticks
         void moveTicks(long ticks);
         void moveTicksPID(long ticks);
@@ -47,6 +50,7 @@ class Motor {
         float _pidDerivative = 0;//.000000001;
 };
 
+// class for both motors/encoders - contains most of the control logic
 class Driver {
     public:
         // Constructor
@@ -73,8 +77,10 @@ class Driver {
         void moveTicks(long ticks);
         void movePID(float setpoint);
 
+        // generate PID outputs for go function
         void computePids(float init_xpos, float init_ypos,
                          float unbounded_angle);
+        // use PID outputs and goal orientation to determine motor power
         void calculateInputPWM(bool angle_flag,
             float goal_x, float goal_y, float angle_diff);
 
@@ -88,16 +94,22 @@ class Driver {
 
         void clearWallData();
 
+        // single move to absolution coordinates
         void go(float goal_x, float goal_y, float goal_a, size_t interval = 1, bool backwards = false);
-        void tankGo(float goal_x, float goal_y, bool backwards = false, bool back_wall = false);
+        // main navigation function, move via tank turn and straight drive
+        void tankGo(float goal_x, float goal_y, bool back_wall = false, bool backwards = false);
+        // realign on a front wall using distance sensors
         void realign(int goal_dist);
+        // align on back wall by physically backing up
         void backAlign();
 
+        // these functions use the go function to move relative distances/angles
         void forward(float distance);
         void turnLeft(float degrees);
         void turnRight(float degrees);
         void brake();
 
+        // switch to a new set of constants
         void updateConfig(DriverConfig cfg);
 
         // Robot state variables

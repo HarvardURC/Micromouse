@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <elapsedMillis.h>
-#include <math.h>
 #include <vector>
 #include "motors.hh"
 #include "bluetooth.hh"
 #include "software_config.hh"
+#include <cmath>
 
 using namespace swconst;
 
@@ -200,7 +200,8 @@ void Driver::movePID(float setpoint) {
     }
 }
 
-
+// generate PID outputs based on how far robot has traveled to goal
+// (assumes PID setpoints are relative distances from init to goal)
 void Driver::computePids(float init_xpos, float init_ypos,
     float angle_travelled) {
     _pid_x.input = curr_xpos - init_xpos;
@@ -308,7 +309,9 @@ int Driver::heading(float goal_x, float goal_y) {
     }
 }
 
-
+/* use PID outputs and goal orientation to determine motor pwm values
+ * (works well only when robot is already pointed in the direction it's
+ * travelling, or if it's turning in place) */
 void Driver::calculateInputPWM(bool angle_flag,
     float goal_x, float goal_y, float angle_diff)
 {
@@ -409,12 +412,12 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
             sensorCounter++;
             readWalls();
         }
-
+        // super fast loop where we update state based on encoders
         if (timeElapsed > interval) {
             // reset sample time
             timeElapsed = 0;
 
-            // do all pid output related on a separate loop
+            // slower loop where we update our motor outputs using PID
             if (pidTimer > pidSampleTime) {
                 pidTimer = 0;
 
@@ -445,7 +448,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                     end_iter++;
                 }
                 else {
-                    end_iter = max(end_iter - 5, 0);
+                    end_iter = std::max(end_iter - 5, 0);
                 }
 
                 if (end_iter > convergenceTime) {
@@ -518,7 +521,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                             && ignore_rangefinder == 0)
                         {
                             float ratio = 0.5*(acosf(20./right_diag_dist) - acosf(20./left_diag_dist));
-                            if (!isnanf(ratio) && !isinff(ratio)) {
+                            if (!std::isnan(ratio) && !std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -528,7 +531,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                         else if (right_diag_dist >= tof_low_bound && right_diag_dist <= tof_high_bound)
                         {
                             float ratio = acosf(20./right_diag_dist) - 1.05;
-                            if (!isnanf(ratio) && !isinff(ratio)) {
+                            if (!std::isnan(ratio) && !std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -538,7 +541,7 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
                         // just use left wall to wallfollow
                         else {
                             float ratio = 1.05 - acosf(20./left_diag_dist);
-                            if (!isnanf(ratio) && ! isinff(ratio)) {
+                            if (!std::isnan(ratio) && ! std::isinf(ratio)) {
                                 rangefinder_angle = alpha*(ratio) + (1-alpha)*rangefinder_angle;
                                 rangefinder_change = rangefinder_angle - last_rangefinder_angle;
                                 last_rangefinder_angle = rangefinder_angle;
@@ -614,29 +617,29 @@ void Driver::go(float goal_x, float goal_y, float goal_a, size_t interval, bool 
     if (debug) debug_println("Done with movement.");
 }
 
-
+// move forward given relative distance
 void Driver::forward(float distance) {
     float goal_x = curr_xpos - sinf(curr_angle) * distance;
     float goal_y = curr_ypos + cosf(curr_angle) * distance;
     go(goal_x, goal_y, curr_angle);
 }
 
-
+// turn left relative degrees
 void Driver::turnLeft(float degrees) {
     float goal_a = curr_angle + degToRad * degrees;
     go(curr_xpos, curr_ypos, goal_a);
 }
 
-
+// turn right relative degrees
 void Driver::turnRight(float degrees) {
     turnLeft(-1 * degrees);
 }
 
-
 /* Moves the robot to the input goal state in discrete tank style movements
  * of move forward and turn */
-void Driver::tankGo(float goal_x, float goal_y, bool backwards, bool back_wall) {
-    float temp_a = wrapAngle(atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos));
+void Driver::tankGo(float goal_x, float goal_y, bool back_wall, bool backwards) {
+    // calculation for the desired angle to face the goal coordinates
+    float temp_a = atan2f(-1*(goal_x - curr_xpos), goal_y - curr_ypos);
 
     debug_printvar(curr_angle);
     debug_printvar(temp_a);
@@ -658,6 +661,7 @@ void Driver::tankGo(float goal_x, float goal_y, bool backwards, bool back_wall) 
         // Turn
         debug_println(temp_a);
         go(curr_xpos, curr_ypos, temp_a);
+        // back align after turning, if there is a wall behind
         if (back_wall){
             backAlign();
         }
@@ -672,7 +676,7 @@ void Driver::tankGo(float goal_x, float goal_y, bool backwards, bool back_wall) 
         go(goal_x, goal_y, temp_a);
     }
 
-    // Re-align if near the wall
+    // Front Re-align if near the wall
     if (_sensors.readShortTof(LEFTFRONT) < 80) {
         realign(front_wall_align);
     }
@@ -685,7 +689,7 @@ void Driver::resetState() {
     this->curr_angle = 0;
 }
 
-
+// realign on a front wall using distance sensors
 void Driver::realign(int goal_dist) {
     _pid_front_tof.setpoint = goal_dist;
     // right diag reads less than left diag
@@ -699,8 +703,7 @@ void Driver::realign(int goal_dist) {
     float front_diff = left_front_dist - right_front_dist - diag_correction;
     float front_dist = .5*(left_front_dist + right_front_dist);
 
-    // use imu to incorporate angle into front pid input
-    // (when robot is turned, its closer to the wall with same front reading)
+    // use single loop to get to proper distance and perpendicular to front wall
     elapsedMillis timeout = 0;
     while (timeout < pidLoopTimeout) {
         left_front_dist = _sensors.readShortTof(LEFTFRONT);
@@ -750,6 +753,7 @@ void Driver::realign(int goal_dist) {
     curr_angle += (new_angle - curr_angle) * angle_correction_ratio;
 }
 
+// align on back wall, then move back to middle of cell
 void Driver::backAlign() {
     // if there is a wall behind, back into it
     elapsedMillis encoderTimer = 0;
@@ -760,7 +764,8 @@ void Driver::backAlign() {
     EncoderTicker rightEnc(&_rightMotor._encoder);
     long left_diff = 501;
     long right_diff = 501;
-    while(abs(left_diff) > 500 || abs(right_diff) > 500) {
+    // stop when encoders show wheels stop turning (hit wall)
+    while(abs(left_diff) > 300 || abs(right_diff) > 300) {
         if (encoderTimer > 40) {
             encoderTimer = 0;
             left_diff = leftEnc.diffLastRead();
