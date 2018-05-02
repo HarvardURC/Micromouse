@@ -1,5 +1,5 @@
 #include <QueueArray.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include <VL6180X.h>
 #include <config.h>
 #include <emile_motors.h>
@@ -12,11 +12,11 @@
 #define SOUTH 2
 #define WEST 1
 
-#define MAZE_WIDTH 3
-#define MAZE_HEIGHT 6
+#define MAZE_WIDTH 16
+#define MAZE_HEIGHT 16
 
-#define CENTER_ROW 2
-#define CENTER_COL 1
+#define CENTER_ROW 7
+#define CENTER_COL 7
 
 #define START_ROW 0
 #define START_COL 0
@@ -40,7 +40,7 @@ int mouseCol;
 // 0 NORTH
 // 1 EAST
 // 2 SOUTH
-// 3 WEST 
+// 3 WEST
 int mouseDir;
 
 const int wallThreshold = 280;
@@ -97,7 +97,6 @@ int speed;
 //String pathToCenterCheck [150];
 short pathToCenter[256];
 short pathToStart[256];
-short rawPath[256];
 short pathLength;
 
 // initialize motors object
@@ -151,8 +150,7 @@ void setup() {
   pathLength = 0;
 
   // Only start runs when buttons are pressed
-  // TEMPORARY - BUTTONS BROKEN
-  mapping_run = true;
+  mapping_run = false;
   speed_run = false;
 
   // no buttons pressed
@@ -162,7 +160,7 @@ void setup() {
 //
 //  int eepromAddr = 0;
 //  eepromAddr += EEPROM_readAnything(eepromAddr, pathLength);
-//  
+//
 //  for (short i = 0; i < 256; i++) {
 //    eepromAddr += EEPROM_readAnything(eepromAddr, pathToCenter[i]);
 //  }
@@ -170,16 +168,12 @@ void setup() {
 //    eepromAddr += EEPROM_readAnything(eepromAddr, pathToStart[i]);
 //  }
 
-  Serial.println("Finished setup");
 }
 
 // LOOP
 void loop() {
-  Serial.println("Looping");
-  
-//  checkButtons();
-  Serial.println("Made it past checkButtons()");
-  
+  checkButtons();
+
   if (mapping_run) {
     senseWalls();
     Serial.println("Made it past sense walls");
@@ -193,10 +187,9 @@ void loop() {
     printVirtualMaze();
     Serial.println("Made it past print virtual maze");
 
-    delay(150);
-  } 
+    delay(300);
+  }
   else if (speed_run) {
-    Serial.println("Speed Run");
     speedRun();
   }
 }
@@ -218,66 +211,37 @@ void Janus() {
     //      quickestPath[i] = endArray;
     //      }
 
-    // CONVERT RawPath TO pathToCenter
+    // FLOOD THE MAZE
+    // STORE SPEED PATH
+
+    floodMaze();
+
+    // Virtual cell placeholders
     int tempRow = START_ROW;
     int tempCol = START_COL;
-    cellMap[tempRow][tempCol].visited = true;
-    // while (cellMap[tempRow][tempCol].floodDistance != 0) {
 
-    // }
-    for (int i = 0; i < pathLength; i++) {
-      if (rawPath[i] == 0) {
+    int tempDir = 0;
+    pathLength = 0;
+
+    while (cellMap[tempRow][tempCol].floodDistance != 0) {
+      tempDir = chooseDirection(tempRow, tempCol);
+
+      pathToCenter[pathLength] = tempDir;
+
+      if (tempDir == 0) {
         tempRow--;
       }
-      else if (rawPath[i] == 1) {
+      else if (tempDir == 1) {
         tempCol++;
       }
-      else if (rawPath[i] == 2) {
+      else if (tempDir == 2) {
         tempRow++;
       }
-      else if (rawPath[i] == 3) {
+      else if (tempDir == 3) {
         tempCol--;
       }
 
-      // delete dead end
-      if (cellMap[tempRow][tempCol].visited) {
-        int leftPair = i - 1;
-        int rightPair = i;
-
-        while (rawPath[leftPair] == (rawPath[rightPair] + 2) % 4) {
-          for (int j = rightPair + 1; j < pathLength; j++) {
-            rawPath[j - 2] = rawPath[j];
-          }
-          pathLength -= 2;
-          i--;
-
-          leftPair--;
-          rightPair--;
-
-          if (rawPath[rightPair] == 0) {
-            tempRow--;
-          }
-          else if (rawPath[rightPair] == 1) {
-            tempCol++;
-          }
-          else if (rawPath[rightPair] == 2) {
-            tempRow++;
-          }
-          else if (rawPath[rightPair] == 3) {
-            tempCol--;
-          }
-
-          digitalWrite(pins::led, HIGH);
-          delay(500);
-          digitalWrite(pins::led, LOW);
-        }
-      }
-
-      cellMap[tempRow][tempCol].visited = true;
-    }
-
-    for (int i = 0; i < pathLength; i++) {
-      pathToCenter[i] = rawPath[i];
+      pathLength++;
     }
 
     // reverse pathToCenter for pathToStart
@@ -286,10 +250,21 @@ void Janus() {
 
     while (start <= end) {
       pathToStart[start] = (pathToCenter[end] + 2) % 4;
-      pathToStart[end] = (pathToCenter[start] + 2) % 4; 
+      pathToStart[end] = (pathToCenter[start] + 2) % 4;
       start++;
       end--;
     }
+    // Store map data to EEPROM:
+    // FORMAT: Pathlength, pathToCenter, pathToStart
+//    int eepromAddr = 0;
+//    eepromAddr += EEPROM_writeAnything(eepromAddr, pathLength);
+//    eepromAddr += EEPROM_writeA
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToCenter[i]);
+//    }
+//    for (int i = 0; i < pathLength; i++){
+//      eepromAddr += EEPROM_writeAnything(eepromAddr, pathToStart[i]);
+//    }
 
     // Go back to start
     for (int i = 0; i < pathLength; i++) {
@@ -298,12 +273,11 @@ void Janus() {
     }
 
     // Increment spd to go on to speed runs
+//    spd++;
 
     // stop mapping run
     mapping_run = false;
-    speed_run = true;
-    motors->MOTOR_SPEED += SPEED_INCREASE;
-  } //jdjdjdjdjdjdjdjdjdj
+  }
   else {
     int thePath = chooseDirection(mouseRow, mouseCol);
 
@@ -327,10 +301,6 @@ void Janus() {
     else if (thePath == 3) {
       mouseCol--;
     }
-
-    // store values in rawPath
-    rawPath[pathLength] = thePath;
-    pathLength++;
   }
 }
 
@@ -501,17 +471,17 @@ void initializeFloodMaze() {
   cellMap[CENTER_ROW][CENTER_COL].visited = true;
   floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL]);
 
-//  cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
-//  cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
-//  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
-//
-//  cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
-//  cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
-//  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
-//
-//  cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
-//  cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
-//  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
+  cellMap[CENTER_ROW + 1][CENTER_COL].floodDistance = 0;
+  cellMap[CENTER_ROW + 1][CENTER_COL].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL]);
+
+  cellMap[CENTER_ROW][CENTER_COL + 1].floodDistance = 0;
+  cellMap[CENTER_ROW][CENTER_COL + 1].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW][CENTER_COL + 1]);
+
+  cellMap[CENTER_ROW + 1][CENTER_COL + 1].floodDistance = 0;
+  cellMap[CENTER_ROW + 1][CENTER_COL + 1].visited = true;
+  floodQueue.enqueue(cellMap[CENTER_ROW + 1][CENTER_COL + 1]);
 }
 
 void initializeCellMap() {
@@ -690,6 +660,13 @@ void initSensor(int pin, VL6180X *sensor, int address) {
   Serial.println(" connected.");
 }
 
+// void addSpdCount() {
+//   // S8 is the increment button
+//   int addSpd = digitalRead(pins::buttonS8);
+//   int deleteSpd = -digitalRead(pins::buttonS6);
+//   spd += addSpd + deleteSpd;
+// }
+
 void checkButtons() {
   // S8 changes the speed, turns on speed_run
   // S6 overrides Teensy memory EEBROM, turns on mapping_run
@@ -699,7 +676,6 @@ void checkButtons() {
 
   if (S6_active) {
     mapping_run = true;
-    pathLength = 0;
     S6_active = false;
     digitalWrite(pins::led, HIGH);
     delay(500);
@@ -726,11 +702,11 @@ void checkButtons() {
     } else {
       motors->MOTOR_SPEED += SPEED_INCREASE;
     }
-    
+
     S8_active = false;
     S8_long_active = false;
 
-//    speed_run = true;
+    speed_run = true;
     digitalWrite(pins::led, HIGH);
     delay(500);
     digitalWrite(pins::led, LOW);
@@ -738,11 +714,11 @@ void checkButtons() {
 }
 
 void speedRun() {
-  // Run through pathToCenter, turn and move robot forward according to direction at each index
+  // Run through pathToCenter, turn and move robot advance according to direction at each index
   // motors->MOTOR_SPEED = 150;
   for (int i = 0; i < pathLength; i++) {
     turn(pathToCenter[i]);
-    motors->forward();
+    motors->forward(); //TODO change to advance()
   }
   Serial.println("REACHED THE CENTER!");
   for (int i = 0; i < pathLength; i++) {
@@ -751,11 +727,8 @@ void speedRun() {
   }
   Serial.println("REACHED THE START");
 
-  // VERY JANK PLEASE REMOVE
-  motors->MOTOR_SPEED += SPEED_INCREASE;
-
   // turn off speed run
-//  speed_run = false;
+  speed_run = false;
   // Reverse each of the directions once the robot has reached the center
   // for (int i = 0; i < pathLength; i++) {
   //   pathToCenter[i] = (pathToCenter[i] + 2) % 4;
@@ -773,10 +746,10 @@ void speedRun() {
   // for (int i = 0; i < pathLength; i++) {
   //   turn(pathToCenter[i]);
   //   Serial.print(pathToCenter[i]);
-  //   motors->forward();
+  //   motors->advances();
   // }
 }
-//
+
 //
 //template <class T> int EEPROM_writeAnything(int ee, const T& value)
 //{

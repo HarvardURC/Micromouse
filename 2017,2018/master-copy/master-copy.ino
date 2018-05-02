@@ -301,8 +301,6 @@ void Janus() {
 
     // stop mapping run
     mapping_run = false;
-    speed_run = true;
-    motors->MOTOR_SPEED += SPEED_INCREASE;
   } //jdjdjdjdjdjdjdjdjdj
   else {
     int thePath = chooseDirection(mouseRow, mouseCol);
@@ -751,11 +749,8 @@ void speedRun() {
   }
   Serial.println("REACHED THE START");
 
-  // VERY JANK PLEASE REMOVE
-  motors->MOTOR_SPEED += SPEED_INCREASE;
-
   // turn off speed run
-//  speed_run = false;
+  speed_run = false;
   // Reverse each of the directions once the robot has reached the center
   // for (int i = 0; i < pathLength; i++) {
   //   pathToCenter[i] = (pathToCenter[i] + 2) % 4;
