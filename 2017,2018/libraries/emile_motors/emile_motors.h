@@ -14,7 +14,7 @@ class emile_motors
 {
     public:
         // Constructor
-        int MOTOR_SPEED = 70;
+        int MOTOR_SPEED = 130;
         emile_motors(VL6180X* leftIR, VL6180X* rightIR, VL6180X* frontIR,
                     VL6180X* leftDiagIR, VL6180X* rightDiagIR);
         // flag for reset button

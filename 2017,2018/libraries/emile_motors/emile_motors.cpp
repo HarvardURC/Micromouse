@@ -129,7 +129,8 @@ void emile_motors::turnLeft()
   PIDLeft->SetTunings(1.7,0.01,0.00);
   PIDRight->SetTunings(1.7,0.01,0.00);
   moveTicks(-1 * TICKS_TURN, TICKS_TURN);
-  delay(250);
+  stop();
+  delay(150);
   if (backFlag) {
     back_align();
   }
@@ -182,9 +183,9 @@ void emile_motors::front_align()
 void emile_motors::back_align()
 {
   moveTicks(-TICKS_CELL/2.0, -TICKS_CELL / 2.0);
-  delay(100);
+  delay(50);
   moveTicks(TICKS_CELL/2.4, TICKS_CELL / 2.4);
-  delay(200);
+  delay(100);
 }
 
 // follows the right wall for a certain number of ticks

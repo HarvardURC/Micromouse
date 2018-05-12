@@ -1,5 +1,5 @@
-#include <VL6180X.h>
-#include <Wire.h>
+#include "VL6180X.h"
+#include <i2c_t3.h>
 
 // Defines /////////////////////////////////////////////////////////////////////
 
