@@ -5,7 +5,7 @@
 This repo contains both the 2015-2017 code and the 2017-2018 code, in the respectively named folders. In 2017-2018 we had both an experienced and a beginner team. They used different Micromice and have different codebases. The codebase merged into master right now is the experienced team's codebase. To look at the beginner team codebase you can switch to the `beg-mouse` branch and look in the 2017,2018 folder.
 
 ## Library Setup
-To setup the libraries on your machine. You will need to symlink your local `/2017-2018/libraries` to your Arduino libraries folder. This will mean that everytime you pull down updated libraries from Github, they will also be updated for Arduino without any nastiness on your part. The default location for your local Arduino libraries folder is:
+To setup the libraries on your machine you will need to symlink your local `/2017-2018/libraries` to your Arduino libraries folder. This will mean that every time you pull down updated libraries from Github they will also be updated for your local Arduino application without any nastiness on your part. The default location for your local Arduino libraries folder is:
 * OSX: `/Users/your_username/Documents/Arduino/Libraries`
 * Windows: `My Documents\Arduino\libraries\`
 
