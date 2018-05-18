@@ -30,7 +30,7 @@ Config files for the robot that are populated with Teensy pin numbers.
 - 'start' : Starts the mouse of a full maze run.
 - 'celebrate' : Flashes the LEDs and sounds the buzzer in a celebratory pattern.
 - 'setgoal x y' : Sets the goal of the maze to be row 'x' and column 'y' (0 indexed). This is useful for testing different goals or maze configurations without having to reset the goal inside the code and upload every maze change.
-- 'tune' : Enters the tuning menu for the PIDs. This is a powerful menu that allows setting the PID values of the driver to different values remotely. This can be good for trying different sets of PID values in quick reptition (prevents the recompile and upload step). Note: the values won't persist if you turn the mouse off, but it's useful for debugging. Make sure to save good values into the code.
+- 'tune' : Enters the tuning menu for the PIDs. This is a powerful menu that allows setting the PID values of the driver to different values remotely. This can be good for trying different sets of PID values in quick repetition (prevents the recompile and upload step). Note: the values won't persist if you turn the mouse off, but it's useful for debugging. Make sure to save good values into the code.
 - 'quit' : Exits out of the tuning menu interface.
 - 'help' : Shows available commands.
 
