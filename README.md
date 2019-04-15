@@ -22,3 +22,4 @@ Use Finder to verify that the libraries are now in your Arduino folder. This sho
 2. Use `cd` (no arguments) to get the current directory information and save this for later.
 3. `cd` to where your Arduino libraries are located. Again use `cd` (no arguments) to save the full directory path.
 4. Run `mklink /D source destination` and replace `source` with the first directory path and replace `destination` with the second directory path.
+* Note: If symlink does not work, simply locally cp (copy) the necessary libraries into your Arduino library folder
